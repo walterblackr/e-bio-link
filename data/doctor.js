@@ -23,13 +23,13 @@ export const doctorData = {
   links: [
     { 
       label: "whatsapp", 
-      url: "https://web.whatsapp.com/", 
+      url: "https://wa.me/5492995558764", 
       // Usamos un icono genérico, puedes cambiarlo
       icon: <FaWhatsapp size={18} />, 
     },
     { 
       label: "Instagram", 
-      url: "https://www.instagram.com/", 
+      url: "https://www.instagram.com/ebiolink?igsh=cXNoYnhqOHc1czgx", 
       icon: <FaInstagram size={18} />,
     },
     { 

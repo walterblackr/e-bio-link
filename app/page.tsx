@@ -95,7 +95,7 @@ export default function Home() {
         ></div>
 
         {/* BOTÓN DE RESERVAR */}
-        <button
+        {/* <button
           data-cal-link="walter-rafael-garrido-t2aiac/30min"
           data-cal-namespace="30min"
           data-cal-config='{"layout":"month_view"}'
@@ -106,7 +106,7 @@ export default function Home() {
           }}
         >
           turnos
-        </button>
+        </button> */}
 
         {/* LISTA DE BOTONES (LINKS) */}
         <div className="w-full space-y-4">
@@ -142,7 +142,7 @@ export default function Home() {
         </div>
 
         {/* OBRAS SOCIALES */}
-        {doctorData.insurances && doctorData.insurances.length > 0 && (
+        {/* {doctorData.insurances && doctorData.insurances.length > 0 && (
           <div className="mt-6 pt-5 w-full">
             <div
               className="w-12 h-0.5 mx-auto mb-4"
@@ -161,7 +161,7 @@ export default function Home() {
               {doctorData.insurances.join(" • ")}
             </p>
           </div>
-        )}
+        )} */}
       </div>
 
       {/* Footer (Opcional, lo oculto para que sea idéntico a la imagen) */}
