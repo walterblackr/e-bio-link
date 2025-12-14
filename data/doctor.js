@@ -32,9 +32,9 @@ export const doctorData = {
       url: "https://www.instagram.com/ebiolink?igsh=cXNoYnhqOHc1czgx", 
       icon: <FaInstagram size={18} />,
     },
-    { 
-      label: "quienes somos", 
-      url: "https://www.google.com/maps", 
+    {
+      label: "quienes somos",
+      url: "/en-construccion",
       icon: <FaRegEnvelope size={18} />,
     },
   ],
