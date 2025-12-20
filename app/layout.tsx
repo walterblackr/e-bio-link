@@ -24,8 +24,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es">
-      {/* Agregamos la variable de la fuente al body */}
-      <body className={`${inter.className} ${spaceMono.variable}`}>
+      <head>
         {/* Meta Pixel Code */}
         <Script id="facebook-pixel" strategy="afterInteractive">
           {`
@@ -52,7 +51,9 @@ export default function RootLayout({
             alt=""
           />
         </noscript>
-
+      </head>
+      {/* Agregamos la variable de la fuente al body */}
+      <body className={`${inter.className} ${spaceMono.variable}`}>
         {children}
       </body>
     </html>
