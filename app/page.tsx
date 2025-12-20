@@ -118,9 +118,15 @@ export default function Home() {
               rel="noopener noreferrer"
               className="flex items-center justify-center w-full py-3 px-6 rounded-full font-semibold transition-all transform hover:scale-105 bg-transparent border lowercase tracking-wider font-[family-name:var(--font-space-mono)]"
               // Aplicamos colores dinámicos para borde y texto
-              style={{ 
+              style={{
                 borderColor: doctorData.colors.buttonBorder,
                 color: doctorData.colors.text
+              }}
+              onClick={() => {
+                // Trackear evento Lead en Meta Pixel cuando se hace clic en WhatsApp
+                if (link.label.toLowerCase() === 'whatsapp' && typeof window !== 'undefined' && (window as any).fbq) {
+                  (window as any).fbq('track', 'Lead');
+                }
               }}
             >
               {/* Puedes quitar el icono si quieres que sea solo texto como en la imagen */}
