@@ -14,15 +14,20 @@ export default async function handler(
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { clientSlug, adminKey } = req.body;
+  const { clientId, adminKey } = req.body;
 
   // 🔐 IMPORTANTE: Proteger este endpoint con una clave secreta
   if (adminKey !== process.env.ADMIN_SECRET_KEY) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
-  if (!clientSlug) {
-    return res.status(400).json({ error: 'clientSlug is required' });
+  if (!clientId) {
+    return res.status(400).json({ error: 'clientId is required' });
+  }
+
+  // Validar que sea un UUID válido
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(clientId)) {
+    return res.status(400).json({ error: 'clientId must be a valid UUID' });
   }
 
   try {
@@ -30,7 +35,7 @@ export default async function handler(
 
     // 1. Obtener el token del cliente
     const result = await sql`
-      SELECT mp_access_token FROM clients WHERE slug = ${clientSlug}
+      SELECT mp_access_token FROM clients WHERE id = ${clientId}
     `;
 
     if (result.length === 0) {
@@ -61,14 +66,14 @@ export default async function handler(
 
     // 3. Eliminar el token de la base de datos
     await sql`
-      DELETE FROM clients WHERE slug = ${clientSlug}
+      DELETE FROM clients WHERE id = ${clientId}
     `;
 
-    console.log(`✅ Acceso revocado para cliente: ${clientSlug}`);
+    console.log(`✅ Acceso revocado para cliente: ${clientId}`);
 
     return res.status(200).json({
       success: true,
-      message: `Acceso revocado para ${clientSlug}`,
+      message: `Acceso revocado para cliente ID: ${clientId}`,
     });
 
   } catch (error) {

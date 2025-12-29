@@ -14,7 +14,7 @@ async function emergencyRevokeAll() {
   try {
     // 1. Obtener todos los clientes
     const clients = await sql`
-      SELECT slug, mp_access_token FROM clients
+      SELECT id, client_name, mp_access_token FROM clients
     `;
 
     console.log(`📊 Encontrados ${clients.length} clientes`);
@@ -25,7 +25,7 @@ async function emergencyRevokeAll() {
     // 2. Revocar cada token
     for (const client of clients) {
       try {
-        console.log(`Revocando acceso para: ${client.slug}`);
+        console.log(`Revocando acceso para: ${client.client_name || client.id}`);
 
         // Revocar en Mercado Pago
         await axios.delete(
@@ -42,10 +42,10 @@ async function emergencyRevokeAll() {
         );
 
         revokedCount++;
-        console.log(`✅ Revocado: ${client.slug}`);
+        console.log(`✅ Revocado: ${client.client_name || client.id}`);
       } catch (error) {
         errorCount++;
-        console.error(`❌ Error revocando ${client.slug}:`, error);
+        console.error(`❌ Error revocando ${client.client_name || client.id}:`, error);
       }
     }
 

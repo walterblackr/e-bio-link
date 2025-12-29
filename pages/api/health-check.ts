@@ -7,7 +7,8 @@ import axios from 'axios';
 import { neon } from '@neondatabase/serverless';
 
 interface TokenHealthStatus {
-  clientSlug: string;
+  clientId: string;
+  clientName?: string;
   status: 'valid' | 'invalid' | 'error';
   error?: string;
 }
@@ -31,7 +32,7 @@ export default async function handler(
 
     // Obtener todos los clientes
     const clients = await sql`
-      SELECT slug, mp_access_token FROM clients
+      SELECT id, client_name, mp_access_token FROM clients
     `;
 
     const healthStatus: TokenHealthStatus[] = [];
@@ -48,13 +49,15 @@ export default async function handler(
         });
 
         healthStatus.push({
-          clientSlug: client.slug,
+          clientId: client.id,
+          clientName: client.client_name,
           status: 'valid',
         });
 
       } catch (error) {
         const status: TokenHealthStatus = {
-          clientSlug: client.slug,
+          clientId: client.id,
+          clientName: client.client_name,
           status: 'invalid',
         };
 
@@ -63,8 +66,8 @@ export default async function handler(
             status.error = 'Token revocado o expirado';
 
             // Auto-limpiar tokens inválidos
-            await sql`DELETE FROM clients WHERE slug = ${client.slug}`;
-            console.log(`🗑️ Token inválido eliminado: ${client.slug}`);
+            await sql`DELETE FROM clients WHERE id = ${client.id}`;
+            console.log(`🗑️ Token inválido eliminado: ${client.client_name || client.id}`);
           } else {
             status.error = `HTTP ${error.response?.status}`;
             status.status = 'error';
