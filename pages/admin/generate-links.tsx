@@ -1,6 +1,4 @@
-'use client';
-
-// app/admin/generate-links/page.tsx
+// pages/admin/generate-links.tsx
 // Panel simple para que VOS generes links manualmente
 
 import { useState } from 'react';

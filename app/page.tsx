@@ -2,7 +2,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect } from "react";
-import { FaCalendarAlt } from "react-icons/fa";
+import { FaCalendarAlt, FaWhatsapp } from "react-icons/fa";
+import { FileText, Users, ArrowRight, Play } from "lucide-react";
 import { doctorData } from "../data/doctor";
 
 export default function Home() {
@@ -40,19 +41,25 @@ export default function Home() {
 
   return (
     <main
-      className="min-h-screen py-8 px-6 flex flex-col items-center justify-start overflow-y-auto"
-      style={{ backgroundColor: doctorData.colors.background }}
+      className="min-h-screen py-8 px-6 flex flex-col items-center justify-start overflow-y-auto relative overflow-x-hidden selection:bg-blue-100 font-sans"
+      style={{ backgroundColor: '#f8fafc' }}
     >
 
+      {/* --- FONDO DECORATIVO (Animado) --- */}
+      <div className="fixed top-0 left-0 w-full h-full overflow-hidden pointer-events-none -z-10">
+         <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-blue-100 rounded-full mix-blend-multiply filter blur-3xl opacity-50 animate-pulse"></div>
+         <div className="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-slate-200 rounded-full mix-blend-multiply filter blur-3xl opacity-50"></div>
+      </div>
+
       {/* Contenedor principal centrado */}
-      <div className="w-full max-w-xs text-center z-10 flex flex-col items-center my-auto">
+      <div className="w-full max-w-xs text-center z-10 flex flex-col items-center my-auto animate-fade-in-up">
         
         {/* FOTO DE PERFIL */}
-        <div className="relative w-28 h-28 mx-auto mb-4">
+        <div className="relative w-28 h-28 mx-auto mb-4 bg-white rounded-full shadow-xl flex items-center justify-center border-4 border-white ring-1 ring-slate-100 transform hover:scale-105 transition-transform duration-300 overflow-hidden">
            <img
              src={doctorData.avatar}
              alt={doctorData.name}
-             className="w-full h-full rounded-full object-cover shadow-md"
+             className="absolute inset-0 w-full h-full object-cover"
            />
         </div>
 
@@ -110,16 +117,76 @@ export default function Home() {
 
         {/* LISTA DE BOTONES (LINKS) */}
         <div className="w-full space-y-4">
+          {/* BOTÓN 1: PROPUESTA COMERCIAL */}
+          <Link
+            href="/propuesta"
+            className="group relative flex items-center justify-between w-full py-4 px-6 rounded-2xl bg-white border border-slate-200 shadow-sm hover:shadow-md hover:border-blue-400 hover:-translate-y-1 transition-all duration-300"
+          >
+             <div className="flex items-center gap-4">
+                <div className="p-2.5 bg-blue-50 text-blue-600 rounded-xl group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                    <FileText size={20} strokeWidth={2.5} />
+                </div>
+                <span className="font-bold text-slate-700 group-hover:text-blue-700">Propuesta Comercial</span>
+             </div>
+             <ArrowRight size={18} className="text-slate-300 group-hover:text-blue-500 transition-colors" />
+          </Link>
+
+          {/* BOTÓN 2: QUIÉNES SOMOS */}
+          <Link
+            href="/quienes-somos"
+            className="group relative flex items-center justify-between w-full py-4 px-6 rounded-2xl bg-white border border-slate-200 shadow-sm hover:shadow-md hover:border-blue-400 hover:-translate-y-1 transition-all duration-300"
+          >
+             <div className="flex items-center gap-4">
+                <div className="p-2.5 bg-slate-50 text-slate-600 rounded-xl group-hover:bg-slate-800 group-hover:text-white transition-colors">
+                    <Users size={20} strokeWidth={2.5} />
+                </div>
+                <span className="font-bold text-slate-700 group-hover:text-slate-900">Quiénes Somos</span>
+             </div>
+             <ArrowRight size={18} className="text-slate-300 group-hover:text-slate-500 transition-colors" />
+          </Link>
+
+          {/* SEPARADOR VISUAL */}
+          <div className="flex items-center gap-4 w-full py-2 opacity-50">
+            <div className="h-px bg-slate-300 flex-1"></div>
+            <span className="text-[10px] uppercase tracking-widest text-slate-400 font-semibold">Acciones</span>
+            <div className="h-px bg-slate-300 flex-1"></div>
+          </div>
+
+          {/* BOTÓN 3: VER DEMO */}
+          <a
+            href="https://e-bio-link-cr-v-bruce.vercel.app/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center w-full py-4 px-6 rounded-2xl bg-slate-900 text-white shadow-xl shadow-slate-200 hover:bg-slate-800 hover:scale-[1.02] active:scale-95 transition-all duration-300 gap-3 group"
+          >
+             <div className="bg-white/10 p-1 rounded-full">
+                <Play size={16} fill="currentColor" className="text-white ml-0.5" />
+             </div>
+             <span className="font-bold tracking-wide">VER DEMO EN VIVO</span>
+          </a>
+
+          {/* BOTÓN 4: WHATSAPP */}
+          <a
+            href="https://wa.me/5492994091255"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center w-full py-4 px-6 rounded-2xl bg-blue-600 text-white shadow-xl shadow-blue-200 hover:bg-blue-700 hover:scale-[1.02] active:scale-95 transition-all duration-300 gap-3"
+          >
+             <FaWhatsapp size={22} />
+             <span className="font-bold tracking-wide">ME INTERESA / HABLAR</span>
+          </a>
+
+      
+
+          {/* BOTONES ORIGINALES DEL DOCTOR */}
           {doctorData.links.map((link, index) => (
             <a
               key={index}
               href={link.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center justify-center w-full py-3 px-6 rounded-full font-semibold transition-all transform hover:scale-105 bg-transparent border lowercase tracking-wider font-[family-name:var(--font-space-mono)]"
-              // Aplicamos colores dinámicos para borde y texto
+              className="flex items-center justify-center w-full py-4 px-6 rounded-2xl font-bold transition-all bg-white border border-slate-200 shadow-sm hover:shadow-md hover:border-blue-400 hover:-translate-y-1 lowercase tracking-wider font-[family-name:var(--font-space-mono)]"
               style={{
-                borderColor: doctorData.colors.buttonBorder,
                 color: doctorData.colors.text
               }}
               onClick={() => {
@@ -129,8 +196,6 @@ export default function Home() {
                 }
               }}
             >
-              {/* Puedes quitar el icono si quieres que sea solo texto como en la imagen */}
-              {/* <span className="mr-3">{link.icon}</span> */}
               {link.label}
             </a>
           ))}

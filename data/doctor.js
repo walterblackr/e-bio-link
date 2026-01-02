@@ -11,9 +11,9 @@ export const doctorData = {
 
   colors: {
     // El color de fondo exacto de la imagen
-    background: "#0a0a0aff", 
+    background: "#4a90e2", 
     // Color para el texto blanco
-    text: "#ffffff",
+    text: "#0e0d0dff",
     // Color para los bordes de los botones
     buttonBorder: "#ffffff", 
     // Color sutil para la línea separadora (un azul más claro)
@@ -21,22 +21,7 @@ export const doctorData = {
   },
 
   links: [
-    { 
-      label: "whatsapp", 
-      url: "https://wa.me/5492995558764", 
-      // Usamos un icono genérico, puedes cambiarlo
-      icon: <FaWhatsapp size={18} />, 
-    },
-    { 
-      label: "Instagram", 
-      url: "https://www.instagram.com/ebiolink?igsh=cXNoYnhqOHc1czgx", 
-      icon: <FaInstagram size={18} />,
-    },
-    {
-      label: "quienes somos",
-      url: "/en-construccion",
-      icon: <FaRegEnvelope size={18} />,
-    },
+    
   ],
 
   calLink: "usuario-prueba/consulta-general" 
