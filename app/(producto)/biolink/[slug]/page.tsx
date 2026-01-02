@@ -6,6 +6,9 @@ import BioLinkTemplate from '@/app/components/BioLinkTemplate';
 interface MedicoData {
   nombre_completo: string;
   foto_url: string;
+  especialidad?: string;
+  matricula?: string;
+  descripcion?: string;
   cal_username: string;
   botones_config: any[];
   tema_config: any;
@@ -29,6 +32,9 @@ export default async function BioLinkPage({ params }: PageProps) {
     SELECT
       nombre_completo,
       foto_url,
+      especialidad,
+      matricula,
+      descripcion,
       cal_username,
       botones_config,
       tema_config
@@ -54,7 +60,7 @@ export async function generateMetadata({ params }: PageProps) {
   const sql = neon(process.env.DATABASE_URL!);
 
   const response = await sql`
-    SELECT nombre_completo
+    SELECT nombre_completo, especialidad, descripcion
     FROM clients
     WHERE slug = ${slug}
     LIMIT 1
@@ -68,8 +74,16 @@ export async function generateMetadata({ params }: PageProps) {
     };
   }
 
+  const title = medico.especialidad
+    ? `${medico.nombre_completo} - ${medico.especialidad}`
+    : medico.nombre_completo;
+
+  const description = medico.descripcion
+    ? medico.descripcion
+    : `Agenda tu consulta con ${medico.nombre_completo}${medico.especialidad ? `, ${medico.especialidad}` : ''}`;
+
   return {
-    title: medico.nombre_completo,
-    description: `Agenda tu consulta con ${medico.nombre_completo}`,
+    title,
+    description,
   };
 }

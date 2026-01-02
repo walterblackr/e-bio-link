@@ -7,6 +7,9 @@ interface BioLinkProps {
   data: {
     nombre_completo: string;
     foto_url: string;
+    especialidad?: string;
+    matricula?: string;
+    descripcion?: string;
     cal_username: string;
     botones_config: any[];
     tema_config: any;
@@ -102,11 +105,35 @@ export default function BioLinkTemplate({ data }: BioLinkProps) {
 
         {/* NOMBRE */}
         <h1
-          className="text-3xl font-extrabold uppercase leading-tight mb-6"
+          className="text-3xl font-extrabold uppercase leading-tight mb-2"
           style={{ color: colors.text }}
         >
           {data.nombre_completo}
         </h1>
+
+        {/* ESPECIALIDAD */}
+        {data.especialidad && (
+          <p className="text-sm mb-1 opacity-90 font-medium" style={{ color: colors.text }}>
+            {data.especialidad}
+          </p>
+        )}
+
+        {/* MATRÍCULA */}
+        {data.matricula && (
+          <p className="text-xs mb-3 opacity-80" style={{ color: colors.text }}>
+            {data.matricula}
+          </p>
+        )}
+
+        {/* DESCRIPCIÓN */}
+        {data.descripcion && (
+          <p
+            className="text-xs mb-4 px-4 opacity-90 italic"
+            style={{ color: colors.text }}
+          >
+            "{data.descripcion}"
+          </p>
+        )}
 
         {/* LÍNEA SEPARADORA */}
         <div
