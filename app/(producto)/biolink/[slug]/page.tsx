@@ -6,13 +6,9 @@ import BioLinkTemplate from '@/app/components/BioLinkTemplate';
 interface MedicoData {
   nombre_completo: string;
   foto_url: string;
-  especialidad?: string;
-  matricula?: string;
-  mensaje?: string;
   cal_username: string;
   botones_config: any[];
   tema_config: any;
-  biolink_activo?: boolean;
 }
 
 // En Next.js 15/16 params es una Promesa, hay que definirlo así:
@@ -33,22 +29,17 @@ export default async function BioLinkPage({ params }: PageProps) {
     SELECT
       nombre_completo,
       foto_url,
-      especialidad,
-      matricula,
-      mensaje,
       cal_username,
       botones_config,
-      tema_config,
-      biolink_activo
+      tema_config
     FROM clients
     WHERE slug = ${slug}
-      AND biolink_activo = true
     LIMIT 1
   `;
 
   const medico = response[0] as MedicoData | undefined;
 
-  // 4. Si no existe o está inactivo, mandamos a página 404
+  // 4. Si no existe, mandamos a página 404
   if (!medico) {
     notFound();
   }
@@ -63,10 +54,9 @@ export async function generateMetadata({ params }: PageProps) {
   const sql = neon(process.env.DATABASE_URL!);
 
   const response = await sql`
-    SELECT nombre_completo, especialidad
+    SELECT nombre_completo
     FROM clients
     WHERE slug = ${slug}
-      AND biolink_activo = true
     LIMIT 1
   `;
 
@@ -79,7 +69,7 @@ export async function generateMetadata({ params }: PageProps) {
   }
 
   return {
-    title: `${medico.nombre_completo} ${medico.especialidad ? `- ${medico.especialidad}` : ''}`,
-    description: `Agenda tu consulta con ${medico.nombre_completo}${medico.especialidad ? `, ${medico.especialidad}` : ''}`,
+    title: medico.nombre_completo,
+    description: `Agenda tu consulta con ${medico.nombre_completo}`,
   };
 }
