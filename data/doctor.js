@@ -21,7 +21,22 @@ export const doctorData = {
   },
 
   links: [
-    
+    { 
+      label: "whatsapp", 
+      url: "https://wa.me/5492994091255", 
+      // Usamos un icono genérico, puedes cambiarlo
+      icon: <FaWhatsapp size={18} />, 
+    },
+    { 
+      label: "Instagram", 
+      url: "https://www.instagram.com/ebiolink?igsh=cXNoYnhqOHc1czgx", 
+      icon: <FaInstagram size={18} />,
+    },
+    {
+      label: "quienes somos",
+      url: "/quienes-somos",
+      icon: <FaRegEnvelope size={18} />,
+    },
   ],
 
   calLink: "usuario-prueba/consulta-general" 

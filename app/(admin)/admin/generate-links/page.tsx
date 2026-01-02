@@ -1,6 +1,8 @@
 // pages/admin/generate-links.tsx
 // Panel simple para que VOS generes links manualmente
 
+'use client';
+
 import { useState } from 'react';
 
 export default function GenerateLinksPage() {

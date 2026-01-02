@@ -471,11 +471,11 @@ export default function QuienesSomos() {
                     <img
                       src="/walter.jpeg"
                       alt="Walter Garrido"
-                      width={200} 
+                      width={200}
                       height={200}
                       className="object-cover"
-                       
-                    
+
+
                     />
                   </div>
                   <div className="fundador-info">
@@ -501,7 +501,7 @@ export default function QuienesSomos() {
                     <img
                       src="/valeria.jpeg"
                       alt="Valeria"
-                      width={80} 
+                      width={80}
                       height={90}
                       className="object-cover"
                     />

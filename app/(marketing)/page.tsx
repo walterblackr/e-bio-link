@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect } from "react";
 import { FaCalendarAlt, FaWhatsapp } from "react-icons/fa";
 import { FileText, Users, ArrowRight, Play } from "lucide-react";
-import { doctorData } from "../data/doctor";
+import { doctorData } from "../../data/doctor";
 
 export default function Home() {
   useEffect(() => {
@@ -53,7 +53,7 @@ export default function Home() {
 
       {/* Contenedor principal centrado */}
       <div className="w-full max-w-xs text-center z-10 flex flex-col items-center my-auto animate-fade-in-up">
-        
+
         {/* FOTO DE PERFIL */}
         <div className="relative w-28 h-28 mx-auto mb-4 bg-white rounded-full shadow-xl flex items-center justify-center border-4 border-white ring-1 ring-slate-100 transform hover:scale-105 transition-transform duration-300 overflow-hidden">
            <img
@@ -176,10 +176,12 @@ export default function Home() {
              <span className="font-bold tracking-wide">ME INTERESA / HABLAR</span>
           </a>
 
-      
+
 
           {/* BOTONES ORIGINALES DEL DOCTOR */}
-          {doctorData.links.map((link, index) => (
+          {/* */}
+          {/*
+          doctorData.links.map((link, index) => (
             <a
               key={index}
               href={link.url}
@@ -198,7 +200,8 @@ export default function Home() {
             >
               {link.label}
             </a>
-          ))}
+          ))
+          /*}
            {/* BOTÓN EXTRA PARA CONTACTO */}
           {/* <a
               href="mailto:contacto@olivia.com"
