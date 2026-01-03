@@ -1,6 +1,8 @@
 // API de login para administradores
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { verifyAdminCredentials, createAdminSession } from '@/lib/auth/admin-auth';
+import { neon } from '@neondatabase/serverless';
+import bcrypt from 'bcryptjs';
+import { serialize } from 'cookie';
 
 export default async function handler(
   req: NextApiRequest,
@@ -19,15 +21,51 @@ export default async function handler(
       return res.status(400).json({ error: 'Email y contraseña son requeridos' });
     }
 
-    // Verificar credenciales
-    const admin = await verifyAdminCredentials(email, password);
+    // Conectar a BD
+    const sql = neon(process.env.DATABASE_URL!);
 
-    if (!admin) {
+    // Buscar admin por email
+    const result = await sql`
+      SELECT id, email, password_hash, nombre, activo
+      FROM admins
+      WHERE email = ${email}
+      LIMIT 1
+    `;
+
+    if (result.length === 0) {
       return res.status(401).json({ error: 'Credenciales inválidas' });
     }
 
-    // Crear sesión
-    await createAdminSession(admin);
+    const admin = result[0];
+
+    // Verificar que esté activo
+    if (!admin.activo) {
+      return res.status(401).json({ error: 'Credenciales inválidas' });
+    }
+
+    // Verificar contraseña
+    const passwordMatch = await bcrypt.compare(password, admin.password_hash);
+
+    if (!passwordMatch) {
+      return res.status(401).json({ error: 'Credenciales inválidas' });
+    }
+
+    // Crear sesión (cookie)
+    const sessionData = JSON.stringify({
+      id: admin.id,
+      email: admin.email,
+      nombre: admin.nombre,
+    });
+
+    const cookie = serialize('admin_session', sessionData, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 7, // 7 días
+      path: '/',
+    });
+
+    res.setHeader('Set-Cookie', cookie);
 
     // Retornar datos del admin (sin contraseña)
     return res.status(200).json({

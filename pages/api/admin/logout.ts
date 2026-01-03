@@ -1,6 +1,6 @@
 // API de logout para administradores
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { destroyAdminSession } from '@/lib/auth/admin-auth';
+import { serialize } from 'cookie';
 
 export default async function handler(
   req: NextApiRequest,
@@ -12,8 +12,16 @@ export default async function handler(
   }
 
   try {
-    // Destruir sesión
-    await destroyAdminSession();
+    // Destruir sesión (eliminar cookie)
+    const cookie = serialize('admin_session', '', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 0, // Expira inmediatamente
+      path: '/',
+    });
+
+    res.setHeader('Set-Cookie', cookie);
 
     return res.status(200).json({ success: true });
   } catch (error: any) {
