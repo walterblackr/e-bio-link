@@ -4,13 +4,25 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function GenerateLinksPage() {
+  const router = useRouter();
   const [clientName, setClientName] = useState('');
   const [adminKey, setAdminKey] = useState('');
   const [result, setResult] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/admin/logout', { method: 'POST' });
+      router.push('/admin/login');
+      router.refresh();
+    } catch (error) {
+      console.error('Error al cerrar sesión:', error);
+    }
+  };
 
   const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,12 +65,35 @@ export default function GenerateLinksPage() {
       <div className="max-w-3xl mx-auto">
         {/* Header */}
         <div className="bg-white rounded-lg shadow-lg p-8 mb-6">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            🔐 Panel de Administración
-          </h1>
-          <p className="text-gray-600">
-            Generá links de autorización de Mercado Pago para tus clientes
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                🔐 Panel de Administración
+              </h1>
+              <p className="text-gray-600">
+                Generá links de autorización de Mercado Pago para tus clientes
+              </p>
+            </div>
+            <button
+              onClick={handleLogout}
+              className="px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg font-medium transition-colors flex items-center gap-2"
+            >
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                />
+              </svg>
+              Cerrar Sesión
+            </button>
+          </div>
         </div>
 
         {/* Formulario */}
