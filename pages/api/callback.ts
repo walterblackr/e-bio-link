@@ -2,7 +2,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import axios from 'axios';
 import { neon } from '@neondatabase/serverless';
-import { randomUUID } from 'crypto';
+import { encrypt } from '../../lib/encryption';
 
 // Función para sanitizar HTML y prevenir XSS
 function escapeHtml(unsafe: string): string {
@@ -185,12 +185,16 @@ export default async function handler(
       SELECT slug FROM clients WHERE mp_user_id = ${user_id}
     `;
 
+    // Encriptar tokens antes de guardarlos
+    const encryptedAccessToken = encrypt(access_token);
+    const encryptedRefreshToken = refresh_token ? encrypt(refresh_token) : '';
+
     if (existingClient.length > 0) {
       // Actualizar cliente existente
       await sql`
         UPDATE clients
-        SET mp_access_token = ${access_token},
-            mp_refresh_token = ${refresh_token}
+        SET mp_access_token = ${encryptedAccessToken},
+            mp_refresh_token = ${encryptedRefreshToken}
         WHERE mp_user_id = ${user_id}
       `;
       console.log(`Cliente existente actualizado: ${user_id}`);
@@ -215,9 +219,9 @@ export default async function handler(
         )
         VALUES (
           ${slug},
-          ${access_token},
+          ${encryptedAccessToken},
           ${user_id},
-          ${refresh_token || ''},
+          ${encryptedRefreshToken},
           ${session.client_name || 'Médico'},
           '',
           '',
