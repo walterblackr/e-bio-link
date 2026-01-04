@@ -1,22 +1,28 @@
 // API para actualizar y eliminar clientes específicos
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { neon } from '@neondatabase/serverless';
-import bcrypt from 'bcrypt';
 
 // Validar sesión de admin
 async function validateAdminSession(req: NextApiRequest): Promise<boolean> {
-  const adminKey = req.cookies.admin_session;
-  if (!adminKey) return false;
+  const sessionCookie = req.cookies.admin_session;
+  if (!sessionCookie) return false;
 
   try {
+    // Parsear el JSON de la sesión
+    const session = JSON.parse(sessionCookie);
+
+    // Verificar que tenga los campos necesarios
+    if (!session.id || !session.email) {
+      return false;
+    }
+
+    // Verificar que el admin exista y esté activo
     const sql = neon(process.env.DATABASE_URL!);
     const result = await sql`
-      SELECT password_hash FROM admin_users WHERE username = 'admin' LIMIT 1
+      SELECT id FROM admins WHERE id = ${session.id} AND activo = true LIMIT 1
     `;
 
-    if (result.length === 0) return false;
-
-    return await bcrypt.compare(adminKey, result[0].password_hash);
+    return result.length > 0;
   } catch {
     return false;
   }
