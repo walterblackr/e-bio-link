@@ -152,39 +152,37 @@ export default async function handler(
       throw new Error('Invalid response from Mercado Pago API');
     }
 
-    // 6. Generar UUID único para el cliente
-    const clientId = randomUUID();
+    // 6. Generar slug único basado en client_name
+    // Convertir nombre a slug: "Dr. Juan Pérez" -> "dr-juan-perez"
+    const generateSlug = (name: string): string => {
+      return name
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '') // Remover acentos
+        .replace(/[^a-z0-9\s-]/g, '') // Remover caracteres especiales
+        .trim()
+        .replace(/\s+/g, '-') // Espacios a guiones
+        .replace(/-+/g, '-'); // Múltiples guiones a uno solo
+    };
 
-    // 7. Crear tabla de clientes si no existe
-    await sql`
-      CREATE TABLE IF NOT EXISTS clients (
-        id uuid PRIMARY KEY,
-        user_id varchar(255) NOT NULL,
-        client_name varchar(255),
-        mp_access_token text NOT NULL,
-        mp_user_id varchar(255) NOT NULL UNIQUE,
-        mp_refresh_token text,
-        created_at timestamp DEFAULT NOW(),
-        updated_at timestamp DEFAULT NOW()
-      );
-    `;
+    const baseSlug = generateSlug(session.client_name || 'medico');
+    let slug = baseSlug;
+    let counter = 1;
 
-    // 8. Crear tabla de sesiones OAuth si no existe
-    await sql`
-      CREATE TABLE IF NOT EXISTS oauth_sessions (
-        session_id uuid PRIMARY KEY,
-        user_id varchar(255) NOT NULL,
-        client_name varchar(255),
-        status varchar(50) DEFAULT 'pending',
-        created_at timestamp DEFAULT NOW(),
-        completed_at timestamp
-      );
-    `;
+    // Verificar si el slug ya existe y generar uno único
+    while (true) {
+      const existingSlug = await sql`
+        SELECT slug FROM clients WHERE slug = ${slug}
+      `;
+      if (existingSlug.length === 0) break;
+      slug = `${baseSlug}-${counter}`;
+      counter++;
+    }
 
-    // 9. Guardar o actualizar los datos del cliente
+    // 7. Guardar o actualizar los datos del cliente
     // Si el mp_user_id ya existe, actualizar el token
     const existingClient = await sql`
-      SELECT id FROM clients WHERE mp_user_id = ${user_id}
+      SELECT slug FROM clients WHERE mp_user_id = ${user_id}
     `;
 
     if (existingClient.length > 0) {
@@ -192,18 +190,46 @@ export default async function handler(
       await sql`
         UPDATE clients
         SET mp_access_token = ${access_token},
-            mp_refresh_token = ${refresh_token},
-            updated_at = NOW()
+            mp_refresh_token = ${refresh_token}
         WHERE mp_user_id = ${user_id}
       `;
       console.log(`Cliente existente actualizado: ${user_id}`);
+      slug = existingClient[0].slug; // Usar el slug existente
     } else {
-      // Crear nuevo cliente
+      // Crear nuevo cliente con valores por defecto
       await sql`
-        INSERT INTO clients (id, user_id, client_name, mp_access_token, mp_user_id, mp_refresh_token)
-        VALUES (${clientId}, ${session.user_id}, ${session.client_name}, ${access_token}, ${user_id}, ${refresh_token})
+        INSERT INTO clients (
+          slug,
+          mp_access_token,
+          mp_user_id,
+          mp_refresh_token,
+          nombre_completo,
+          foto_url,
+          cal_api_key,
+          cal_username,
+          botones_config,
+          tema_config,
+          especialidad,
+          matricula,
+          descripcion
+        )
+        VALUES (
+          ${slug},
+          ${access_token},
+          ${user_id},
+          ${refresh_token || ''},
+          ${session.client_name || 'Médico'},
+          '',
+          '',
+          '',
+          '[]'::jsonb,
+          '{}'::jsonb,
+          '',
+          '',
+          ''
+        )
       `;
-      console.log(`Nuevo cliente creado: ${clientId}`);
+      console.log(`Nuevo cliente creado con slug: ${slug}`);
     }
 
     // 10. Marcar la sesión como completada
@@ -215,6 +241,8 @@ export default async function handler(
 
     // 11. Respuesta de éxito
     const safeClientName = escapeHtml(session.client_name || 'Cliente');
+    const safeSlug = escapeHtml(slug);
+    const biolinkUrl = `https://e-bio-link.vercel.app/biolink/${safeSlug}`;
 
     return res.status(200).send(`
       <!DOCTYPE html>
@@ -223,12 +251,58 @@ export default async function handler(
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Conexión Exitosa</title>
+        <style>
+          body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+          }
+          .container {
+            background: white;
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            max-width: 500px;
+            text-align: center;
+          }
+          h1 { color: #009EE3; margin-bottom: 20px; }
+          .biolink {
+            background: #f8fafc;
+            padding: 16px;
+            border-radius: 8px;
+            margin: 20px 0;
+            word-break: break-all;
+          }
+          .biolink a {
+            color: #2563eb;
+            text-decoration: none;
+            font-weight: 600;
+          }
+          .biolink a:hover {
+            text-decoration: underline;
+          }
+          .note {
+            color: #64748b;
+            font-size: 14px;
+            margin-top: 20px;
+          }
+        </style>
       </head>
       <body>
-        <div style="font-family: sans-serif; text-align: center; padding: 50px;">
-          <h1 style="color: #009EE3;">¡Conexión Exitosa! ✅</h1>
+        <div class="container">
+          <h1>¡Conexión Exitosa! ✅</h1>
           <p>La cuenta de <strong>${safeClientName}</strong> se conectó correctamente a Mercado Pago.</p>
-          <p>Ya podés cerrar esta ventana.</p>
+
+          <div class="biolink">
+            <p style="margin: 0 0 8px 0; font-size: 14px; color: #64748b;">Tu biolink:</p>
+            <a href="${biolinkUrl}" target="_blank">${biolinkUrl}</a>
+          </div>
+
+          <p class="note">Ya podés cerrar esta ventana y configurar tu perfil.</p>
         </div>
       </body>
       </html>
