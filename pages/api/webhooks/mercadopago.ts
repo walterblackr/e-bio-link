@@ -3,6 +3,41 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { neon } from '@neondatabase/serverless';
 import { decrypt } from '../../../lib/encryption';
 import axios from 'axios';
+import crypto from 'crypto';
+
+// Función para validar la firma del webhook de Mercado Pago
+function validateMercadoPagoSignature(
+  xSignature: string | undefined,
+  xRequestId: string | undefined,
+  dataId: string,
+  secret: string
+): boolean {
+  if (!xSignature || !xRequestId) {
+    return false;
+  }
+
+  // Mercado Pago envía la firma en formato: ts=timestamp,v1=hash
+  const parts = xSignature.split(',');
+  const tsMatch = parts.find((part) => part.startsWith('ts='));
+  const hashMatch = parts.find((part) => part.startsWith('v1='));
+
+  if (!tsMatch || !hashMatch) {
+    return false;
+  }
+
+  const ts = tsMatch.replace('ts=', '');
+  const receivedHash = hashMatch.replace('v1=', '');
+
+  // Crear el manifest que MP usa para firmar: id + request-id + ts
+  const manifest = `id:${dataId};request-id:${xRequestId};ts:${ts};`;
+
+  // Generar HMAC SHA256
+  const hmac = crypto.createHmac('sha256', secret);
+  hmac.update(manifest);
+  const calculatedHash = hmac.digest('hex');
+
+  return calculatedHash === receivedHash;
+}
 
 export default async function handler(
   req: NextApiRequest,
@@ -19,6 +54,24 @@ export default async function handler(
 
   try {
     const { type, data } = req.body;
+
+    // Validar firma del webhook si tenemos el secret configurado
+    if (process.env.MERCADOPAGO_WEBHOOK_SECRET) {
+      const xSignature = req.headers['x-signature'] as string | undefined;
+      const xRequestId = req.headers['x-request-id'] as string | undefined;
+
+      const isValid = validateMercadoPagoSignature(
+        xSignature,
+        xRequestId,
+        data?.id,
+        process.env.MERCADOPAGO_WEBHOOK_SECRET
+      );
+
+      if (!isValid) {
+        console.error('Invalid webhook signature from Mercado Pago');
+        return res.status(401).json({ error: 'Invalid signature' });
+      }
+    }
 
     // Mercado Pago puede enviar varios tipos de notificaciones
     // Nos interesa: payment
