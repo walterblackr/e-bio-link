@@ -56,7 +56,8 @@ export default async function handler(
           mp_user_id,
           created_at,
           botones_config,
-          tema_config
+          tema_config,
+          monto_consulta
         FROM clients
         ORDER BY created_at DESC
       `;
@@ -82,6 +83,7 @@ export default async function handler(
         cal_username,
         botones_config,
         tema_config,
+        monto_consulta,
       } = req.body;
 
       // Validaciones
@@ -144,7 +146,8 @@ export default async function handler(
           mp_user_id,
           mp_refresh_token,
           botones_config,
-          tema_config
+          tema_config,
+          monto_consulta
         )
         VALUES (
           ${slug},
@@ -159,7 +162,8 @@ export default async function handler(
           '',
           '',
           ${JSON.stringify(botonesConfigParsed)}::jsonb,
-          ${JSON.stringify(temaConfigParsed)}::jsonb
+          ${JSON.stringify(temaConfigParsed)}::jsonb,
+          ${parseFloat(monto_consulta) || 10000}
         )
       `;
 

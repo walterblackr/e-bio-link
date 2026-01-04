@@ -17,6 +17,7 @@ interface Client {
   created_at: string;
   botones_config: any;
   tema_config: any;
+  monto_consulta: number;
 }
 
 export default function ClientesPage() {
@@ -40,6 +41,7 @@ export default function ClientesPage() {
     cal_username: '',
     botones_config: '[]',
     tema_config: '{}',
+    monto_consulta: '10000',
   });
 
   useEffect(() => {
@@ -126,6 +128,7 @@ export default function ClientesPage() {
       tema_config: typeof client.tema_config === 'string'
         ? client.tema_config
         : JSON.stringify(client.tema_config, null, 2),
+      monto_consulta: client.monto_consulta?.toString() || '10000',
     });
     setShowForm(true);
   };
@@ -164,6 +167,7 @@ export default function ClientesPage() {
       cal_username: '',
       botones_config: '[]',
       tema_config: '{}',
+      monto_consulta: '10000',
     });
     setEditingClient(null);
   };
@@ -363,6 +367,25 @@ export default function ClientesPage() {
                   maxLength={255}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder-gray-400"
                 />
+              </div>
+
+              {/* Monto de Consulta */}
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Monto de Consulta (ARS)
+                </label>
+                <input
+                  type="number"
+                  value={formData.monto_consulta}
+                  onChange={(e) => setFormData({ ...formData, monto_consulta: e.target.value })}
+                  placeholder="10000"
+                  min="0"
+                  step="100"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder-gray-400"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Precio que se cobrará por cada consulta. Ejemplo: $10,000 ARS
+                </p>
               </div>
 
               {/* Configuración de Botones (JSON) */}

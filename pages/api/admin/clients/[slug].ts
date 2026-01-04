@@ -59,6 +59,7 @@ export default async function handler(
         cal_username,
         botones_config,
         tema_config,
+        monto_consulta,
       } = req.body;
 
       // Validaciones
@@ -110,6 +111,7 @@ export default async function handler(
           cal_username = ${cal_username || ''},
           botones_config = ${JSON.stringify(botonesConfigParsed)}::jsonb,
           tema_config = ${JSON.stringify(temaConfigParsed)}::jsonb,
+          monto_consulta = ${parseFloat(monto_consulta) || 10000},
           updated_at = NOW()
         WHERE slug = ${slug}
       `;
