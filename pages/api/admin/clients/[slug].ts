@@ -57,12 +57,34 @@ export default async function handler(
         foto_url,
         cal_api_key,
         cal_username,
+        botones_config,
+        tema_config,
       } = req.body;
 
       // Validaciones
       if (!nombre_completo || !especialidad || !matricula) {
         return res.status(400).json({
           error: 'Faltan campos obligatorios: nombre_completo, especialidad, matricula',
+        });
+      }
+
+      // Validar y parsear JSON de botones_config
+      let botonesConfigParsed;
+      try {
+        botonesConfigParsed = botones_config ? JSON.parse(botones_config) : [];
+      } catch {
+        return res.status(400).json({
+          error: 'El campo botones_config debe ser un JSON válido',
+        });
+      }
+
+      // Validar y parsear JSON de tema_config
+      let temaConfigParsed;
+      try {
+        temaConfigParsed = tema_config ? JSON.parse(tema_config) : {};
+      } catch {
+        return res.status(400).json({
+          error: 'El campo tema_config debe ser un JSON válido',
         });
       }
 
@@ -86,6 +108,8 @@ export default async function handler(
           foto_url = ${foto_url || ''},
           cal_api_key = ${cal_api_key || ''},
           cal_username = ${cal_username || ''},
+          botones_config = ${JSON.stringify(botonesConfigParsed)}::jsonb,
+          tema_config = ${JSON.stringify(temaConfigParsed)}::jsonb,
           updated_at = NOW()
         WHERE slug = ${slug}
       `;

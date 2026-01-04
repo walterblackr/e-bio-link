@@ -54,7 +54,9 @@ export default async function handler(
           cal_api_key,
           cal_username,
           mp_user_id,
-          created_at
+          created_at,
+          botones_config,
+          tema_config
         FROM clients
         ORDER BY created_at DESC
       `;
@@ -78,6 +80,8 @@ export default async function handler(
         foto_url,
         cal_api_key,
         cal_username,
+        botones_config,
+        tema_config,
       } = req.body;
 
       // Validaciones
@@ -91,6 +95,26 @@ export default async function handler(
       if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) {
         return res.status(400).json({
           error: 'El slug solo puede contener letras minúsculas, números y guiones',
+        });
+      }
+
+      // Validar y parsear JSON de botones_config
+      let botonesConfigParsed;
+      try {
+        botonesConfigParsed = botones_config ? JSON.parse(botones_config) : [];
+      } catch {
+        return res.status(400).json({
+          error: 'El campo botones_config debe ser un JSON válido',
+        });
+      }
+
+      // Validar y parsear JSON de tema_config
+      let temaConfigParsed;
+      try {
+        temaConfigParsed = tema_config ? JSON.parse(tema_config) : {};
+      } catch {
+        return res.status(400).json({
+          error: 'El campo tema_config debe ser un JSON válido',
         });
       }
 
@@ -134,8 +158,8 @@ export default async function handler(
           '',
           '',
           '',
-          '[]'::jsonb,
-          '{}'::jsonb
+          ${JSON.stringify(botonesConfigParsed)}::jsonb,
+          ${JSON.stringify(temaConfigParsed)}::jsonb
         )
       `;
 

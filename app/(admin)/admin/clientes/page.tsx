@@ -15,6 +15,8 @@ interface Client {
   cal_username: string;
   mp_user_id: string;
   created_at: string;
+  botones_config: any;
+  tema_config: any;
 }
 
 export default function ClientesPage() {
@@ -36,6 +38,8 @@ export default function ClientesPage() {
     foto_url: '',
     cal_api_key: '',
     cal_username: '',
+    botones_config: '[]',
+    tema_config: '{}',
   });
 
   useEffect(() => {
@@ -116,6 +120,12 @@ export default function ClientesPage() {
       foto_url: client.foto_url,
       cal_api_key: client.cal_api_key,
       cal_username: client.cal_username,
+      botones_config: typeof client.botones_config === 'string'
+        ? client.botones_config
+        : JSON.stringify(client.botones_config, null, 2),
+      tema_config: typeof client.tema_config === 'string'
+        ? client.tema_config
+        : JSON.stringify(client.tema_config, null, 2),
     });
     setShowForm(true);
   };
@@ -152,6 +162,8 @@ export default function ClientesPage() {
       foto_url: '',
       cal_api_key: '',
       cal_username: '',
+      botones_config: '[]',
+      tema_config: '{}',
     });
     setEditingClient(null);
   };
@@ -351,6 +363,74 @@ export default function ClientesPage() {
                   maxLength={255}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder-gray-400"
                 />
+              </div>
+
+              {/* Configuración de Botones (JSON) */}
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Configuración de Botones (JSON)
+                </label>
+                <textarea
+                  value={formData.botones_config}
+                  onChange={(e) => setFormData({ ...formData, botones_config: e.target.value })}
+                  placeholder='[{"id":"btn_1","texto":"Agendar Consulta","accion":"cal_modal","activo":true}]'
+                  rows={6}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder-gray-400 font-mono text-sm"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  JSON válido. Ejemplo: {`[{"id":"btn_1","texto":"Agendar Consulta","accion":"cal_modal","activo":true}]`}
+                </p>
+                <details className="mt-2">
+                  <summary className="text-xs text-blue-600 cursor-pointer hover:text-blue-800">
+                    📖 Ver estructura completa
+                  </summary>
+                  <pre className="mt-2 p-3 bg-gray-50 rounded text-xs overflow-x-auto">
+{`[
+  {
+    "id": "btn_1",
+    "texto": "Agendar Consulta",
+    "accion": "cal_modal",
+    "activo": true
+  },
+  {
+    "id": "btn_2",
+    "url": "https://instagram.com",
+    "texto": "Ver Instagram",
+    "accion": "link",
+    "activo": true
+  }
+]`}
+                  </pre>
+                </details>
+              </div>
+
+              {/* Configuración de Tema (JSON) */}
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Configuración de Tema (JSON)
+                </label>
+                <textarea
+                  value={formData.tema_config}
+                  onChange={(e) => setFormData({ ...formData, tema_config: e.target.value })}
+                  placeholder='{"borde":"rounded-lg","modoOscuro":false,"colorPrimario":"#3b82f6"}'
+                  rows={4}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder-gray-400 font-mono text-sm"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  JSON válido. Ejemplo: {`{"borde":"rounded-lg","modoOscuro":false,"colorPrimario":"#3b82f6"}`}
+                </p>
+                <details className="mt-2">
+                  <summary className="text-xs text-blue-600 cursor-pointer hover:text-blue-800">
+                    📖 Ver opciones disponibles
+                  </summary>
+                  <pre className="mt-2 p-3 bg-gray-50 rounded text-xs overflow-x-auto">
+{`{
+  "borde": "rounded-lg",        // rounded-none, rounded-md, rounded-lg, rounded-xl
+  "modoOscuro": false,          // true o false
+  "colorPrimario": "#3b82f6"    // Color hexadecimal
+}`}
+                  </pre>
+                </details>
               </div>
 
               {/* Buttons */}
