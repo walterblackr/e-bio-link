@@ -8,6 +8,7 @@ function PagoPendienteContent() {
   const router = useRouter();
 
   const paymentId = searchParams.get('payment_id');
+  const clientSlug = searchParams.get('slug');
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-yellow-50 to-orange-50 flex items-center justify-center p-6">
@@ -53,10 +54,10 @@ function PagoPendienteContent() {
           </div>
 
           <button
-            onClick={() => router.push('/')}
+            onClick={() => router.push(clientSlug ? `/biolink/${clientSlug}` : '/')}
             className="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
           >
-            Volver al inicio
+            {clientSlug ? 'Volver al perfil del profesional' : 'Volver al inicio'}
           </button>
         </div>
       </div>

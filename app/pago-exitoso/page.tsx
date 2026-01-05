@@ -1,137 +1,66 @@
 'use client';
 
-import { useEffect, useState, Suspense } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
+import Link from 'next/link';
+import { FaCheckCircle } from 'react-icons/fa';
 
 function PagoExitosoContent() {
   const searchParams = useSearchParams();
-  const router = useRouter();
-  const [bookingData, setBookingData] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-
   const paymentId = searchParams.get('payment_id');
-  const preferenceId = searchParams.get('preference_id');
   const status = searchParams.get('status');
-
-  useEffect(() => {
-    // Opcional: Consultar el estado del booking
-    // Por ahora solo mostramos un mensaje genérico
-    setLoading(false);
-  }, [paymentId]);
-
-  if (loading) {
-    return (
-      <main className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center p-6">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-green-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Verificando pago...</p>
-        </div>
-      </main>
-    );
-  }
+  const externalReference = searchParams.get('external_reference');
+  const clientSlug = searchParams.get('slug');
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center p-6">
-      <div className="max-w-md w-full">
-        {/* Card de éxito */}
-        <div className="bg-white rounded-2xl shadow-xl p-8 text-center">
-          {/* Icono de éxito */}
-          <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <svg
-              className="w-12 h-12 text-green-600"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M5 13l4 4L19 7"
-              />
-            </svg>
-          </div>
-
-          {/* Título */}
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">
-            ¡Pago Exitoso! ✅
-          </h1>
-
-          {/* Descripción */}
-          <p className="text-gray-600 mb-6">
-            Tu turno ha sido confirmado. Recibirás un email con los detalles de tu consulta.
-          </p>
-
-          {/* Detalles del pago */}
-          {paymentId && (
-            <div className="bg-gray-50 rounded-lg p-4 mb-6 text-left">
-              <h3 className="text-sm font-semibold text-gray-700 mb-2">
-                Detalles del pago
-              </h3>
-              <div className="space-y-1 text-sm">
-                <p className="text-gray-600">
-                  <span className="font-medium">ID de pago:</span> {paymentId}
-                </p>
-                {status && (
-                  <p className="text-gray-600">
-                    <span className="font-medium">Estado:</span>{' '}
-                    <span className="text-green-600 font-semibold">
-                      {status === 'approved' ? 'Aprobado' : status}
-                    </span>
-                  </p>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Información adicional */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-            <p className="text-sm text-blue-800">
-              📧 Te enviamos un email de confirmación con el link de la reunión y toda la
-              información necesaria.
-            </p>
-          </div>
-
-          {/* Botones de acción */}
-          <div className="space-y-3">
-            <button
-              onClick={() => router.push('/')}
-              className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
-            >
-              Volver al inicio
-            </button>
-          </div>
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-green-50 to-white p-4">
+      <div className="bg-white shadow-lg rounded-lg p-8 max-w-md w-full text-center">
+        <div className="mb-6">
+          <FaCheckCircle className="text-green-500 text-6xl mx-auto mb-4" />
+          <h1 className="text-3xl font-bold text-gray-800 mb-2">¡Pago Exitoso!</h1>
+          <p className="text-gray-600">Tu turno ha sido confirmado</p>
         </div>
 
-        {/* Soporte */}
-        <div className="mt-6 text-center">
-          <p className="text-sm text-gray-600">
-            ¿Tenés alguna duda?{' '}
-            <a
-              href="https://wa.me/5492994091255"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-600 hover:text-blue-700 font-medium"
-            >
-              Contactanos
-            </a>
+        <div className="bg-green-50 p-4 rounded-lg mb-6 text-left">
+          <p className="text-sm text-gray-700 mb-2">
+            <strong>ID de Pago:</strong> {paymentId || 'N/A'}
           </p>
+          <p className="text-sm text-gray-700 mb-2">
+            <strong>Estado:</strong> {status || 'approved'}
+          </p>
+          {externalReference && (
+            <p className="text-sm text-gray-700">
+              <strong>Turno ID:</strong> {externalReference}
+            </p>
+          )}
+        </div>
+
+        <div className="space-y-3">
+          <p className="text-gray-600 text-sm">
+            Recibirás un email de confirmación con todos los detalles de tu turno.
+          </p>
+
+          <Link
+            href={clientSlug ? `/biolink/${clientSlug}` : '/'}
+            className="block w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-4 rounded transition"
+          >
+            {clientSlug ? 'Volver al Perfil del Profesional' : 'Volver al Inicio'}
+          </Link>
         </div>
       </div>
-    </main>
+    </div>
   );
 }
 
 export default function PagoExitosoPage() {
   return (
-    <Suspense fallback={
-      <main className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center p-6">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-green-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Cargando...</p>
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center min-h-screen">
+          <p className="text-gray-500">Cargando...</p>
         </div>
-      </main>
-    }>
+      }
+    >
       <PagoExitosoContent />
     </Suspense>
   );

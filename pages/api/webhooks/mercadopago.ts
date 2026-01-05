@@ -55,6 +55,8 @@ export default async function handler(
   try {
     const { type, data } = req.body;
 
+    console.log(`[MP Webhook] Recibido: type=${type}, data.id=${data?.id}`);
+
     // Validar firma del webhook si tenemos el secret configurado
     if (process.env.MERCADOPAGO_WEBHOOK_SECRET) {
       const xSignature = req.headers['x-signature'] as string | undefined;
@@ -158,6 +160,8 @@ export default async function handler(
         // Confirmar el turno en Cal.com si tiene API key y booking ID
         if (bookingMatch.cal_api_key && bookingMatch.cal_booking_id) {
           try {
+            console.log(`[MP Webhook] Confirmando turno en Cal.com - Booking ID: ${bookingMatch.cal_booking_id}`);
+
             await axios.patch(
               `https://api.cal.com/v1/bookings/${bookingMatch.cal_booking_id}`,
               {
@@ -171,6 +175,8 @@ export default async function handler(
               }
             );
 
+            console.log(`[MP Webhook] Turno confirmado exitosamente en Cal.com`);
+
             await sql`
               UPDATE bookings
               SET
@@ -179,9 +185,11 @@ export default async function handler(
               WHERE id = ${bookingMatch.id}
             `;
           } catch (calError: any) {
-            console.error('Error confirming in Cal.com:', calError.response?.data || calError.message);
+            console.error('[MP Webhook] Error confirming in Cal.com:', calError.response?.data || calError.message);
             // No fallar el webhook por esto, el pago ya fue registrado
           }
+        } else {
+          console.warn(`[MP Webhook] No se puede confirmar en Cal.com - API Key: ${!!bookingMatch.cal_api_key}, Booking ID: ${!!bookingMatch.cal_booking_id}`);
         }
 
         return res.status(200).json({

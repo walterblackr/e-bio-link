@@ -84,9 +84,9 @@ export default async function handler(
         }),
       },
       back_urls: {
-        success: `${process.env.NEXT_PUBLIC_APP_URL || 'https://e-bio-link.vercel.app'}/pago-exitoso`,
+        success: `${process.env.NEXT_PUBLIC_APP_URL || 'https://e-bio-link.vercel.app'}/pago-exitoso?slug=${client_slug}`,
         failure: `${process.env.NEXT_PUBLIC_APP_URL || 'https://e-bio-link.vercel.app'}/biolink/${client_slug}`,
-        pending: `${process.env.NEXT_PUBLIC_APP_URL || 'https://e-bio-link.vercel.app'}/pago-pendiente`,
+        pending: `${process.env.NEXT_PUBLIC_APP_URL || 'https://e-bio-link.vercel.app'}/pago-pendiente?slug=${client_slug}`,
       },
       auto_return: 'approved',
       notification_url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://e-bio-link.vercel.app'}/api/webhooks/mercadopago`,
