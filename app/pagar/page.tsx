@@ -7,8 +7,10 @@ interface TurnoData {
   name: string;
   email: string;
   date: string;
-  calBookingId: string;
+  bookingId: string;
   clientSlug: string;
+  startTime?: string;
+  monto?: number;
 }
 
 function PagarContent() {
@@ -20,49 +22,71 @@ function PagarContent() {
   const [precio, setPrecio] = useState<number>(10000);
 
   // Cal.com puede enviar el ID como 'uid' o 'bookingId'
-  const calBookingId = searchParams.get('uid') || searchParams.get('bookingId');
+  const bookingId = searchParams.get('uid') || searchParams.get('bookingId');
 
-  // Datos del turno que Cal.com puede enviar en la URL
+  // También podemos obtener datos directamente de la URL como fallback
   const nameFromUrl = searchParams.get('attendeeName');
   const emailFromUrl = searchParams.get('email');
   const startTimeFromUrl = searchParams.get('startTime');
-
-  // Obtener el slug del médico desde la URL
-  const clientSlug = searchParams.get('clientSlug');
+  const clientSlugFromUrl = searchParams.get('clientSlug');
 
   useEffect(() => {
-    if (calBookingId && nameFromUrl && emailFromUrl && startTimeFromUrl && clientSlug) {
-      // Formatear la fecha
-      const formattedDate = new Date(startTimeFromUrl).toLocaleString('es-AR', {
-        dateStyle: 'full',
-        timeStyle: 'short',
-      });
-
-      setTurno({
-        name: decodeURIComponent(nameFromUrl),
-        email: decodeURIComponent(emailFromUrl),
-        date: formattedDate,
-        calBookingId: calBookingId,
-        clientSlug: decodeURIComponent(clientSlug),
-      });
-
-      // Obtener el precio de la consulta del médico
-      fetch(`/api/obtener-precio-consulta?slug=${clientSlug}`)
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.monto_consulta) {
-            setPrecio(parseFloat(data.monto_consulta));
-          }
-          setLoading(false);
-        })
-        .catch(() => {
-          setLoading(false);
+    if (bookingId) {
+      // Si tenemos los datos en la URL, usarlos directamente (más rápido)
+      if (nameFromUrl && emailFromUrl && startTimeFromUrl && clientSlugFromUrl) {
+        const formattedDate = new Date(startTimeFromUrl).toLocaleString('es-AR', {
+          dateStyle: 'full',
+          timeStyle: 'short',
         });
+
+        setTurno({
+          name: decodeURIComponent(nameFromUrl),
+          email: decodeURIComponent(emailFromUrl),
+          date: formattedDate,
+          bookingId: bookingId,
+          clientSlug: decodeURIComponent(clientSlugFromUrl),
+          startTime: startTimeFromUrl,
+        });
+
+        // Obtener precio del médico
+        fetch(`/api/obtener-precio-consulta?slug=${clientSlugFromUrl}`)
+          .then((res) => res.json())
+          .then((data) => {
+            if (data.monto_consulta) {
+              setPrecio(parseFloat(data.monto_consulta));
+            }
+            setLoading(false);
+          })
+          .catch(() => {
+            setLoading(false);
+          });
+      } else {
+        // Fallback: intentar consultar a Cal.com API
+        fetch(`/api/consultar-turno?bookingId=${bookingId}`)
+          .then((res) => res.json())
+          .then((data) => {
+            if (data.error) {
+              setError(data.error);
+              setLoading(false);
+            } else {
+              setTurno(data);
+              if (data.monto) {
+                setPrecio(data.monto);
+              }
+              setLoading(false);
+            }
+          })
+          .catch((err) => {
+            console.error(err);
+            setError('Error al cargar los datos del turno');
+            setLoading(false);
+          });
+      }
     } else {
-      setError('Faltan datos del turno. Por favor reservá tu turno desde el calendario.');
+      setError('No se encontró información del turno. Por favor reservá tu turno desde el calendario.');
       setLoading(false);
     }
-  }, [calBookingId, nameFromUrl, emailFromUrl, startTimeFromUrl, clientSlug]);
+  }, [bookingId, nameFromUrl, emailFromUrl, startTimeFromUrl, clientSlugFromUrl]);
 
   const handlePagar = async () => {
     if (!turno) return;
@@ -76,8 +100,8 @@ function PagarContent() {
           client_slug: turno.clientSlug,
           paciente_nombre: turno.name,
           paciente_email: turno.email,
-          cal_booking_id: turno.calBookingId,
-          fecha_hora: startTimeFromUrl,
+          cal_booking_id: turno.bookingId,
+          fecha_hora: turno.startTime || new Date().toISOString(),
           monto: precio,
         }),
       });
@@ -87,7 +111,7 @@ function PagarContent() {
       if (data.init_point) {
         window.location.href = data.init_point;
       } else {
-        alert(`Error al generar el link de pago: ${data.error || 'Error desconocido'}`);
+        alert(`Error al generar el link de pago: ${data.details || data.error}`);
         setLoading(false);
       }
     } catch (error) {
@@ -97,7 +121,48 @@ function PagarContent() {
     }
   };
 
-  // Estado de error
+  // Estados de carga y error
+  if (!bookingId) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-gray-50">
+        <div className="bg-white shadow-lg rounded-lg p-8 max-w-md w-full text-center">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg
+              className="w-8 h-8 text-red-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+          </div>
+          <h1 className="text-xl font-bold text-red-600 mb-2">Error: No hay turno identificado</h1>
+          <p className="text-gray-600 mb-6">Por favor iniciá tu reserva desde el calendario.</p>
+          <button
+            onClick={() => router.push('/')}
+            className="w-full bg-gray-600 hover:bg-gray-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
+          >
+            Volver al inicio
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
+        <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mb-4"></div>
+        <p className="text-lg text-gray-600">Cargando datos del turno...</p>
+      </div>
+    );
+  }
+
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-gray-50">
@@ -126,16 +191,6 @@ function PagarContent() {
             Volver al inicio
           </button>
         </div>
-      </div>
-    );
-  }
-
-  // Estado de carga
-  if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
-        <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mb-4"></div>
-        <p className="text-lg text-gray-600">Cargando datos del turno...</p>
       </div>
     );
   }
