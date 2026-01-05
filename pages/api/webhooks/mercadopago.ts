@@ -105,48 +105,45 @@ export default async function handler(
 
       const sql = neon(process.env.DATABASE_URL!);
 
-      // Buscar todos los bookings pendientes o en proceso
-      // Necesitamos obtener el access token para consultar el pago
+      // 1. Buscar bookings pendientes (sin JOIN, más simple)
       const pendingBookings = await sql`
-        SELECT
-          b.id,
-          b.client_slug,
-          b.cal_booking_id,
-          b.mp_preference_id,
-          c.mp_access_token,
-          c.cal_api_key,
-          c.nombre_completo
-        FROM bookings b
-        JOIN clients c ON b.client_slug = c.slug
-        WHERE b.estado IN ('pending', 'paid')
-          AND c.mp_access_token IS NOT NULL
-          AND c.mp_access_token != ''
-        ORDER BY b.created_at DESC
+        SELECT id, client_slug, cal_booking_id, mp_preference_id
+        FROM bookings
+        WHERE estado IN ('pending', 'paid')
+        ORDER BY created_at DESC
         LIMIT 20
       `;
 
       console.log(`[MP Webhook] Buscando entre ${pendingBookings.length} bookings pendientes`);
-
-      // Debug: mostrar el primer booking completo para ver qué campos tiene
-      if (pendingBookings.length > 0) {
-        console.log(`[MP Webhook] DEBUG - Primer booking encontrado:`, JSON.stringify(pendingBookings[0], null, 2));
-        console.log(`[MP Webhook] DEBUG - Claves del objeto:`, Object.keys(pendingBookings[0]));
-      }
 
       if (pendingBookings.length === 0) {
         console.log('[MP Webhook] No hay bookings pendientes');
         return res.status(200).json({ message: 'No pending bookings found' });
       }
 
-      // Intentar con cada token hasta encontrar el pago
+      // 2. Intentar obtener el pago con cada cliente hasta encontrar el correcto
       let payment = null;
       let bookingMatch = null;
+      let clientData = null;
 
       for (const booking of pendingBookings) {
-        console.log(`[MP Webhook] Probando con booking ${booking.id} - preference_id: ${booking.mp_preference_id}`);
         try {
-          const accessToken = decrypt(booking.mp_access_token);
+          // Obtener datos del cliente para este booking (igual que en crear-preferencia-pago)
+          const clientResult = await sql`
+            SELECT slug, mp_access_token, cal_api_key, nombre_completo
+            FROM clients
+            WHERE slug = ${booking.client_slug}
+            LIMIT 1
+          `;
 
+          if (clientResult.length === 0 || !clientResult[0].mp_access_token) {
+            continue;
+          }
+
+          const client = clientResult[0];
+          const accessToken = decrypt(client.mp_access_token);
+
+          // Intentar obtener el pago con este access token
           const paymentResponse = await axios.get(
             `https://api.mercadopago.com/v1/payments/${paymentId}`,
             {
@@ -161,27 +158,25 @@ export default async function handler(
           console.log(`[MP Webhook] Pago obtenido - preference_id: ${payment.preference_id}, external_reference: ${payment.external_reference}`);
 
           // Verificar si este pago corresponde a este booking
-          // Intentar match por preference_id O por external_reference (cal_booking_id)
           const matchByPreference = payment.preference_id && payment.preference_id === booking.mp_preference_id;
           const matchByReference = payment.external_reference && payment.external_reference === booking.cal_booking_id;
 
           if (matchByPreference || matchByReference) {
             console.log(`[MP Webhook] ✓ Match encontrado con booking ${booking.id} (${matchByPreference ? 'por preference_id' : 'por external_reference'})`);
             bookingMatch = booking;
-            console.log(`[MP Webhook] DEBUG - bookingMatch completo:`, JSON.stringify(bookingMatch, null, 2));
-            console.log(`[MP Webhook] DEBUG - Claves de bookingMatch:`, Object.keys(bookingMatch));
+            clientData = client;
+            console.log(`[MP Webhook] Cliente: ${client.slug}, cal_api_key presente: ${!!client.cal_api_key}`);
             break;
           } else {
-            console.log(`[MP Webhook] ✗ No match - preference_id del pago (${payment.preference_id}) != booking (${booking.mp_preference_id}), external_reference (${payment.external_reference}) != cal_booking_id (${booking.cal_booking_id})`);
+            console.log(`[MP Webhook] ✗ No match - preference_id del pago (${payment.preference_id}) != booking (${booking.mp_preference_id})`);
           }
         } catch (error: any) {
           console.log(`[MP Webhook] Error consultando pago con booking ${booking.id}:`, error.response?.status || error.message);
-          // Token inválido o pago no pertenece a este vendedor, continuar
           continue;
         }
       }
 
-      if (!payment || !bookingMatch) {
+      if (!payment || !bookingMatch || !clientData) {
         console.log('[MP Webhook] No se encontró match para este pago');
         return res.status(200).json({ message: 'Payment not matched to any booking' });
       }
@@ -203,10 +198,10 @@ export default async function handler(
 
         // Confirmar el turno en Cal.com si tiene API key y booking ID
         console.log(`[MP Webhook] Verificando datos para Cal.com:`);
-        console.log(`  - cal_api_key: "${bookingMatch.cal_api_key}" (length: ${bookingMatch.cal_api_key?.length || 0})`);
+        console.log(`  - cal_api_key: "${clientData.cal_api_key}" (length: ${clientData.cal_api_key?.length || 0})`);
         console.log(`  - cal_booking_id: "${bookingMatch.cal_booking_id}"`);
 
-        if (bookingMatch.cal_api_key && bookingMatch.cal_booking_id) {
+        if (clientData.cal_api_key && bookingMatch.cal_booking_id) {
           try {
             console.log(`[MP Webhook] Confirmando turno en Cal.com - Booking ID: ${bookingMatch.cal_booking_id}`);
 
@@ -218,7 +213,7 @@ export default async function handler(
               {
                 headers: {
                   'cal-api-version': '2024-08-13',
-                  Authorization: `Bearer ${bookingMatch.cal_api_key}`,
+                  Authorization: `Bearer ${clientData.cal_api_key}`,
                 },
               }
             );
@@ -237,7 +232,7 @@ export default async function handler(
             // No fallar el webhook por esto, el pago ya fue registrado
           }
         } else {
-          console.warn(`[MP Webhook] No se puede confirmar en Cal.com - API Key: ${!!bookingMatch.cal_api_key}, Booking ID: ${!!bookingMatch.cal_booking_id}`);
+          console.warn(`[MP Webhook] No se puede confirmar en Cal.com - API Key: ${!!clientData.cal_api_key}, Booking ID: ${!!bookingMatch.cal_booking_id}`);
         }
 
         return res.status(200).json({
@@ -256,14 +251,14 @@ export default async function handler(
         `;
 
         // Cancelar en Cal.com si es necesario
-        if (bookingMatch.cal_api_key && bookingMatch.cal_booking_id) {
+        if (clientData.cal_api_key && bookingMatch.cal_booking_id) {
           try {
             await axios.delete(
               `https://api.cal.com/v1/bookings/${bookingMatch.cal_booking_id}`,
               {
                 headers: {
                   'cal-api-version': '2024-08-13',
-                  Authorization: `Bearer ${bookingMatch.cal_api_key}`,
+                  Authorization: `Bearer ${clientData.cal_api_key}`,
                 },
               }
             );
