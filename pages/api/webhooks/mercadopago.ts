@@ -203,13 +203,18 @@ export default async function handler(
 
         if (clientData.cal_api_key && bookingMatch.cal_booking_id) {
           try {
-            console.log(`[MP Webhook] Confirmando turno en Cal.com - Booking ID: ${bookingMatch.cal_booking_id}`);
+            console.log(`[MP Webhook] Confirmando turno en Cal.com - Booking UID: ${bookingMatch.cal_booking_id}`);
 
-            // Cal.com API v1 usa apiKey como query parameter, NO como header
-            await axios.patch(
-              `https://api.cal.com/v1/bookings/${bookingMatch.cal_booking_id}?apiKey=${clientData.cal_api_key}`,
+            // Cal.com API v2: Confirmar booking usando el endpoint específico
+            // POST /v2/bookings/{bookingUid}/confirm
+            await axios.post(
+              `https://api.cal.com/v2/bookings/${bookingMatch.cal_booking_id}/confirm`,
+              {},
               {
-                status: 'ACCEPTED',
+                headers: {
+                  Authorization: `Bearer ${clientData.cal_api_key}`,
+                  'cal-api-version': '2024-08-13',
+                },
               }
             );
 
