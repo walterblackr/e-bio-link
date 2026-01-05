@@ -10,7 +10,7 @@ export async function migrateBiolinkColumns() {
 
   const sql = neon(process.env.DATABASE_URL);
 
-  console.log('🚀 Iniciando migración de biolinks...');
+
 
   try {
     // Agregar columnas a la tabla clients

@@ -67,7 +67,7 @@ export default async function handler(
 
             // Auto-limpiar tokens inválidos
             await sql`DELETE FROM clients WHERE id = ${client.id}`;
-            console.log(`🗑️ Token inválido eliminado: ${client.client_name || client.id}`);
+           
           } else {
             status.error = `HTTP ${error.response?.status}`;
             status.status = 'error';

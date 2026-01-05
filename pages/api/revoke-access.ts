@@ -69,8 +69,6 @@ export default async function handler(
       DELETE FROM clients WHERE id = ${clientId}
     `;
 
-    console.log(`✅ Acceso revocado para cliente: ${clientId}`);
-
     return res.status(200).json({
       success: true,
       message: `Acceso revocado para cliente ID: ${clientId}`,

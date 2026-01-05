@@ -63,7 +63,7 @@ export default async function handler(
       clientName,
     });
 
-    console.log(`[Admin] Link generado para usuario: ${userId}`);
+  
 
     return res.status(200).json({
       authUrl,

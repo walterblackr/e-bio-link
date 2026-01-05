@@ -145,6 +145,3 @@ content = content.replace(
 // Guardar archivo
 fs.writeFileSync(filePath, content, 'utf8');
 
-console.log('✅ Archivo convertido exitosamente a CSS Module');
-console.log('📝 Archivo: app/(marketing)/propuesta/page.tsx');
-console.log('🎨 CSS Module: app/(marketing)/propuesta/propuesta.module.css');

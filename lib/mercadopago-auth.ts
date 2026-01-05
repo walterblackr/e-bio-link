@@ -67,8 +67,6 @@ export async function generateMercadoPagoAuthLink(
 
   const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
-  console.log(`[OAuth] Sesión creada: ${sessionId} para usuario: ${userId}`);
-
   return {
     authUrl: authUrl.toString(),
     sessionId,

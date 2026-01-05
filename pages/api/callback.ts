@@ -82,7 +82,7 @@ export default async function handler(
   }
 
   try {
-    console.log('Procesando autorización OAuth...');
+  
 
     const sql = neon(process.env.DATABASE_URL!);
 
@@ -197,7 +197,7 @@ export default async function handler(
             mp_refresh_token = ${encryptedRefreshToken}
         WHERE mp_user_id = ${user_id}
       `;
-      console.log(`Cliente existente actualizado: ${user_id}`);
+   
       slug = existingClient[0].slug; // Usar el slug existente
     } else {
       // Crear nuevo cliente con valores por defecto
@@ -233,7 +233,7 @@ export default async function handler(
           ''
         )
       `;
-      console.log(`Nuevo cliente creado con slug: ${slug}`);
+  
     }
 
     // 10. Marcar la sesión como completada

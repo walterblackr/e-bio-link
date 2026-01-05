@@ -6,8 +6,7 @@ import { neon } from '@neondatabase/serverless';
 import axios from 'axios';
 
 async function emergencyRevokeAll() {
-  console.log('🚨 INICIANDO REVOCACIÓN DE EMERGENCIA DE TODOS LOS TOKENS');
-  console.log('⚠️  Esta acción no se puede deshacer');
+
 
   const sql = neon(process.env.DATABASE_URL!);
 
@@ -17,7 +16,7 @@ async function emergencyRevokeAll() {
       SELECT id, client_name, mp_access_token FROM clients
     `;
 
-    console.log(`📊 Encontrados ${clients.length} clientes`);
+  
 
     let revokedCount = 0;
     let errorCount = 0;
@@ -25,8 +24,7 @@ async function emergencyRevokeAll() {
     // 2. Revocar cada token
     for (const client of clients) {
       try {
-        console.log(`Revocando acceso para: ${client.client_name || client.id}`);
-
+      
         // Revocar en Mercado Pago
         await axios.delete(
           `https://api.mercadopago.com/oauth/token/${client.mp_access_token}`,
@@ -42,7 +40,7 @@ async function emergencyRevokeAll() {
         );
 
         revokedCount++;
-        console.log(`✅ Revocado: ${client.client_name || client.id}`);
+
       } catch (error) {
         errorCount++;
         console.error(`❌ Error revocando ${client.client_name || client.id}:`, error);
@@ -51,12 +49,6 @@ async function emergencyRevokeAll() {
 
     // 3. Limpiar TODA la tabla
     await sql`TRUNCATE TABLE clients`;
-
-    console.log('\n📋 RESUMEN:');
-    console.log(`✅ Tokens revocados: ${revokedCount}`);
-    console.log(`❌ Errores: ${errorCount}`);
-    console.log(`🗑️  Base de datos limpiada completamente`);
-    console.log('\n⚠️  TODOS los médicos tendrán que reconectar sus cuentas');
 
   } catch (error) {
     console.error('💥 Error crítico en revocación de emergencia:', error);
@@ -67,7 +59,7 @@ async function emergencyRevokeAll() {
 // Ejecutar
 emergencyRevokeAll()
   .then(() => {
-    console.log('\n✅ Revocación de emergencia completada');
+
     process.exit(0);
   })
   .catch((error) => {
