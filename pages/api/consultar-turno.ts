@@ -24,16 +24,25 @@ export default async function handler(
     const clients = await sql`
       SELECT slug, cal_api_key, nombre_completo, monto_consulta
       FROM clients
-      WHERE cal_api_key IS NOT NULL AND cal_api_key != ''
+      WHERE cal_api_key IS NOT NULL
+        AND cal_api_key != ''
+        AND LENGTH(cal_api_key) > 0
     `;
+
+    console.log(`[consultar-turno] Booking ID: ${bookingId}`);
+    console.log(`[consultar-turno] Clientes con Cal.com: ${clients.length}`);
 
     if (clients.length === 0) {
       return res.status(404).json({ error: 'No hay clientes con Cal.com configurado' });
     }
 
+    let lastError: any = null;
+
     // Intentar obtener el booking con cada API key hasta encontrarlo
     for (const client of clients) {
       try {
+        console.log(`[consultar-turno] Intentando con cliente: ${client.slug}`);
+
         const response = await axios.get(
           `https://api.cal.com/v1/bookings/${bookingId}`,
           {
@@ -45,6 +54,7 @@ export default async function handler(
         );
 
         const booking = response.data;
+        console.log(`[consultar-turno] Booking encontrado con ${client.slug}`);
 
         // Si llegamos aquí, encontramos el booking
         const attendee = booking.attendees?.[0] || booking.responses;
@@ -61,14 +71,24 @@ export default async function handler(
           startTime: booking.startTime,
           monto: client.monto_consulta || 10000,
         });
-      } catch (error) {
+      } catch (error: any) {
+        // Guardar el último error para debugging
+        lastError = error;
+        console.log(`[consultar-turno] Error con ${client.slug}:`, error.response?.status, error.response?.data);
         // Si falla, continuar con el siguiente cliente
         continue;
       }
     }
 
     // Si llegamos aquí, no encontramos el booking con ninguna API key
-    return res.status(404).json({ error: 'Booking no encontrado' });
+    console.error('[consultar-turno] No se encontró el booking con ningún cliente');
+    console.error('[consultar-turno] Último error:', lastError?.response?.data || lastError?.message);
+
+    return res.status(404).json({
+      error: 'Booking no encontrado',
+      bookingId: bookingId,
+      detail: 'El turno no existe o no pertenece a ningún profesional configurado'
+    });
   } catch (error) {
     console.error('Error al consultar turno:', error);
     return res.status(500).json({ error: 'Error al consultar turno' });
