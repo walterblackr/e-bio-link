@@ -104,7 +104,7 @@ export default function PropuestaComercial() {
                     <p className={styles.analysisTitle}>Análisis de Inversión</p>
                   </div>
                   <p className={styles.analysisText}>
-                    Inviertes <strong>$150.000</strong> para dejar de perder casi <strong>3 Millones</strong>. Con evitar solo 4 ausencias en todo el año, el sistema es gratis.
+                    Inviertes <strong>$120.000</strong> para dejar de perder casi <strong>3 Millones</strong>. Con evitar solo 4 ausencias en todo el año, el sistema es gratis.
                   </p>
                 </div>
               </div>
@@ -123,7 +123,7 @@ export default function PropuestaComercial() {
                 <p className={styles.planDescription}>Menor inversión inicial.</p>
                 <div className={styles.planPriceContainer}>
                   <span className={styles.planPriceNormal}>$15.000</span>
-                  <span className={styles.planPriceLabel}>/ único</span>
+                  <span className={styles.planPriceLabel}>/ mes</span>
                 </div>
 
                 <div className={styles.planDetailsNormal}>
