@@ -127,6 +127,12 @@ export default async function handler(
 
       console.log(`[MP Webhook] Buscando entre ${pendingBookings.length} bookings pendientes`);
 
+      // Debug: mostrar el primer booking completo para ver qué campos tiene
+      if (pendingBookings.length > 0) {
+        console.log(`[MP Webhook] DEBUG - Primer booking encontrado:`, JSON.stringify(pendingBookings[0], null, 2));
+        console.log(`[MP Webhook] DEBUG - Claves del objeto:`, Object.keys(pendingBookings[0]));
+      }
+
       if (pendingBookings.length === 0) {
         console.log('[MP Webhook] No hay bookings pendientes');
         return res.status(200).json({ message: 'No pending bookings found' });
@@ -162,6 +168,8 @@ export default async function handler(
           if (matchByPreference || matchByReference) {
             console.log(`[MP Webhook] ✓ Match encontrado con booking ${booking.id} (${matchByPreference ? 'por preference_id' : 'por external_reference'})`);
             bookingMatch = booking;
+            console.log(`[MP Webhook] DEBUG - bookingMatch completo:`, JSON.stringify(bookingMatch, null, 2));
+            console.log(`[MP Webhook] DEBUG - Claves de bookingMatch:`, Object.keys(bookingMatch));
             break;
           } else {
             console.log(`[MP Webhook] ✗ No match - preference_id del pago (${payment.preference_id}) != booking (${booking.mp_preference_id}), external_reference (${payment.external_reference}) != cal_booking_id (${booking.cal_booking_id})`);
@@ -194,6 +202,10 @@ export default async function handler(
         `;
 
         // Confirmar el turno en Cal.com si tiene API key y booking ID
+        console.log(`[MP Webhook] Verificando datos para Cal.com:`);
+        console.log(`  - cal_api_key: "${bookingMatch.cal_api_key}" (length: ${bookingMatch.cal_api_key?.length || 0})`);
+        console.log(`  - cal_booking_id: "${bookingMatch.cal_booking_id}"`);
+
         if (bookingMatch.cal_api_key && bookingMatch.cal_booking_id) {
           try {
             console.log(`[MP Webhook] Confirmando turno en Cal.com - Booking ID: ${bookingMatch.cal_booking_id}`);
