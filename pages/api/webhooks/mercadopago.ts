@@ -152,15 +152,19 @@ export default async function handler(
 
           payment = paymentResponse.data;
 
-          console.log(`[MP Webhook] Pago obtenido - preference_id del pago: ${payment.preference_id}`);
+          console.log(`[MP Webhook] Pago obtenido - preference_id: ${payment.preference_id}, external_reference: ${payment.external_reference}`);
 
           // Verificar si este pago corresponde a este booking
-          if (payment.preference_id === booking.mp_preference_id) {
-            console.log(`[MP Webhook] ✓ Match encontrado con booking ${booking.id}`);
+          // Intentar match por preference_id O por external_reference (cal_booking_id)
+          const matchByPreference = payment.preference_id && payment.preference_id === booking.mp_preference_id;
+          const matchByReference = payment.external_reference && payment.external_reference === booking.cal_booking_id;
+
+          if (matchByPreference || matchByReference) {
+            console.log(`[MP Webhook] ✓ Match encontrado con booking ${booking.id} (${matchByPreference ? 'por preference_id' : 'por external_reference'})`);
             bookingMatch = booking;
             break;
           } else {
-            console.log(`[MP Webhook] ✗ No match - preference_id del pago (${payment.preference_id}) != booking (${booking.mp_preference_id})`);
+            console.log(`[MP Webhook] ✗ No match - preference_id del pago (${payment.preference_id}) != booking (${booking.mp_preference_id}), external_reference (${payment.external_reference}) != cal_booking_id (${booking.cal_booking_id})`);
           }
         } catch (error: any) {
           console.log(`[MP Webhook] Error consultando pago con booking ${booking.id}:`, error.response?.status || error.message);
