@@ -21,72 +21,59 @@ function PagarContent() {
   const [error, setError] = useState<string | null>(null);
   const [precio, setPrecio] = useState<number>(10000);
 
-  // Cal.com puede enviar el ID como 'uid' o 'bookingId'
-  const bookingId = searchParams.get('uid') || searchParams.get('bookingId');
-
-  // También podemos obtener datos directamente de la URL como fallback
+  // Cal.com envía estos parámetros en la URL
+  const bookingId = searchParams.get('uid');
+  const calUsername = searchParams.get('user');
   const nameFromUrl = searchParams.get('attendeeName');
   const emailFromUrl = searchParams.get('email');
   const startTimeFromUrl = searchParams.get('startTime');
-  const clientSlugFromUrl = searchParams.get('clientSlug');
 
   useEffect(() => {
-    if (bookingId) {
-      // Si tenemos los datos en la URL, usarlos directamente (más rápido)
-      if (nameFromUrl && emailFromUrl && startTimeFromUrl && clientSlugFromUrl) {
-        const formattedDate = new Date(startTimeFromUrl).toLocaleString('es-AR', {
-          dateStyle: 'full',
-          timeStyle: 'short',
-        });
-
-        setTurno({
-          name: decodeURIComponent(nameFromUrl),
-          email: decodeURIComponent(emailFromUrl),
-          date: formattedDate,
-          bookingId: bookingId,
-          clientSlug: decodeURIComponent(clientSlugFromUrl),
-          startTime: startTimeFromUrl,
-        });
-
-        // Obtener precio del médico
-        fetch(`/api/obtener-precio-consulta?slug=${clientSlugFromUrl}`)
-          .then((res) => res.json())
-          .then((data) => {
-            if (data.monto_consulta) {
-              setPrecio(parseFloat(data.monto_consulta));
-            }
-            setLoading(false);
-          })
-          .catch(() => {
-            setLoading(false);
-          });
-      } else {
-        // Fallback: intentar consultar a Cal.com API
-        fetch(`/api/consultar-turno?bookingId=${bookingId}`)
-          .then((res) => res.json())
-          .then((data) => {
-            if (data.error) {
-              setError(data.error);
-              setLoading(false);
-            } else {
-              setTurno(data);
-              if (data.monto) {
-                setPrecio(data.monto);
-              }
-              setLoading(false);
-            }
-          })
-          .catch((err) => {
-            console.error(err);
-            setError('Error al cargar los datos del turno');
-            setLoading(false);
-          });
-      }
-    } else {
+    if (!bookingId) {
       setError('No se encontró información del turno. Por favor reservá tu turno desde el calendario.');
       setLoading(false);
+      return;
     }
-  }, [bookingId, nameFromUrl, emailFromUrl, startTimeFromUrl, clientSlugFromUrl]);
+
+    // Si tenemos todos los datos de Cal.com en la URL, usarlos directamente
+    if (nameFromUrl && emailFromUrl && startTimeFromUrl && calUsername) {
+      // Buscar el cliente por cal_username y obtener su precio
+      fetch(`/api/obtener-precio-consulta?calUsername=${calUsername}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.error) {
+            setError(`No se encontró el médico con username: ${calUsername}`);
+            setLoading(false);
+            return;
+          }
+
+          const formattedDate = new Date(startTimeFromUrl).toLocaleString('es-AR', {
+            dateStyle: 'full',
+            timeStyle: 'short',
+          });
+
+          setTurno({
+            name: decodeURIComponent(nameFromUrl),
+            email: decodeURIComponent(emailFromUrl),
+            date: formattedDate,
+            bookingId: bookingId,
+            clientSlug: data.slug,
+            startTime: startTimeFromUrl,
+          });
+
+          setPrecio(parseFloat(data.monto_consulta));
+          setLoading(false);
+        })
+        .catch((err) => {
+          console.error(err);
+          setError('Error al cargar los datos del médico');
+          setLoading(false);
+        });
+    } else {
+      setError('Faltan datos del turno. Por favor reservá tu turno desde el calendario.');
+      setLoading(false);
+    }
+  }, [bookingId, calUsername, nameFromUrl, emailFromUrl, startTimeFromUrl]);
 
   const handlePagar = async () => {
     if (!turno) return;
