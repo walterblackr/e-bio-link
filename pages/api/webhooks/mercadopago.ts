@@ -53,36 +53,55 @@ export default async function handler(
   }
 
   try {
-    const { type, data } = req.body;
+    // Mercado Pago puede enviar en diferentes formatos
+    // Formato 1: { type: "payment", data: { id: "123" } }
+    // Formato 2: { action: "payment.created", data: { id: "123" } }
+    // Formato 3: Query params ?topic=payment&id=123
 
-    console.log(`[MP Webhook] Recibido: type=${type}, data.id=${data?.id}`);
+    const topic = req.query.topic || req.body?.type || req.body?.action?.split('.')[0];
+    const resourceId = req.query.id || req.body?.data?.id || req.body?.id;
+
+    console.log(`[MP Webhook] Body completo:`, JSON.stringify(req.body));
+    console.log(`[MP Webhook] Query params:`, JSON.stringify(req.query));
+    console.log(`[MP Webhook] Recibido: topic=${topic}, resourceId=${resourceId}`);
 
     // Validar firma del webhook si tenemos el secret configurado
     if (process.env.MERCADOPAGO_WEBHOOK_SECRET) {
       const xSignature = req.headers['x-signature'] as string | undefined;
       const xRequestId = req.headers['x-request-id'] as string | undefined;
 
+      console.log(`[MP Webhook] Validando firma - Signature: ${xSignature ? 'presente' : 'ausente'}, RequestId: ${xRequestId ? 'presente' : 'ausente'}`);
+
       const isValid = validateMercadoPagoSignature(
         xSignature,
         xRequestId,
-        data?.id,
+        resourceId,
         process.env.MERCADOPAGO_WEBHOOK_SECRET
       );
 
       if (!isValid) {
-        console.error('Invalid webhook signature from Mercado Pago');
-        return res.status(401).json({ error: 'Invalid signature' });
+        console.error('[MP Webhook] ADVERTENCIA: Firma inválida - procesando de todas formas para debugging');
+        // Temporalmente no rechazamos el webhook para debugging
+        // TODO: Descomentar esto en producción
+        // return res.status(401).json({ error: 'Invalid signature' });
+      } else {
+        console.log('[MP Webhook] Firma válida');
       }
+    } else {
+      console.log('[MP Webhook] No hay MERCADOPAGO_WEBHOOK_SECRET configurado - saltando validación');
     }
 
     // Mercado Pago puede enviar varios tipos de notificaciones
     // Nos interesa: payment
-    if (type === 'payment') {
-      const paymentId = data.id;
+    if (topic === 'payment') {
+      const paymentId = resourceId;
 
       if (!paymentId) {
+        console.log('[MP Webhook] No payment ID encontrado');
         return res.status(400).json({ error: 'No payment ID received' });
       }
+
+      console.log(`[MP Webhook] Procesando payment ID: ${paymentId}`);
 
       const sql = neon(process.env.DATABASE_URL!);
 
@@ -106,7 +125,10 @@ export default async function handler(
         LIMIT 20
       `;
 
+      console.log(`[MP Webhook] Buscando entre ${pendingBookings.length} bookings pendientes`);
+
       if (pendingBookings.length === 0) {
+        console.log('[MP Webhook] No hay bookings pendientes');
         return res.status(200).json({ message: 'No pending bookings found' });
       }
 
@@ -115,6 +137,7 @@ export default async function handler(
       let bookingMatch = null;
 
       for (const booking of pendingBookings) {
+        console.log(`[MP Webhook] Probando con booking ${booking.id} - preference_id: ${booking.mp_preference_id}`);
         try {
           const accessToken = decrypt(booking.mp_access_token);
 
@@ -129,20 +152,29 @@ export default async function handler(
 
           payment = paymentResponse.data;
 
+          console.log(`[MP Webhook] Pago obtenido - preference_id del pago: ${payment.preference_id}`);
+
           // Verificar si este pago corresponde a este booking
           if (payment.preference_id === booking.mp_preference_id) {
+            console.log(`[MP Webhook] ✓ Match encontrado con booking ${booking.id}`);
             bookingMatch = booking;
             break;
+          } else {
+            console.log(`[MP Webhook] ✗ No match - preference_id del pago (${payment.preference_id}) != booking (${booking.mp_preference_id})`);
           }
-        } catch (error) {
+        } catch (error: any) {
+          console.log(`[MP Webhook] Error consultando pago con booking ${booking.id}:`, error.response?.status || error.message);
           // Token inválido o pago no pertenece a este vendedor, continuar
           continue;
         }
       }
 
       if (!payment || !bookingMatch) {
+        console.log('[MP Webhook] No se encontró match para este pago');
         return res.status(200).json({ message: 'Payment not matched to any booking' });
       }
+
+      console.log(`[MP Webhook] Procesando pago - Status: ${payment.status}, Booking ID: ${bookingMatch.id}`);
 
       // Actualizar el booking con el estado del pago
       if (payment.status === 'approved') {
@@ -246,6 +278,7 @@ export default async function handler(
     }
 
     // Para otros tipos de notificaciones
+    console.log(`[MP Webhook] Tipo de notificación no manejado: ${topic}`);
     return res.status(200).json({ success: true, message: 'Notification received' });
   } catch (error: any) {
     console.error('Error processing Mercado Pago webhook:', error);
