@@ -54,7 +54,7 @@ export default async function BioLinkPage({ params }: PageProps) {
   return <BioLinkTemplate data={medico} />;
 }
 
-// Opcional: Generar metadata dinámica para SEO
+// Opcional: Generar metadata dinámica para SEO y Open Graph (WhatsApp)
 export async function generateMetadata({ params }: PageProps) {
   const { slug } = await params;
   const sql = neon(process.env.DATABASE_URL!);
@@ -85,5 +85,22 @@ export async function generateMetadata({ params }: PageProps) {
   return {
     title,
     description,
+    openGraph: {
+      title: `📅 Turnos Online: ${medico.nombre_completo}`,
+      description: `Reserva tu cita con ${medico.nombre_completo} en segundos.`,
+      images: [
+        {
+          url: `/biolink/${slug}/opengraph-image`,
+          width: 1200,
+          height: 630,
+          alt: `${medico.nombre_completo}${medico.especialidad ? ` - ${medico.especialidad}` : ''}`,
+        },
+      ],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `Turnos con ${medico.nombre_completo}`,
+      description: `Reserva online con ${medico.nombre_completo}`,
+    },
   };
 }
