@@ -244,9 +244,17 @@ export default async function handler(
         // Cancelar en Cal.com si es necesario
         if (clientData.cal_api_key && bookingMatch.cal_booking_id) {
           try {
-            // Cal.com API v1 usa apiKey como query parameter
-            await axios.delete(
-              `https://api.cal.com/v1/bookings/${bookingMatch.cal_booking_id}?apiKey=${clientData.cal_api_key}`
+            // Cal.com API v2: Cancelar booking
+            // POST /v2/bookings/{bookingUid}/cancel
+            await axios.post(
+              `https://api.cal.com/v2/bookings/${bookingMatch.cal_booking_id}/cancel`,
+              { cancellationReason: 'Pago rechazado en Mercado Pago' },
+              {
+                headers: {
+                  Authorization: `Bearer ${clientData.cal_api_key}`,
+                  'cal-api-version': '2024-08-13',
+                },
+              }
             );
           } catch {
             // Ignorar error
