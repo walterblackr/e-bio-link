@@ -1,4 +1,4 @@
-import { ImageResponse } from 'next/og';
+import { ImageResponse } from '@vercel/og';
 import { getProfileBySlug } from '@/lib/get-profile';
 
 // Configuración de la imagen (Tamaño estándar Open Graph)
