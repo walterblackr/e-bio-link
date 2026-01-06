@@ -4,6 +4,13 @@ import { v2 as cloudinary } from 'cloudinary';
 import formidable from 'formidable';
 import fs from 'fs';
 
+// Verificar que las variables de entorno estén configuradas
+if (!process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME ||
+    !process.env.CLOUDINARY_API_KEY ||
+    !process.env.CLOUDINARY_API_SECRET) {
+  console.error('Missing Cloudinary environment variables');
+}
+
 // Configurar Cloudinary
 cloudinary.config({
   cloud_name: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
@@ -24,6 +31,16 @@ export default async function handler(
 ) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  // Verificar configuración de Cloudinary
+  if (!process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME ||
+      !process.env.CLOUDINARY_API_KEY ||
+      !process.env.CLOUDINARY_API_SECRET) {
+    return res.status(500).json({
+      error: 'Cloudinary not configured',
+      message: 'Please add CLOUDINARY environment variables in Vercel'
+    });
   }
 
   try {
