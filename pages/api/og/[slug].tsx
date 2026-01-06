@@ -8,9 +8,12 @@ export const config = {
 
 export default async function handler(req: NextRequest) {
   try {
-    const slug = req.url.split('/').pop();
+    // Obtener slug de la URL correctamente
+    const url = new URL(req.url);
+    const pathParts = url.pathname.split('/');
+    const slug = pathParts[pathParts.length - 1];
 
-    if (!slug) {
+    if (!slug || slug === '') {
       return new Response('Slug not provided', { status: 400 });
     }
 
