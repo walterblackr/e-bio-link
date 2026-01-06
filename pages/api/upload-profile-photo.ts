@@ -3,6 +3,33 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { v2 as cloudinary } from 'cloudinary';
 import formidable from 'formidable';
 import fs from 'fs';
+import { neon } from '@neondatabase/serverless';
+
+// Validar sesión de admin
+async function validateAdminSession(req: NextApiRequest): Promise<boolean> {
+  const sessionCookie = req.cookies.admin_session;
+  if (!sessionCookie) return false;
+
+  try {
+    // Parsear el JSON de la sesión
+    const session = JSON.parse(sessionCookie);
+
+    // Verificar que tenga los campos necesarios
+    if (!session.id || !session.email) {
+      return false;
+    }
+
+    // Verificar que el admin exista y esté activo
+    const sql = neon(process.env.DATABASE_URL!);
+    const result = await sql`
+      SELECT id FROM admins WHERE id = ${session.id} AND activo = true LIMIT 1
+    `;
+
+    return result.length > 0;
+  } catch {
+    return false;
+  }
+}
 
 // Verificar que las variables de entorno estén configuradas
 if (!process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME ||
@@ -33,6 +60,12 @@ export default async function handler(
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
+  // Validar autenticación de admin
+  const isAuthenticated = await validateAdminSession(req);
+  if (!isAuthenticated) {
+    return res.status(401).json({ error: 'No autorizado' });
+  }
+
   // Verificar configuración de Cloudinary
   if (!process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME ||
       !process.env.CLOUDINARY_API_KEY ||
@@ -44,14 +77,6 @@ export default async function handler(
   }
 
   try {
-    console.log('Starting file upload process...');
-    console.log('Cloudinary config check:', {
-      hasCloudName: !!process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
-      hasApiKey: !!process.env.CLOUDINARY_API_KEY,
-      hasApiSecret: !!process.env.CLOUDINARY_API_SECRET,
-      cloudName: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
-    });
-
     // Parsear el form data con formidable
     const form = formidable({
       maxFileSize: 5 * 1024 * 1024, // 5MB máximo
@@ -61,9 +86,7 @@ export default async function handler(
       },
     });
 
-    console.log('Parsing form data...');
-    const [fields, files] = await form.parse(req);
-    console.log('Form parsed. Files:', files.file ? 'found' : 'not found');
+    const [, files] = await form.parse(req);
 
     // Obtener el archivo subido
     const file = files.file?.[0];
@@ -81,12 +104,6 @@ export default async function handler(
     }
 
     // Subir a Cloudinary
-    console.log('Uploading to Cloudinary...', {
-      filepath: file.filepath,
-      mimetype: file.mimetype,
-      size: file.size
-    });
-
     const result = await cloudinary.uploader.upload(file.filepath, {
       folder: 'e-bio-link/profiles', // Carpeta en Cloudinary
       transformation: [
@@ -96,8 +113,6 @@ export default async function handler(
       ],
       public_id: `profile-${Date.now()}`, // ID único
     });
-
-    console.log('Upload successful:', result.secure_url);
 
     // Eliminar archivo temporal
     fs.unlinkSync(file.filepath);
@@ -109,18 +124,10 @@ export default async function handler(
       public_id: result.public_id,
     });
   } catch (error: any) {
-    console.error('❌ ERROR COMPLETO:', error);
-    console.error('Error name:', error.name);
-    console.error('Error message:', error.message);
-    console.error('Error stack:', error.stack);
-    if (error.http_code) {
-      console.error('Cloudinary HTTP code:', error.http_code);
-    }
-
+    console.error('Error uploading to Cloudinary:', error);
     return res.status(500).json({
       error: 'Failed to upload image',
-      details: error.message,
-      errorName: error.name
+      details: error.message
     });
   }
 }

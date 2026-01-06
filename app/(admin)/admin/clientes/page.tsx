@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import PhotoUploader from '@/app/components/PhotoUploader';
 
 interface Client {
   slug: string;
@@ -323,21 +324,15 @@ export default function ClientesPage() {
                 </p>
               </div>
 
-              {/* Foto URL */}
+              {/* Foto de Perfil */}
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  URL de Foto de Perfil
+                  Foto de Perfil
                 </label>
-                <input
-                  type="url"
-                  value={formData.foto_url}
-                  onChange={(e) => setFormData({ ...formData, foto_url: e.target.value })}
-                  placeholder="https://ejemplo.com/foto.jpg"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder-gray-400"
+                <PhotoUploader
+                  currentPhotoUrl={formData.foto_url}
+                  onPhotoUploaded={(url) => setFormData({ ...formData, foto_url: url })}
                 />
-                <p className="text-xs text-gray-500 mt-1">
-                  URL completa de la imagen (opcional)
-                </p>
               </div>
 
               {/* Cal.com API Key */}
