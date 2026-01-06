@@ -44,6 +44,14 @@ export default async function handler(
   }
 
   try {
+    console.log('Starting file upload process...');
+    console.log('Cloudinary config check:', {
+      hasCloudName: !!process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
+      hasApiKey: !!process.env.CLOUDINARY_API_KEY,
+      hasApiSecret: !!process.env.CLOUDINARY_API_SECRET,
+      cloudName: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
+    });
+
     // Parsear el form data con formidable
     const form = formidable({
       maxFileSize: 5 * 1024 * 1024, // 5MB máximo
@@ -53,7 +61,9 @@ export default async function handler(
       },
     });
 
+    console.log('Parsing form data...');
     const [fields, files] = await form.parse(req);
+    console.log('Form parsed. Files:', files.file ? 'found' : 'not found');
 
     // Obtener el archivo subido
     const file = files.file?.[0];
@@ -71,6 +81,12 @@ export default async function handler(
     }
 
     // Subir a Cloudinary
+    console.log('Uploading to Cloudinary...', {
+      filepath: file.filepath,
+      mimetype: file.mimetype,
+      size: file.size
+    });
+
     const result = await cloudinary.uploader.upload(file.filepath, {
       folder: 'e-bio-link/profiles', // Carpeta en Cloudinary
       transformation: [
@@ -80,6 +96,8 @@ export default async function handler(
       ],
       public_id: `profile-${Date.now()}`, // ID único
     });
+
+    console.log('Upload successful:', result.secure_url);
 
     // Eliminar archivo temporal
     fs.unlinkSync(file.filepath);
@@ -91,10 +109,18 @@ export default async function handler(
       public_id: result.public_id,
     });
   } catch (error: any) {
-    console.error('Error uploading to Cloudinary:', error);
+    console.error('❌ ERROR COMPLETO:', error);
+    console.error('Error name:', error.name);
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
+    if (error.http_code) {
+      console.error('Cloudinary HTTP code:', error.http_code);
+    }
+
     return res.status(500).json({
       error: 'Failed to upload image',
-      details: error.message
+      details: error.message,
+      errorName: error.name
     });
   }
 }
