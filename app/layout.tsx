@@ -6,15 +6,17 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 // Configuramos la fuente monoespaciada
-const spaceMono = Space_Mono({ 
+const spaceMono = Space_Mono({
   weight: ['400', '700'], // Importamos pesos normal y negrita
   subsets: ["latin"],
   variable: '--font-space-mono' // Creamos una variable CSS
 });
 
+// Metadata básica - páginas hijas pueden sobrescribirla
 export const metadata = {
   title: "Bio Link",
   description: "Mi perfil profesional",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://e-bio-link.vercel.app'),
 };
 
 export default function RootLayout({
