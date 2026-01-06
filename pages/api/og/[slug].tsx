@@ -1,20 +1,24 @@
-import { ImageResponse } from 'next/og';
-import { NextRequest } from 'next/server';
-import { getProfileBySlug } from '@/lib/get-profile';
+import { ImageResponse } from '@vercel/og';
+import type { NextRequest } from 'next/server';
 
-export const runtime = 'nodejs';
+export const config = {
+  runtime: 'edge',
+};
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ slug: string }> }
-) {
+export default async function handler(req: NextRequest) {
   try {
-    const { slug } = await params;
+    const { searchParams } = new URL(req.url);
+    const slug = req.url.split('/').pop();
 
-    // Buscar los datos del médico
-    const perfil = await getProfileBySlug(slug);
+    if (!slug) {
+      return new Response('Slug not provided', { status: 400 });
+    }
 
-    if (!perfil) {
+    // Fetch desde la API para obtener los datos del cliente
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://e-bio-link.vercel.app';
+    const response = await fetch(`${baseUrl}/api/get-client-by-slug?slug=${slug}`);
+
+    if (!response.ok) {
       return new ImageResponse(
         (
           <div
@@ -37,6 +41,8 @@ export async function GET(
         }
       );
     }
+
+    const perfil = await response.json();
 
     return new ImageResponse(
       (
