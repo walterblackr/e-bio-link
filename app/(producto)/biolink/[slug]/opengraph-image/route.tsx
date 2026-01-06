@@ -5,10 +5,10 @@ export const runtime = 'edge';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { slug: string } }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
-    const slug = params.slug;
+    const { slug } = await params;
 
     // Fetch desde la API en vez de consultar DB directamente (Edge no soporta Neon)
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://e-bio-link.vercel.app';
