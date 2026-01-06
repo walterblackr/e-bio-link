@@ -33,21 +33,44 @@
    - Agregar validación: `cal_api_key` y `cal_username` requeridos para habilitar pagos
    - Mostrar mensaje claro: "Configurá tu Cal.com para habilitar reservas con pago"
 
-#### B. Gestión de Foto de Perfil
+#### B. Gestión de Foto de Perfil ✅ IMPLEMENTADO
+
+**Solución Implementada:** Cloudinary
 
 **Especificaciones Técnicas:**
 - **Formato:** JPG, PNG, WebP
-- **Tamaño recomendado:** 800x800px (cuadrado)
-- **Peso máximo:** 2MB
-- **Aspect Ratio:** 1:1 (cuadrado, se recortará si es necesario)
+- **Tamaño mínimo:** 400x400px
+- **Peso máximo:** 5MB
+- **Transformación automática:** Crop 500x500px centrado en cara, optimización automática
 
-**Opciones de Almacenamiento:**
-1. **Vercel Blob Storage** (recomendado)
-   - Fácil integración con Next.js
-   - CDN incluido
-   - Costo: ~$0.15/GB almacenamiento + $0.20/GB transferencia
+**Archivos Creados:**
+- `/pages/api/upload-profile-photo.ts` - Endpoint para subir a Cloudinary
+- `/pages/api/update-profile-photo.ts` - Endpoint para actualizar foto_url en BD
+- `/app/components/PhotoUploader.tsx` - Componente React para upload
+- `/app/(admin)/test-photo/page.tsx` - Página de prueba temporal
 
-2. **Cloudinary** (alternativa)
+**Variables de Entorno Requeridas:**
+```bash
+NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=tu-cloud-name
+CLOUDINARY_API_KEY=tu-api-key
+CLOUDINARY_API_SECRET=tu-api-secret
+```
+
+**Cómo Usar:**
+1. Ir a https://e-bio-link.vercel.app/test-photo
+2. Ingresar el slug del perfil (ej: `dr-valeria-1`)
+3. Subir foto (se sube a Cloudinary automáticamente)
+4. Click en "Guardar en perfil" (actualiza `foto_url` en la BD)
+
+**Cloudinary Config:**
+- Plan gratuito: 25GB storage, 25GB bandwidth/mes
+- Carpeta: `e-bio-link/profiles/`
+- Transformación: 500x500px crop automático con detección de rostro
+- Formato: Auto (WebP si el navegador lo soporta)
+- Calidad: Auto-optimizada
+
+**Pendiente:**
+- Integrar PhotoUploader en el panel de admin real (cuando se cree)
    - Free tier: 25GB almacenamiento
    - Transformaciones automáticas
    - CDN global
