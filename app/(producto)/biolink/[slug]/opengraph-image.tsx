@@ -1,4 +1,5 @@
 import { ImageResponse } from 'next/og';
+import { getProfileBySlug } from '@/lib/get-profile';
 
 // Configuración de la imagen (Tamaño estándar Open Graph)
 export const size = {
@@ -10,11 +11,10 @@ export const contentType = 'image/png';
 
 // Generación de la imagen
 export default async function Image({ params }: { params: { slug: string } }) {
-  // Fetch desde la API para obtener los datos del cliente
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://e-bio-link.vercel.app';
-  const response = await fetch(`${baseUrl}/api/get-client-by-slug?slug=${params.slug}`);
+  // 1. Buscamos los datos del médico
+  const perfil = await getProfileBySlug(params.slug);
 
-  if (!response.ok) {
+  if (!perfil) {
     return new ImageResponse(
       (
         <div
@@ -34,8 +34,6 @@ export default async function Image({ params }: { params: { slug: string } }) {
       { ...size }
     );
   }
-
-  const perfil = await response.json();
 
   // 2. Dibujamos la tarjeta con JSX
   return new ImageResponse(
