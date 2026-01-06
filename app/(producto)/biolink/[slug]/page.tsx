@@ -89,13 +89,13 @@ export async function generateMetadata({ params }: PageProps) {
     title,
     description,
     openGraph: {
-      title: `📅 Turnos Online: ${medico.nombre_completo}`,
+      title: `📅 Turnos: ${medico.nombre_completo}`,
       description: `Reserva tu cita con ${medico.nombre_completo} en segundos.`,
       url: bioLinkUrl,
       siteName: 'e-bio-link.vercel.app',
       images: [
         {
-          url: `/api/og/${slug}`,
+          url: `${baseUrl}/api/og/${slug}`,
           width: 1200,
           height: 630,
           alt: `${medico.nombre_completo}${medico.especialidad ? ` - ${medico.especialidad}` : ''}`,
