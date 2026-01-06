@@ -90,7 +90,7 @@ export async function generateMetadata({ params }: PageProps) {
       description: `Reserva tu cita con ${medico.nombre_completo} en segundos.`,
       images: [
         {
-          url: `/biolink/${slug}/opengraph-image`,
+          url: `/api/og/${slug}`,
           width: 1200,
           height: 630,
           alt: `${medico.nombre_completo}${medico.especialidad ? ` - ${medico.especialidad}` : ''}`,
