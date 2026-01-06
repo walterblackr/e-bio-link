@@ -1,5 +1,6 @@
 import { ImageResponse } from '@vercel/og';
 import type { NextRequest } from 'next/server';
+import { neon } from '@neondatabase/serverless';
 
 export const config = {
   runtime: 'edge',
@@ -7,18 +8,23 @@ export const config = {
 
 export default async function handler(req: NextRequest) {
   try {
-    const { searchParams } = new URL(req.url);
     const slug = req.url.split('/').pop();
 
     if (!slug) {
       return new Response('Slug not provided', { status: 400 });
     }
 
-    // Fetch desde la API para obtener los datos del cliente
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://e-bio-link.vercel.app';
-    const response = await fetch(`${baseUrl}/api/get-client-by-slug?slug=${slug}`);
+    // Consultar directamente a la BD con Neon (soporta Edge Runtime)
+    const sql = neon(process.env.DATABASE_URL!);
 
-    if (!response.ok) {
+    const result = await sql`
+      SELECT slug, nombre_completo, especialidad, foto_url, matricula
+      FROM clients
+      WHERE slug = ${slug}
+      LIMIT 1
+    `;
+
+    if (result.length === 0) {
       return new ImageResponse(
         (
           <div
@@ -42,7 +48,7 @@ export default async function handler(req: NextRequest) {
       );
     }
 
-    const perfil = await response.json();
+    const perfil = result[0];
 
     return new ImageResponse(
       (
