@@ -82,12 +82,17 @@ export async function generateMetadata({ params }: PageProps) {
     ? medico.descripcion
     : `Agenda tu consulta con ${medico.nombre_completo}${medico.especialidad ? `, ${medico.especialidad}` : ''}`;
 
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://e-bio-link.vercel.app';
+  const bioLinkUrl = `${baseUrl}/biolink/${slug}`;
+
   return {
     title,
     description,
     openGraph: {
       title: `📅 Turnos Online: ${medico.nombre_completo}`,
       description: `Reserva tu cita con ${medico.nombre_completo} en segundos.`,
+      url: bioLinkUrl,
+      siteName: 'e-bio-link.vercel.app',
       images: [
         {
           url: `/api/og/${slug}`,
@@ -96,6 +101,7 @@ export async function generateMetadata({ params }: PageProps) {
           alt: `${medico.nombre_completo}${medico.especialidad ? ` - ${medico.especialidad}` : ''}`,
         },
       ],
+      type: 'profile',
     },
     twitter: {
       card: 'summary_large_image',
