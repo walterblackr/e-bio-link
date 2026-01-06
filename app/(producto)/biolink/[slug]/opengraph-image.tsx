@@ -1,6 +1,9 @@
 import { ImageResponse } from 'next/og';
 import { getProfileBySlug } from '@/lib/get-profile';
 
+// Route segment config
+export const runtime = 'nodejs';
+
 // Configuración de la imagen (Tamaño estándar Open Graph)
 export const size = {
   width: 1200,
