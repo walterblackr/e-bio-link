@@ -32,9 +32,10 @@ export default async function handler(
 
     const sql = neon(process.env.DATABASE_URL!);
 
-    // 1. Buscar el cliente y sus tokens de Mercado Pago
+    // 1. Buscar el cliente y sus tokens de Mercado Pago (por slug)
     const clientResult = await sql`
       SELECT
+        id,
         slug,
         nombre_completo,
         mp_access_token,
@@ -110,7 +111,7 @@ export default async function handler(
     // 4. Guardar el booking en la base de datos
     const bookingResult = await sql`
       INSERT INTO bookings (
-        client_slug,
+        client_id,
         cal_booking_id,
         paciente_nombre,
         paciente_email,
@@ -121,7 +122,7 @@ export default async function handler(
         estado
       )
       VALUES (
-        ${client_slug},
+        ${client.id},
         ${cal_booking_id || null},
         ${paciente_nombre},
         ${paciente_email},
