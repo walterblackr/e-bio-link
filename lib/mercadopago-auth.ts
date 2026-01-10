@@ -6,8 +6,7 @@ import { neon } from '@neondatabase/serverless';
 import { randomUUID } from 'crypto';
 
 interface GenerateAuthLinkOptions {
-  userId: string;
-  clientName: string;
+  userId: string; // UUID del cliente
 }
 
 interface AuthLinkResult {
@@ -23,15 +22,16 @@ interface AuthLinkResult {
 export async function generateMercadoPagoAuthLink(
   options: GenerateAuthLinkOptions
 ): Promise<AuthLinkResult> {
-  const { userId, clientName } = options;
+  const { userId } = options;
 
   // Validaciones
-  if (!userId || !clientName) {
-    throw new Error('userId and clientName are required');
+  if (!userId) {
+    throw new Error('userId is required');
   }
 
-  if (userId.length > 255 || clientName.length > 255) {
-    throw new Error('userId and clientName must be less than 255 characters');
+  // Validar que sea un UUID válido
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId)) {
+    throw new Error('userId must be a valid UUID');
   }
 
   const sql = neon(process.env.DATABASE_URL!);
@@ -40,8 +40,7 @@ export async function generateMercadoPagoAuthLink(
   await sql`
     CREATE TABLE IF NOT EXISTS oauth_sessions (
       session_id uuid PRIMARY KEY,
-      user_id varchar(255) NOT NULL,
-      client_name varchar(255),
+      client_id uuid,
       status varchar(50) DEFAULT 'pending',
       created_at timestamp DEFAULT NOW(),
       completed_at timestamp
@@ -51,10 +50,10 @@ export async function generateMercadoPagoAuthLink(
   // Generar UUID para la sesión
   const sessionId = randomUUID();
 
-  // Guardar la sesión en la BD
+  // Guardar la sesión en la BD con el client_id (UUID del cliente)
   await sql`
-    INSERT INTO oauth_sessions (session_id, user_id, client_name, status)
-    VALUES (${sessionId}, ${userId}, ${clientName}, 'pending')
+    INSERT INTO oauth_sessions (session_id, client_id, status)
+    VALUES (${sessionId}, ${userId}, 'pending')
   `;
 
   // Construir la URL de autorización

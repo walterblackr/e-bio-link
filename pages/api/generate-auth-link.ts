@@ -40,27 +40,22 @@ export default async function handler(
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
-  const { userId, clientName }: GenerateAuthLinkRequest = req.body;
+  const { userId }: GenerateAuthLinkRequest = req.body;
 
   // Validaciones
   if (!userId || typeof userId !== 'string') {
     return res.status(400).json({ error: 'userId is required and must be a string' });
   }
 
-  if (!clientName || typeof clientName !== 'string') {
-    return res.status(400).json({ error: 'clientName is required and must be a string' });
-  }
-
-  // Validar longitud
-  if (userId.length > 255 || clientName.length > 255) {
-    return res.status(400).json({ error: 'userId and clientName must be less than 255 characters' });
+  // Validar que sea un UUID válido
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId)) {
+    return res.status(400).json({ error: 'userId must be a valid UUID' });
   }
 
   try {
     // Usar la librería interna
     const { authUrl, sessionId, expiresAt } = await generateMercadoPagoAuthLink({
       userId,
-      clientName,
     });
 
   

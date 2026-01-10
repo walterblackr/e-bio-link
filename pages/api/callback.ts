@@ -88,7 +88,7 @@ export default async function handler(
 
     // 4. Verificar que la sesión existe y está pendiente
     const sessionCheck = await sql`
-      SELECT user_id, status, created_at
+      SELECT client_id, status, created_at
       FROM oauth_sessions
       WHERE session_id = ${sessionId}
     `;
@@ -103,7 +103,7 @@ export default async function handler(
     }
 
     const session = sessionCheck[0];
-    const clientId = session.user_id; // Este es el UUID del cliente
+    const clientId = session.client_id; // Este es el UUID del cliente (ahora desde client_id)
 
     // Verificar que la sesión no haya expirado (24 horas)
     const sessionAge = Date.now() - new Date(session.created_at).getTime();
