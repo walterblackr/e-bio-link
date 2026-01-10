@@ -6,6 +6,7 @@ import Link from 'next/link';
 import PhotoUploader from '@/app/components/PhotoUploader';
 
 interface Client {
+  id: string;
   slug: string;
   nombre_completo: string;
   especialidad: string;
@@ -499,6 +500,9 @@ export default function ClientesPage() {
                       Nombre / Slug
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      ID (UUID)
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Especialidad
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -531,6 +535,11 @@ export default function ClientesPage() {
                           >
                             Ver biolink →
                           </a>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="text-xs font-mono text-gray-500">
+                          {client.id}
                         </div>
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-900">
