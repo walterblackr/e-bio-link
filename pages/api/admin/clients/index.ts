@@ -45,6 +45,7 @@ export default async function handler(
     try {
       const clients = await sql`
         SELECT
+          id,
           slug,
           nombre_completo,
           especialidad,
