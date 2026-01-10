@@ -84,7 +84,9 @@ export async function hasActiveMercadoPagoConnection(
   const result = await sql`
     SELECT COUNT(*) as count
     FROM clients
-    WHERE user_id = ${userId}
+    WHERE id = ${userId}
+      AND mp_access_token IS NOT NULL
+      AND mp_access_token != ''
   `;
 
   return result[0].count > 0;
@@ -101,7 +103,7 @@ export async function getMercadoPagoToken(
   const result = await sql`
     SELECT mp_access_token
     FROM clients
-    WHERE user_id = ${userId}
+    WHERE id = ${userId}
     LIMIT 1
   `;
 
