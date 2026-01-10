@@ -103,7 +103,7 @@ export default async function handler(
 
       // 1. Buscar bookings pendientes (sin JOIN, más simple)
       const pendingBookings = await sql`
-        SELECT id, client_slug, cal_booking_id, mp_preference_id
+        SELECT id, client_id, cal_booking_id, mp_preference_id
         FROM bookings
         WHERE estado IN ('pending', 'paid')
         ORDER BY created_at DESC
@@ -126,9 +126,9 @@ export default async function handler(
         try {
           // Obtener datos del cliente para este booking (igual que en crear-preferencia-pago)
           const clientResult = await sql`
-            SELECT slug, mp_access_token, cal_api_key, nombre_completo
+            SELECT id, slug, mp_access_token, cal_api_key, nombre_completo
             FROM clients
-            WHERE slug = ${booking.client_slug}
+            WHERE id = ${booking.client_id}
             LIMIT 1
           `;
 
