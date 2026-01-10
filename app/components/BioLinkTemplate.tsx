@@ -29,8 +29,8 @@ export default function BioLinkTemplate({ data }: BioLinkProps) {
   const buttons = Array.isArray(data.botones_config) ? data.botones_config : [];
 
   // Construimos el link de Cal.com dinámicamente
-  // Si en la BD es "dr-juan", el link será "dr-juan/30min"
-  const calLink = data.cal_username ? `${data.cal_username}/30min` : "";
+  // Apuntamos directamente al username para mostrar todos los event types disponibles
+  const calLink = data.cal_username ? data.cal_username : "";
 
   useEffect(() => {
     if (!data.cal_username) return; // No cargar Cal si no hay usuario
@@ -68,8 +68,8 @@ export default function BioLinkTemplate({ data }: BioLinkProps) {
         };
     })(window, "https://app.cal.com/embed/embed.js", "init");
 
-    (window as any).Cal("init", "30min", { origin: "https://app.cal.com" });
-    (window as any).Cal.ns["30min"]("ui", {
+    (window as any).Cal("init", { origin: "https://app.cal.com" });
+    (window as any).Cal("ui", {
       hideEventTypeDetails: false,
       layout: "month_view",
     });
@@ -145,7 +145,6 @@ export default function BioLinkTemplate({ data }: BioLinkProps) {
         {data.cal_username && (
           <button
             data-cal-link={calLink}
-            data-cal-namespace="30min"
             data-cal-config='{"layout":"month_view"}'
             className="flex items-center justify-center w-full max-w-xs py-3 px-6 mb-4 rounded-full font-semibold transition-all transform hover:scale-105 bg-transparent border lowercase tracking-wider font-[family-name:var(--font-space-mono)]"
             style={{
