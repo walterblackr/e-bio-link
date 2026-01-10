@@ -9,7 +9,7 @@ import Link from 'next/link';
 
 export default function GenerateLinksPage() {
   const router = useRouter();
-  const [clientName, setClientName] = useState('');
+  const [clientId, setClientId] = useState('');
   const [adminKey, setAdminKey] = useState('');
   const [result, setResult] = useState<any>(null);
   const [loading, setLoading] = useState(false);
@@ -36,8 +36,8 @@ export default function GenerateLinksPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          userId: `client_${Date.now()}`, // Auto-generado
-          clientName,
+          userId: clientId,
+          clientName: '', // Ya no se usa, se obtiene de la BD
           adminKey,
         }),
       });
@@ -108,21 +108,22 @@ export default function GenerateLinksPage() {
         {/* Formulario */}
         <div className="bg-white rounded-lg shadow-lg p-8">
           <form onSubmit={handleGenerate} className="space-y-6">
-            {/* Nombre del Cliente */}
+            {/* UUID del Cliente */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Nombre del Cliente/Médico
+                UUID del Cliente
               </label>
               <input
                 type="text"
-                value={clientName}
-                onChange={(e) => setClientName(e.target.value)}
-                placeholder="Ej: Dr. Juan Pérez"
+                value={clientId}
+                onChange={(e) => setClientId(e.target.value)}
+                placeholder="Ej: 550e8400-e29b-41d4-a716-446655440000"
                 required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder-gray-400"
+                pattern="^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder-gray-400 font-mono text-sm"
               />
               <p className="text-xs text-gray-500 mt-1">
-                Este nombre se usará para identificar al cliente en la base de datos
+                Copiá el UUID del cliente desde la tabla de Gestión de Clientes
               </p>
             </div>
 
@@ -215,7 +216,7 @@ export default function GenerateLinksPage() {
                 <div className="mt-3 space-y-2 text-sm font-mono text-gray-600">
                   <p><strong>Session ID:</strong> {result.sessionId}</p>
                   <p><strong>Expira:</strong> {new Date(result.expiresAt).toLocaleString('es-AR')}</p>
-                  <p><strong>Cliente:</strong> {clientName}</p>
+                  <p><strong>Cliente ID:</strong> {clientId}</p>
                 </div>
               </details>
 
@@ -223,7 +224,7 @@ export default function GenerateLinksPage() {
               <button
                 onClick={() => {
                   setResult(null);
-                  setClientName('');
+                  setClientId('');
                 }}
                 className="w-full bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-6 rounded-lg transition-colors"
               >
@@ -237,7 +238,8 @@ export default function GenerateLinksPage() {
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mt-6">
           <h3 className="text-lg font-semibold text-blue-900 mb-3">📝 Instrucciones</h3>
           <ol className="text-sm text-blue-800 space-y-2 list-decimal list-inside">
-            <li>Ingresá el nombre del cliente (ej: "Dr. Juan Pérez")</li>
+            <li>Andá a "Gestión de Clientes" y copiá el UUID del cliente</li>
+            <li>Pegá el UUID en el campo "UUID del Cliente"</li>
             <li>Ingresá tu clave de administrador (ADMIN_SECRET_KEY)</li>
             <li>Hacé clic en "Generar Link"</li>
             <li>Copiá el link o el mensaje completo</li>

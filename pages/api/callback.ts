@@ -88,7 +88,7 @@ export default async function handler(
 
     // 4. Verificar que la sesión existe y está pendiente
     const sessionCheck = await sql`
-      SELECT user_id, client_name, status, created_at
+      SELECT user_id, status, created_at
       FROM oauth_sessions
       WHERE session_id = ${sessionId}
     `;
@@ -103,6 +103,7 @@ export default async function handler(
     }
 
     const session = sessionCheck[0];
+    const clientId = session.user_id; // Este es el UUID del cliente
 
     // Verificar que la sesión no haya expirado (24 horas)
     const sessionAge = Date.now() - new Date(session.created_at).getTime();
@@ -145,106 +146,55 @@ export default async function handler(
       }
     );
 
-    const { access_token, user_id, refresh_token } = response.data;
+    const { access_token, user_id: mp_user_id, refresh_token } = response.data;
 
     // Validar que recibimos los datos necesarios
-    if (!access_token || !user_id) {
+    if (!access_token || !mp_user_id) {
       throw new Error('Invalid response from Mercado Pago API');
     }
 
-    // 6. Generar slug único basado en client_name
-    // Convertir nombre a slug: "Dr. Juan Pérez" -> "dr-juan-perez"
-    const generateSlug = (name: string): string => {
-      return name
-        .toLowerCase()
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '') // Remover acentos
-        .replace(/[^a-z0-9\s-]/g, '') // Remover caracteres especiales
-        .trim()
-        .replace(/\s+/g, '-') // Espacios a guiones
-        .replace(/-+/g, '-'); // Múltiples guiones a uno solo
-    };
-
-    const baseSlug = generateSlug(session.client_name || 'medico');
-    let slug = baseSlug;
-    let counter = 1;
-
-    // Verificar si el slug ya existe y generar uno único
-    while (true) {
-      const existingSlug = await sql`
-        SELECT slug FROM clients WHERE slug = ${slug}
-      `;
-      if (existingSlug.length === 0) break;
-      slug = `${baseSlug}-${counter}`;
-      counter++;
-    }
-
-    // 7. Guardar o actualizar los datos del cliente
-    // Si el mp_user_id ya existe, actualizar el token
+    // 6. Verificar que el cliente existe en la BD
     const existingClient = await sql`
-      SELECT slug FROM clients WHERE mp_user_id = ${user_id}
+      SELECT id, slug, nombre_completo FROM clients WHERE id = ${clientId}
     `;
 
-    // Encriptar tokens antes de guardarlos
+    if (existingClient.length === 0) {
+      return res.status(404).send(`
+        <div style="font-family: sans-serif; text-align: center; padding: 50px;">
+          <h1 style="color: #e74c3c;">Cliente No Encontrado ❌</h1>
+          <p>El cliente con ID ${escapeHtml(clientId)} no existe en la base de datos.</p>
+          <p style="color: #7f8c8d; font-size: 14px;">
+            Asegurate de crear el cliente primero en el panel de administración.
+          </p>
+        </div>
+      `);
+    }
+
+    const client = existingClient[0];
+    const slug = client.slug;
+
+    // 7. Encriptar tokens antes de guardarlos
     const encryptedAccessToken = encrypt(access_token);
     const encryptedRefreshToken = refresh_token ? encrypt(refresh_token) : '';
 
-    if (existingClient.length > 0) {
-      // Actualizar cliente existente
-      await sql`
-        UPDATE clients
-        SET mp_access_token = ${encryptedAccessToken},
-            mp_refresh_token = ${encryptedRefreshToken}
-        WHERE mp_user_id = ${user_id}
-      `;
-   
-      slug = existingClient[0].slug; // Usar el slug existente
-    } else {
-      // Crear nuevo cliente con valores por defecto
-      await sql`
-        INSERT INTO clients (
-          slug,
-          mp_access_token,
-          mp_user_id,
-          mp_refresh_token,
-          nombre_completo,
-          foto_url,
-          cal_api_key,
-          cal_username,
-          botones_config,
-          tema_config,
-          especialidad,
-          matricula,
-          descripcion
-        )
-        VALUES (
-          ${slug},
-          ${encryptedAccessToken},
-          ${user_id},
-          ${encryptedRefreshToken},
-          ${session.client_name || 'Médico'},
-          '',
-          '',
-          '',
-          '[]'::jsonb,
-          '{}'::jsonb,
-          '',
-          '',
-          ''
-        )
-      `;
-  
-    }
+    // 8. Actualizar el cliente existente con los tokens de Mercado Pago
+    await sql`
+      UPDATE clients
+      SET mp_access_token = ${encryptedAccessToken},
+          mp_user_id = ${mp_user_id},
+          mp_refresh_token = ${encryptedRefreshToken}
+      WHERE id = ${clientId}
+    `;
 
-    // 10. Marcar la sesión como completada
+    // 9. Marcar la sesión como completada
     await sql`
       UPDATE oauth_sessions
       SET status = 'completed', completed_at = NOW()
       WHERE session_id = ${sessionId}
     `;
 
-    // 11. Respuesta de éxito
-    const safeClientName = escapeHtml(session.client_name || 'Cliente');
+    // 10. Respuesta de éxito
+    const safeClientName = escapeHtml(client.nombre_completo || 'Cliente');
     const safeSlug = escapeHtml(slug);
     const biolinkUrl = `https://e-bio-link.vercel.app/biolink/${safeSlug}`;
 
