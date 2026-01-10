@@ -53,145 +53,145 @@ export default async function handler(req: NextRequest) {
 
     const perfil = result[0];
 
+    // Ajuste dinámico del tamaño de fuente según longitud del nombre
+    const nameFontSize =
+      perfil.nombre_completo.length < 20 ? 90 :
+      perfil.nombre_completo.length < 30 ? 72 : 56;
+
     return new ImageResponse(
       (
         <div
           style={{
-            background: 'linear-gradient(to bottom right, #f8fafc, #e2e8f0)',
+            background: 'white',
             width: '100%',
             height: '100%',
             display: 'flex',
             flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontFamily: 'sans-serif',
+            fontFamily: 'system-ui, -apple-system, sans-serif',
+            position: 'relative',
           }}
         >
-          {/* Lado Izquierdo: Texto */}
+          {/* Barra de acento lateral */}
+          <div
+            style={{
+              width: '60px',
+              height: '100%',
+              background: 'linear-gradient(180deg, #1E40AF 0%, #2563EB 100%)',
+            }}
+          />
+
+          {/* Contenido principal */}
           <div
             style={{
               display: 'flex',
+              flex: 1,
               flexDirection: 'column',
-              width: '60%',
-              paddingLeft: 80,
               justifyContent: 'center',
+              paddingLeft: 100,
+              paddingRight: 100,
             }}
           >
-            {/* Badge */}
-            <div
-              style={{
-                display: 'flex',
-                background: '#2563EB',
-                color: 'white',
-                padding: '8px 24px',
-                borderRadius: 50,
-                fontSize: 24,
-                fontWeight: 'bold',
-                width: 'fit-content',
-                marginBottom: 20,
-              }}
-            >
-              📅 Reserva tu Turno
-            </div>
-
-            <div
-              style={{
-                fontSize: 64,
-                fontWeight: 'bold',
-                color: '#0F172A',
-                lineHeight: 1.1,
-                marginBottom: 10,
-              }}
-            >
-              {perfil.nombre_completo}
-            </div>
-
-            <div style={{ fontSize: 36, color: '#475569', marginTop: 10 }}>
-              {perfil.especialidad || 'Profesional de la Salud'}
-            </div>
-
-            {perfil.matricula && (
-              <div style={{ fontSize: 28, color: '#64748B', marginTop: 10 }}>
-                Mat. {perfil.matricula}
-              </div>
-            )}
-
-            {/* Marca de agua */}
+            {/* Badge superior */}
             <div
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                marginTop: 60,
-                opacity: 0.6,
+                marginBottom: 32,
+              }}
+            >
+              <span
+                style={{
+                  color: '#2563EB',
+                  fontWeight: 'bold',
+                  fontSize: 24,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.15em',
+                  borderBottom: '2px solid #2563EB',
+                  paddingBottom: 8,
+                }}
+              >
+                Perfil Profesional
+              </span>
+            </div>
+
+            {/* Nombre gigante */}
+            <h2
+              style={{
+                fontSize: nameFontSize,
+                fontWeight: 900,
+                color: '#0F172A',
+                lineHeight: 0.95,
+                letterSpacing: '-0.02em',
+                marginBottom: 24,
+                textTransform: 'uppercase',
+              }}
+            >
+              {perfil.nombre_completo}
+            </h2>
+
+            {/* Especialidad destacada */}
+            <p
+              style={{
+                fontSize: 42,
+                color: '#64748B',
+                fontWeight: 500,
+                marginTop: 0,
+                marginBottom: 0,
+              }}
+            >
+              {perfil.especialidad || 'Profesional de la Salud'}
+            </p>
+
+            {/* Matrícula (opcional) */}
+            {perfil.matricula && (
+              <p
+                style={{
+                  fontSize: 28,
+                  color: '#94A3B8',
+                  marginTop: 12,
+                  marginBottom: 0,
+                }}
+              >
+                Mat. {perfil.matricula}
+              </p>
+            )}
+
+            {/* Call to Action */}
+            <div
+              style={{
+                marginTop: 80,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
               }}
             >
               <div
                 style={{
-                  width: 10,
-                  height: 10,
-                  background: '#2563EB',
-                  borderRadius: '50%',
-                  marginRight: 10,
-                }}
-              ></div>
-              <div style={{ fontSize: 24, color: '#64748B' }}>e-bio-link</div>
-            </div>
-          </div>
-
-          {/* Lado Derecho: Foto */}
-          <div
-            style={{
-              display: 'flex',
-              width: '40%',
-              height: '100%',
-              alignItems: 'center',
-              justifyContent: 'center',
-              background: '#eff6ff',
-            }}
-          >
-            {/* Círculo decorativo */}
-            <div
-              style={{
-                position: 'absolute',
-                width: 400,
-                height: 400,
-                background: '#dbeafe',
-                borderRadius: '50%',
-              }}
-            ></div>
-
-            {/* Foto o placeholder */}
-            {perfil.foto_url && perfil.foto_url !== '' ? (
-              <img
-                src={perfil.foto_url}
-                alt={perfil.nombre_completo}
-                width="320"
-                height="320"
-                style={{
-                  borderRadius: '50%',
-                  objectFit: 'cover',
-                  border: '8px solid white',
-                  boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
-                }}
-              />
-            ) : (
-              <div
-                style={{
-                  display: 'flex',
-                  width: 320,
-                  height: 320,
-                  borderRadius: '50%',
-                  background: 'white',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: 120,
-                  border: '8px solid white',
-                  boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
+                  background: '#F1F5F9',
+                  color: '#475569',
+                  paddingLeft: 24,
+                  paddingRight: 24,
+                  paddingTop: 12,
+                  paddingBottom: 12,
+                  borderRadius: 8,
+                  fontSize: 24,
+                  fontWeight: 600,
+                  border: '1px solid #E2E8F0',
                 }}
               >
-                👨‍⚕️
+                📅 Turnos Disponibles
               </div>
-            )}
+
+              <div
+                style={{
+                  color: '#CBD5E1',
+                  fontSize: 24,
+                  fontWeight: 700,
+                }}
+              >
+                e-bio-link
+              </div>
+            </div>
           </div>
         </div>
       ),
