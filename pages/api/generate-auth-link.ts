@@ -8,7 +8,6 @@ import { generateMercadoPagoAuthLink } from '@/lib/mercadopago-auth';
 
 interface GenerateAuthLinkRequest {
   userId: string;
-  clientName: string;
   adminKey: string; // OBLIGATORIO
 }
 

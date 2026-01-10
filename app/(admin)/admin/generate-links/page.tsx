@@ -37,7 +37,6 @@ export default function GenerateLinksPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           userId: clientId,
-          clientName: '', // Ya no se usa, se obtiene de la BD
           adminKey,
         }),
       });
