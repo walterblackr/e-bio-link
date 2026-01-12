@@ -103,7 +103,7 @@ export default async function handler(
 
       // 1. Buscar bookings pendientes (sin JOIN, más simple)
       const pendingBookings = await sql`
-        SELECT id, client_id, cal_booking_id, mp_preference_id
+        SELECT id, client_id, cal_booking_id, mp_preference_id, mp_payment_id, estado
         FROM bookings
         WHERE estado IN ('pending', 'paid')
         ORDER BY created_at DESC
@@ -173,11 +173,23 @@ export default async function handler(
       }
 
       if (!payment || !bookingMatch || !clientData) {
-       
+
         return res.status(200).json({ message: 'Payment not matched to any booking' });
       }
 
-     
+      // 🛡️ PROTECCIÓN CONTRA WEBHOOKS DUPLICADOS
+      // Si el payment_id ya está registrado, no procesar de nuevo
+      if (bookingMatch.mp_payment_id && bookingMatch.mp_payment_id === paymentId) {
+        console.log(`[MP Webhook] Payment ${paymentId} already processed for booking ${bookingMatch.id} - Estado actual: ${bookingMatch.estado}`);
+        return res.status(200).json({
+          success: true,
+          message: 'Payment already processed (idempotent)',
+          booking_id: bookingMatch.id,
+          estado: bookingMatch.estado
+        });
+      }
+
+
 
       // Actualizar el booking con el estado del pago
       if (payment.status === 'approved') {
