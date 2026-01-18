@@ -93,13 +93,111 @@ export default async function handler(
       const paymentId = resourceId;
 
       if (!paymentId) {
-       
         return res.status(400).json({ error: 'No payment ID received' });
       }
 
-    
-
       const sql = neon(process.env.DATABASE_URL!);
+
+      // 🆕 PRIMERO: Verificar si es un pago de ONBOARDING (suscripción)
+      // Buscar cliente pendiente con el access token de la plataforma
+      const accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN;
+
+      if (accessToken) {
+        try {
+          // Obtener datos del pago con el access token de la plataforma
+          const paymentResponse = await axios.get(
+            `https://api.mercadopago.com/v1/payments/${paymentId}`,
+            {
+              headers: {
+                Authorization: `Bearer ${accessToken}`,
+              },
+            }
+          );
+
+          const payment = paymentResponse.data;
+          const externalReference = payment.external_reference;
+
+          // Si tiene external_reference, verificar si es un cliente en onboarding
+          if (externalReference) {
+            const clientCheck = await sql`
+              SELECT id, email, slug, status, onboarding_mp_payment_id
+              FROM clients
+              WHERE id = ${externalReference}
+                AND status = 'pending_payment'
+              LIMIT 1
+            `;
+
+            if (clientCheck.length > 0) {
+              // 🎯 ES UN PAGO DE ONBOARDING
+              const client = clientCheck[0];
+
+              // Protección contra duplicados
+              if (client.onboarding_mp_payment_id && client.onboarding_mp_payment_id === paymentId) {
+                console.log(`[MP Webhook Onboarding] Payment ${paymentId} already processed for client ${client.id}`);
+                return res.status(200).json({
+                  success: true,
+                  message: 'Onboarding payment already processed (idempotent)',
+                });
+              }
+
+              // Procesar según el estado del pago
+              if (payment.status === 'approved') {
+                // PAGO APROBADO - Activar cuenta
+                await sql`
+                  UPDATE clients
+                  SET
+                    status = 'active',
+                    paid_at = NOW(),
+                    onboarding_mp_payment_id = ${paymentId}
+                  WHERE id = ${client.id}
+                `;
+
+                console.log(`[MP Webhook Onboarding] Client ${client.slug} activated successfully`);
+
+                return res.status(200).json({
+                  success: true,
+                  message: 'Onboarding payment approved - Client activated',
+                  client_id: client.id,
+                  slug: client.slug,
+                });
+              } else if (payment.status === 'rejected' || payment.status === 'cancelled') {
+                // PAGO RECHAZADO - Marcar como rechazado
+                await sql`
+                  UPDATE clients
+                  SET
+                    status = 'payment_failed',
+                    onboarding_mp_payment_id = ${paymentId}
+                  WHERE id = ${client.id}
+                `;
+
+                console.log(`[MP Webhook Onboarding] Payment rejected for client ${client.slug}`);
+
+                return res.status(200).json({
+                  success: true,
+                  message: 'Onboarding payment rejected',
+                });
+              } else {
+                // PAGO PENDIENTE - Actualizar payment_id pero mantener pending_payment
+                await sql`
+                  UPDATE clients
+                  SET onboarding_mp_payment_id = ${paymentId}
+                  WHERE id = ${client.id}
+                `;
+
+                return res.status(200).json({
+                  success: true,
+                  message: 'Onboarding payment pending',
+                });
+              }
+            }
+          }
+        } catch (error: any) {
+          // Si falla la verificación con el token de la plataforma, continuar con lógica de bookings
+          console.log('[MP Webhook] No es pago de onboarding, procesando como booking');
+        }
+      }
+
+      // SEGUNDO: Lógica existente de BOOKINGS (turnos)
 
       // 1. Buscar bookings pendientes (sin JOIN, más simple)
       const pendingBookings = await sql`

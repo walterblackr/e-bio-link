@@ -122,14 +122,14 @@ export default function PropuestaComercial() {
                 <h3 className={styles.planTitle}>Plan Mensual</h3>
                 <p className={styles.planDescription}>Menor inversión inicial.</p>
                 <div className={styles.planPriceContainer}>
-                  <span className={styles.planPriceNormal}>$15.000</span>
+                  <span className={styles.planPriceNormal}>$18.000</span>
                   <span className={styles.planPriceLabel}>/ mes</span>
                 </div>
 
                 <div className={styles.planDetailsNormal}>
                   <div className={styles.planDetailRow}>
                     <span className={styles.planDetailLabel}>Costo mensual:</span>
-                    <span className={styles.planDetailValueNormal}>$15.000</span>
+                    <span className={styles.planDetailValueNormal}>$18.000</span>
                   </div>
                   <div className={styles.planDetailRow}>
                     <span className={styles.planDetailLabel}>Equivalencia:</span>
@@ -138,9 +138,7 @@ export default function PropuestaComercial() {
                 </div>
 
                 <a
-                  href="https://wa.me/5492994091255?text=Hola,%20vi%20el%20Plan%20Mensual%20de%20$15.000%20en%20la%20web%20y%20quiero%20probarlo."
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  href="/register?plan=monthly"
                   className={`${styles.planButton} ${styles.planButtonSecondary}`}
                 >
                   Elegir Mensual
@@ -169,9 +167,7 @@ export default function PropuestaComercial() {
                 </div>
 
                 <a
-                  href="https://wa.me/5492994091255?text=Hola!%20Me%20interesa%20el%20Plan%20Anual%20(%24120.000)%20de%20Gestión%20de%20Turnos.%20Me%20gustaría%20recibir%20más%20información."
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  href="/register?plan=annual"
                   className={`${styles.planButton} ${styles.planButtonPrimary}`}
                 >
                   Elegir Anual
@@ -199,9 +195,7 @@ export default function PropuestaComercial() {
                 </div>
 
                 <a
-                  href="https://wa.me/5492994091255?text=Hola!%20Me%20interesa%20el%20Plan%20Semestral%20(%2480.000)%20de%20Gestión%20de%20Turnos.%20Me%20gustaría%20recibir%20más%20información."
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  href="/register?plan=semestral"
                   className={`${styles.planButton} ${styles.planButtonSecondary}`}
                 >
                   Elegir Semestral
