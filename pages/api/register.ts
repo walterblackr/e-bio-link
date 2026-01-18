@@ -82,7 +82,9 @@ export default async function handler(
         slug,
         status,
         subscription_type,
-        subscription_price
+        subscription_price,
+        mp_access_token,
+        mp_user_id
       )
       VALUES (
         ${email},
@@ -90,7 +92,9 @@ export default async function handler(
         ${slug},
         'pending_payment',
         ${plan},
-        ${planDetails.price}
+        ${planDetails.price},
+        '',
+        ''
       )
       RETURNING id, email, slug
     `;
