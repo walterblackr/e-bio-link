@@ -138,7 +138,9 @@ export default function PropuestaComercial() {
                 </div>
 
                 <a
-                  href="/register?plan=monthly"
+                  href="https://wa.me/5491130825626?text=Hola!%20Me%20interesa%20el%20Plan%20Mensual%20de%20$18.000"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className={`${styles.planButton} ${styles.planButtonSecondary}`}
                 >
                   Elegir Mensual
@@ -167,7 +169,9 @@ export default function PropuestaComercial() {
                 </div>
 
                 <a
-                  href="/register?plan=annual"
+                  href="https://wa.me/5491130825626?text=Hola!%20Me%20interesa%20el%20Plan%20Anual%20de%20$120.000"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className={`${styles.planButton} ${styles.planButtonPrimary}`}
                 >
                   Elegir Anual
@@ -195,7 +199,9 @@ export default function PropuestaComercial() {
                 </div>
 
                 <a
-                  href="/register?plan=semestral"
+                  href="https://wa.me/5491130825626?text=Hola!%20Me%20interesa%20el%20Plan%20Semestral%20de%20$80.000"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className={`${styles.planButton} ${styles.planButtonSecondary}`}
                 >
                   Elegir Semestral
