@@ -42,7 +42,7 @@ export default function PhotoUploader({ currentPhotoUrl, onPhotoUploaded }: Phot
     formData.append('file', file);
 
     try {
-      const response = await fetch('/api/upload-profile-photo', {
+      const response = await fetch('/api/upload-client-photo', {
         method: 'POST',
         body: formData,
       });
@@ -65,40 +65,40 @@ export default function PhotoUploader({ currentPhotoUrl, onPhotoUploaded }: Phot
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col items-center">
-        {/* Preview de la foto */}
-        <div className="relative w-40 h-40 rounded-full overflow-hidden bg-gray-200 mb-4">
-          {preview ? (
-            <img
-              src={preview}
-              alt="Foto de perfil"
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-gray-400 text-6xl">
-              👤
-            </div>
-          )}
-          {uploading && (
-            <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-              <div className="text-white text-sm">Subiendo...</div>
-            </div>
-          )}
-        </div>
+    <div className="flex items-center gap-3">
+      {/* Preview de la foto */}
+      <div className="relative w-16 h-16 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
+        {preview ? (
+          <img
+            src={preview}
+            alt="Foto de perfil"
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-gray-400 text-3xl">
+            👤
+          </div>
+        )}
+        {uploading && (
+          <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+            <div className="text-white text-[10px]">...</div>
+          </div>
+        )}
+      </div>
 
-        {/* Botón de upload */}
+      {/* Botón de upload y texto */}
+      <div className="flex-1">
         <label
           htmlFor="photo-upload"
           className={`
-            px-6 py-2 rounded-lg font-medium cursor-pointer transition-colors
+            inline-block px-3 py-1.5 text-xs rounded-lg font-medium cursor-pointer transition-colors
             ${uploading
               ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
               : 'bg-blue-600 text-white hover:bg-blue-700'
             }
           `}
         >
-          {uploading ? 'Subiendo...' : preview ? 'Cambiar foto' : 'Subir foto'}
+          {uploading ? 'Subiendo...' : preview ? 'Cambiar' : 'Subir foto'}
         </label>
         <input
           id="photo-upload"
@@ -110,15 +110,13 @@ export default function PhotoUploader({ currentPhotoUrl, onPhotoUploaded }: Phot
         />
 
         {/* Recomendaciones */}
-        <p className="text-xs text-gray-500 mt-2 text-center">
-          Recomendado: 400x400px mínimo, máx 5MB
-          <br />
-          Formatos: JPG, PNG, WebP
+        <p className="text-[10px] text-gray-400 mt-1">
+          JPG, PNG o WebP - Máx 5MB
         </p>
 
         {/* Error */}
         {error && (
-          <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+          <div className="mt-1.5 p-2 bg-red-50 border border-red-200 rounded text-red-700 text-[10px]">
             {error}
           </div>
         )}
