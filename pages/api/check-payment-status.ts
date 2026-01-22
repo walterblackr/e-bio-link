@@ -3,6 +3,7 @@
 
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { neon } from '@neondatabase/serverless';
+import { serialize } from 'cookie';
 
 export default async function handler(
   req: NextApiRequest,
@@ -42,6 +43,25 @@ export default async function handler(
     }
 
     const client = result[0];
+
+    // Si el cliente está activo, crear sesión automáticamente
+    if (client.status === 'active') {
+      const sessionData = {
+        id: client.id,
+        email: client.email,
+        slug: client.slug,
+      };
+
+      const cookie = serialize('client_session', JSON.stringify(sessionData), {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 24 * 7, // 7 días
+        path: '/',
+      });
+
+      res.setHeader('Set-Cookie', cookie);
+    }
 
     return res.status(200).json({
       status: client.status,
