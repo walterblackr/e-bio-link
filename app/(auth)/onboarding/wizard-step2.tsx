@@ -186,7 +186,7 @@ export default function WizardStep2({ onNext, onBack, clientData }: WizardStep2P
                       href="https://cal.com/signup"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="ml-8 inline-flex items-center gap-2 px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                      className="ml-8 inline-flex items-center gap-2 px-4 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium"
                     >
                       <ExternalLink className="w-4 h-4" />
                       Crear cuenta en Cal.com
@@ -235,7 +235,7 @@ export default function WizardStep2({ onNext, onBack, clientData }: WizardStep2P
                       href="https://app.cal.com/settings/security"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="ml-8 inline-flex items-center gap-2 px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                      className="ml-8 inline-flex items-center gap-2 px-4 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium"
                     >
                       <Key className="w-4 h-4" />
                       Ir a Settings → Security
