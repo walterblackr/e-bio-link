@@ -160,3 +160,62 @@ export async function requireActiveClient(): Promise<Client> {
 
   return client;
 }
+
+/**
+ * Obtiene la sesión del cliente desde Pages Router (NextApiRequest)
+ */
+export async function getClientSessionFromRequest(req: any): Promise<Client | null> {
+  const sessionCookie = req.cookies.client_session;
+
+  if (!sessionCookie) {
+    return null;
+  }
+
+  try {
+    const session = JSON.parse(sessionCookie);
+
+    // Verificar que el cliente sigue existiendo en la BD
+    const sql = neon(process.env.DATABASE_URL!);
+    const result = await sql`
+      SELECT id, email, slug, nombre_completo, status, subscription_type
+      FROM clients
+      WHERE id = ${session.id}
+      LIMIT 1
+    `;
+
+    if (result.length === 0) {
+      return null;
+    }
+
+    return result[0] as Client;
+  } catch (error) {
+    console.error('Error al parsear sesión de cliente:', error);
+    return null;
+  }
+}
+
+/**
+ * Verifica si hay un cliente logueado desde Pages Router
+ */
+export async function requireClientFromRequest(req: any): Promise<Client> {
+  const client = await getClientSessionFromRequest(req);
+
+  if (!client) {
+    throw new Error('No autorizado');
+  }
+
+  return client;
+}
+
+/**
+ * Verifica si hay un cliente logueado con status 'active' desde Pages Router
+ */
+export async function requireActiveClientFromRequest(req: any): Promise<Client> {
+  const client = await requireClientFromRequest(req);
+
+  if (client.status !== 'active') {
+    throw new Error('Cuenta no activa - pago pendiente');
+  }
+
+  return client;
+}

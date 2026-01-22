@@ -3,7 +3,7 @@
 
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { neon } from '@neondatabase/serverless';
-import { requireActiveClient } from '../../../lib/auth/client-auth';
+import { requireActiveClientFromRequest } from '../../../lib/auth/client-auth';
 
 export default async function handler(
   req: NextApiRequest,
@@ -15,7 +15,7 @@ export default async function handler(
 
   try {
     // Verificar sesión del cliente
-    const client = await requireActiveClient();
+    const client = await requireActiveClientFromRequest(req);
 
     const {
       nombre_completo,
