@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import WizardStep1 from "./wizard-step1";
+import WizardStep2 from "./wizard-step2";
 
 interface OnboardingWizardProps {
   clientData: any;
@@ -90,30 +91,11 @@ export default function OnboardingWizard({ clientData }: OnboardingWizardProps) 
       )}
 
       {currentStep === 2 && (
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-          <div className="bg-white rounded-xl shadow-lg p-8 max-w-md">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">
-              Paso 2: Configurá tu Agenda
-            </h2>
-            <p className="text-gray-600 mb-6">
-              Próximamente podrás configurar tu calendario Cal.com aquí
-            </p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setCurrentStep(1)}
-                className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-3 px-6 rounded-lg transition"
-              >
-                ← Volver
-              </button>
-              <button
-                onClick={() => setCurrentStep(3)}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition"
-              >
-                Siguiente →
-              </button>
-            </div>
-          </div>
-        </div>
+        <WizardStep2
+          onNext={() => setCurrentStep(3)}
+          onBack={() => setCurrentStep(1)}
+          clientData={clientData}
+        />
       )}
 
       {currentStep === 3 && (
