@@ -13,6 +13,7 @@ export default function OnboardingWizard({ clientData }: OnboardingWizardProps) 
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
   const [step1Data, setStep1Data] = useState<any>(null);
+  const [currentClientData, setCurrentClientData] = useState(clientData);
 
   const handleStep1Next = async (data: any) => {
     try {
@@ -28,6 +29,8 @@ export default function OnboardingWizard({ clientData }: OnboardingWizardProps) 
       }
 
       setStep1Data(data);
+      // Actualizar datos del cliente con lo que acabamos de guardar
+      setCurrentClientData({ ...currentClientData, ...data });
       setCurrentStep(2);
     } catch (error: any) {
       alert(error.message || "Error al guardar los datos");
@@ -78,14 +81,18 @@ export default function OnboardingWizard({ clientData }: OnboardingWizardProps) 
         <WizardStep1
           onNext={handleStep1Next}
           initialData={{
-            nombre_completo: clientData.nombre_completo || "",
-            especialidad: clientData.especialidad || "",
-            matricula: clientData.matricula || "",
-            descripcion: clientData.descripcion || "",
-            foto_url: clientData.foto_url || "",
-            monto_consulta: clientData.monto_consulta || 10000,
-            tema_config: clientData.tema_config || undefined,
-            botones_config: clientData.botones_config || [],
+            nombre_completo: currentClientData.nombre_completo || "",
+            especialidad: currentClientData.especialidad || "",
+            matricula: currentClientData.matricula || "",
+            descripcion: currentClientData.descripcion || "",
+            foto_url: currentClientData.foto_url || "",
+            monto_consulta: currentClientData.monto_consulta || 10000,
+            tema_config: typeof currentClientData.tema_config === 'string'
+              ? JSON.parse(currentClientData.tema_config)
+              : currentClientData.tema_config || undefined,
+            botones_config: typeof currentClientData.botones_config === 'string'
+              ? JSON.parse(currentClientData.botones_config)
+              : currentClientData.botones_config || [],
           }}
         />
       )}
@@ -94,7 +101,7 @@ export default function OnboardingWizard({ clientData }: OnboardingWizardProps) 
         <WizardStep2
           onNext={() => setCurrentStep(3)}
           onBack={() => setCurrentStep(1)}
-          clientData={clientData}
+          clientData={currentClientData}
         />
       )}
 
@@ -115,7 +122,7 @@ export default function OnboardingWizard({ clientData }: OnboardingWizardProps) 
                 ← Volver
               </button>
               <button
-                onClick={() => router.push(`/biolink/${clientData.slug}`)}
+                onClick={() => router.push(`/biolink/${currentClientData.slug}`)}
                 className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-lg transition"
               >
                 Finalizar ✓

@@ -45,6 +45,23 @@ interface WizardStep1Props {
 }
 
 export default function WizardStep1({ onNext, initialData }: WizardStep1Props) {
+  // Detectar paleta inicial basada en los colores guardados
+  const detectPaletteFromColors = (colors: any) => {
+    if (!colors) return COLOR_PALETTES[0].id;
+
+    const matchingPalette = COLOR_PALETTES.find(
+      (p) =>
+        p.colors.background === colors.background &&
+        p.colors.text === colors.text &&
+        p.colors.buttonBorder === colors.buttonBorder
+    );
+
+    return matchingPalette?.id || COLOR_PALETTES[0].id;
+  };
+
+  const initialTheme = initialData?.tema_config || COLOR_PALETTES[0].colors;
+  const initialPalette = detectPaletteFromColors(initialTheme);
+
   const [formData, setFormData] = useState({
     nombre_completo: initialData?.nombre_completo || "",
     especialidad: initialData?.especialidad || "",
@@ -52,11 +69,11 @@ export default function WizardStep1({ onNext, initialData }: WizardStep1Props) {
     descripcion: initialData?.descripcion || "",
     foto_url: initialData?.foto_url || "",
     monto_consulta: initialData?.monto_consulta || 10000,
-    tema_config: initialData?.tema_config || COLOR_PALETTES[0].colors,
+    tema_config: initialTheme,
     botones_config: initialData?.botones_config || [],
   });
 
-  const [selectedPalette, setSelectedPalette] = useState(COLOR_PALETTES[0].id);
+  const [selectedPalette, setSelectedPalette] = useState(initialPalette);
   const [showCustomColors, setShowCustomColors] = useState(false);
   const [newLink, setNewLink] = useState({ texto: "", url: "" });
   const [showAddLink, setShowAddLink] = useState(false);
@@ -346,7 +363,7 @@ export default function WizardStep1({ onNext, initialData }: WizardStep1Props) {
                             setShowAddLink(false);
                             setNewLink({ texto: "", url: "" });
                           }}
-                          className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-white text-xs font-medium"
+                          className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700 text-xs font-medium"
                         >
                           Cancelar
                         </button>
