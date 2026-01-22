@@ -142,7 +142,7 @@ export default async function handler(
 
               
               // Procesar según el estado del pago
-              if (payment.status === 'approved' || true) {
+              if (payment.status === 'approved' ) {
                 // PAGO APROBADO - Activar cuenta
                 await sql`
                   UPDATE clients
