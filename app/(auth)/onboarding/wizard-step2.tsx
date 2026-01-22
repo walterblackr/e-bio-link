@@ -216,8 +216,8 @@ export default function WizardStep2({ onNext, onBack, clientData }: WizardStep2P
                         <p className="font-medium">📋 Pasos para obtener tu API Key:</p>
                         <ol className="list-decimal list-inside space-y-1 ml-2">
                           <li>Iniciá sesión en <a href="https://app.cal.com" target="_blank" rel="noopener noreferrer" className="text-purple-600 hover:underline">app.cal.com</a></li>
-                          <li>Andá a <strong>Settings → Security</strong></li>
-                          <li>En la sección <strong>API Keys</strong>, hacé clic en <strong>+ New API Key</strong></li>
+                          <li>Andá a <strong>Settings → Developer → API Keys</strong></li>
+                          <li>Hacé clic en <strong>+ New API Key</strong></li>
                           <li>Dale un nombre (ej: "Mi Biolink")</li>
                           <li>Copiá la API Key (empieza con <code className="bg-gray-100 px-1 rounded">cal_live_</code>)</li>
                           <li>Pegala en el campo de abajo</li>
@@ -232,13 +232,13 @@ export default function WizardStep2({ onNext, onBack, clientData }: WizardStep2P
                       Seguí los pasos para generar tu API Key en Cal.com.
                     </p>
                     <a
-                      href="https://app.cal.com/settings/security"
+                      href="https://app.cal.com/settings/developer/api-keys"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="ml-8 inline-flex items-center gap-2 px-4 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium"
                     >
                       <Key className="w-4 h-4" />
-                      Ir a Settings → Security
+                      Ir a API Keys
                     </a>
                   </div>
 
