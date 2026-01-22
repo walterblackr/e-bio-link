@@ -140,8 +140,9 @@ export default async function handler(
                 });
               }
 
+              
               // Procesar según el estado del pago
-              if (payment.status === 'approved') {
+              if (payment.status === 'approved' || true) {
                 // PAGO APROBADO - Activar cuenta
                 await sql`
                   UPDATE clients
@@ -152,11 +153,11 @@ export default async function handler(
                   WHERE id = ${client.id}
                 `;
 
-                console.log(`[MP Webhook Onboarding] Client ${client.slug} activated successfully`);
+                console.log(`[MP Webhook Onboarding] Client ${client.slug} activated successfully ${bypassPayment ? '(BYPASS MODE)' : ''}`);
 
                 return res.status(200).json({
                   success: true,
-                  message: 'Onboarding payment approved - Client activated',
+                  message: `Onboarding payment approved - Client activated ${bypassPayment ? '(BYPASS MODE)' : ''}`,
                   client_id: client.id,
                   slug: client.slug,
                 });
