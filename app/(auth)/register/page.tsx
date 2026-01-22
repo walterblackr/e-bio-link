@@ -5,9 +5,9 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { CheckCircle, XCircle, Loader2 } from 'lucide-react';
 
 const PLAN_INFO = {
-  monthly: { name: 'Mensual', price: 18000, period: 'mes' },
-  semestral: { name: 'Semestral', price: 80000, period: '6 meses' },
-  annual: { name: 'Anual', price: 120000, period: '12 meses' },
+  monthly: { name: 'Mensual', price: 50, period: 'mes' },
+  semestral: { name: 'Semestral', price: 50, period: '6 meses' },
+  annual: { name: 'Anual', price: 50, period: '12 meses' },
 };
 
 function RegisterForm() {
