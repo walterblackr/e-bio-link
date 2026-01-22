@@ -40,15 +40,15 @@ export function middleware(request: NextRequest) {
     }
 
     try {
-      // Parsear sesión para verificar status
+      // Parsear sesión
       const session = JSON.parse(clientSession.value);
 
-      if (session.status !== 'active') {
-        // Cliente no activo (pago pendiente), redirigir a success para polling
-        return NextResponse.redirect(new URL(`/success?client_id=${session.id}`, request.url));
+      // Verificar que tenga los campos mínimos requeridos
+      if (!session.id || !session.email) {
+        throw new Error('Invalid session');
       }
 
-      // Cliente activo, permitir acceso
+      // Cliente con sesión válida, permitir acceso
       return NextResponse.next();
     } catch (error) {
       // Error al parsear sesión, eliminar cookie y redirigir
