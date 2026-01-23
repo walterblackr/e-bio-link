@@ -257,13 +257,13 @@ export default function WizardStep2B({ onNext, onBack }: WizardStep2BProps) {
                           Ir a Cal.com Settings
                         </a>
                         <a
-                          href="https://cal.com/docs/platform/quick-start/create-event-type"
+                          href="https://cal.com/help/availabilities/edit-availability"
                           target="_blank"
                           rel="noopener noreferrer"
                           className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs text-blue-700 bg-white border border-blue-300 rounded-lg hover:bg-blue-50 transition-colors font-medium"
                         >
                           <ExternalLink className="w-3.5 h-3.5" />
-                          Ver documentación (inglés)
+                          Ver documentación
                         </a>
                       </div>
                     </div>
