@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import WizardStep1 from "./wizard-step1";
 import WizardStep2 from "./wizard-step2";
+import WizardStep2B from "./wizard-step2b";
 
 interface OnboardingWizardProps {
   clientData: any;
@@ -12,6 +13,7 @@ interface OnboardingWizardProps {
 export default function OnboardingWizard({ clientData }: OnboardingWizardProps) {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
+  const [currentSubStep, setCurrentSubStep] = useState<'2a' | '2b'>('2a'); // Sub-pasos del paso 2
   const [step1Data, setStep1Data] = useState<any>(null);
   const [currentClientData, setCurrentClientData] = useState(clientData);
 
@@ -69,7 +71,8 @@ export default function OnboardingWizard({ clientData }: OnboardingWizardProps) 
           <div className="text-center mt-2">
             <p className="text-sm text-gray-600">
               {currentStep === 1 && "Paso 1: Configurá tu Identidad"}
-              {currentStep === 2 && "Paso 2: Configurá tu Agenda"}
+              {currentStep === 2 && currentSubStep === '2a' && "Paso 2: Conectá Cal.com"}
+              {currentStep === 2 && currentSubStep === '2b' && "Paso 2: Configurá tus Eventos"}
               {currentStep === 3 && "Paso 3: Conectá Mercado Pago"}
             </p>
           </div>
@@ -97,11 +100,21 @@ export default function OnboardingWizard({ clientData }: OnboardingWizardProps) 
         />
       )}
 
-      {currentStep === 2 && (
+      {currentStep === 2 && currentSubStep === '2a' && (
         <WizardStep2
-          onNext={() => setCurrentStep(3)}
+          onNext={() => setCurrentSubStep('2b')}
           onBack={() => setCurrentStep(1)}
           clientData={currentClientData}
+        />
+      )}
+
+      {currentStep === 2 && currentSubStep === '2b' && (
+        <WizardStep2B
+          onNext={() => {
+            setCurrentStep(3);
+            setCurrentSubStep('2a'); // Reset for next time
+          }}
+          onBack={() => setCurrentSubStep('2a')}
         />
       )}
 
