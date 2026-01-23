@@ -12,6 +12,8 @@ export interface Client {
   nombre_completo: string;
   status: string;
   subscription_type: string | null;
+  cal_api_key?: string | null;
+  cal_username?: string | null;
 }
 
 /**
@@ -108,7 +110,7 @@ export async function getClientSession(): Promise<Client | null> {
     // Verificar que el cliente sigue existiendo en la BD
     const sql = neon(process.env.DATABASE_URL!);
     const result = await sql`
-      SELECT id, email, slug, nombre_completo, status, subscription_type
+      SELECT id, email, slug, nombre_completo, status, subscription_type, cal_api_key, cal_username
       FROM clients
       WHERE id = ${session.id}
       LIMIT 1
@@ -177,7 +179,7 @@ export async function getClientSessionFromRequest(req: any): Promise<Client | nu
     // Verificar que el cliente sigue existiendo en la BD
     const sql = neon(process.env.DATABASE_URL!);
     const result = await sql`
-      SELECT id, email, slug, nombre_completo, status, subscription_type
+      SELECT id, email, slug, nombre_completo, status, subscription_type, cal_api_key, cal_username
       FROM clients
       WHERE id = ${session.id}
       LIMIT 1
