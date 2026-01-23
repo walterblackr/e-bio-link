@@ -95,12 +95,14 @@ export default async function handler(
               },
               {
                 type: 'phone',
+                slug: 'telefono',
                 label: 'Número de teléfono',
                 required: true,
                 placeholder: '+54 9 11 1234-5678',
               },
               {
                 type: 'textarea',
+                slug: 'notas',
                 label: 'Notas adicionales',
                 required: false,
                 placeholder: 'Información adicional (opcional)',
