@@ -152,7 +152,7 @@ export default async function handler(
         });
 
       } catch (error: any) {
-        console.error('Error creando event type en Cal.com:', error.response?.data || error.message);
+        console.error('Error creando event type en Cal.com:', JSON.stringify(error.response?.data, null, 2) || error.message);
 
         if (axios.isAxiosError(error)) {
           return res.status(500).json({
