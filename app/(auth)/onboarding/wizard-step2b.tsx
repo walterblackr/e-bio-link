@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Edit2, Trash2, Clock, DollarSign, Calendar, CheckCircle } from "lucide-react";
+import { Plus, Edit2, Trash2, Clock, DollarSign, Calendar, CheckCircle, Info, ExternalLink } from "lucide-react";
 
 interface Evento {
   id: string;
@@ -220,6 +220,53 @@ export default function WizardStep2B({ onNext, onBack }: WizardStep2BProps) {
                         </div>
                       </div>
                     ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Información sobre configuración de horarios en Cal.com */}
+              {eventos.length > 0 && !showForm && (
+                <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="flex items-start gap-3">
+                    <Info className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                    <div className="flex-1">
+                      <h4 className="text-sm font-semibold text-blue-900 mb-2">
+                        Recordá configurar tus horarios disponibles en Cal.com
+                      </h4>
+                      <p className="text-xs text-blue-800 mb-3">
+                        Ya creaste tus eventos, pero todavía necesitás configurar tus <strong>días y horarios de atención</strong> en Cal.com para que tus pacientes puedan reservar turnos.
+                      </p>
+
+                      <div className="space-y-2 mb-3">
+                        <p className="text-xs text-blue-800 font-medium">📅 ¿Cómo configurar tus horarios?</p>
+                        <ol className="list-decimal list-inside space-y-1 text-xs text-blue-800 ml-2">
+                          <li>Andá a <strong>Settings → Availability</strong> en Cal.com</li>
+                          <li>Configurá tus horarios de trabajo (días y horas)</li>
+                          <li>Guardá los cambios</li>
+                        </ol>
+                      </div>
+
+                      <div className="flex flex-wrap gap-2">
+                        <a
+                          href="https://app.cal.com/settings/my-account/general"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs text-blue-700 bg-white border border-blue-300 rounded-lg hover:bg-blue-50 transition-colors font-medium"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" />
+                          Ir a Cal.com Settings
+                        </a>
+                        <a
+                          href="https://cal.com/docs/platform/quick-start/create-event-type"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs text-blue-700 bg-white border border-blue-300 rounded-lg hover:bg-blue-50 transition-colors font-medium"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" />
+                          Ver documentación (inglés)
+                        </a>
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
