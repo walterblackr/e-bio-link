@@ -78,9 +78,7 @@ export default async function handler(
             // Configuración del redirect después del booking
             successRedirectUrl: 'https://e-bio-link.vercel.app/pagar',
             // Requiere confirmación manual del profesional
-            confirmationPolicy: {
-              disabled: false
-            },
+            requiresConfirmation: true,
             // Campos del formulario de booking
             bookingFields: [
               {
