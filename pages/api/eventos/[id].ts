@@ -57,7 +57,7 @@ export default async function handler(
               headers: {
                 'Authorization': `Bearer ${client.cal_api_key}`,
                 'Content-Type': 'application/json',
-                'cal-api-version': '2024-08-13',
+                'cal-api-version': '2024-06-14',
               },
             }
           );
@@ -96,7 +96,7 @@ export default async function handler(
           {
             headers: {
               'Authorization': `Bearer ${client.cal_api_key}`,
-              'cal-api-version': '2024-08-13',
+              'cal-api-version': '2024-06-14',
             },
           }
         );

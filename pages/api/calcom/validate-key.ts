@@ -72,7 +72,7 @@ export default async function handler(
           headers: {
             'Authorization': `Bearer ${apiKey}`,
             'Content-Type': 'application/json',
-            'cal-api-version': '2024-08-13',
+            'cal-api-version': '2024-06-14',
           },
           timeout: 10000,
         }
