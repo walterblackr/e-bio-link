@@ -33,15 +33,8 @@ async function requireActiveClient(req: NextApiRequest): Promise<any> {
   }
 }
 
-// Tipos para la respuesta de Cal.com API
-interface CalComMeResponse {
-  user: {
-    id: number;
-    username: string;
-    email: string;
-    name: string;
-  };
-}
+// Nota: La estructura de respuesta de Cal.com API v2 puede variar
+// Por eso usamos una extracción flexible del username
 
 export default async function handler(
   req: NextApiRequest,
@@ -70,10 +63,10 @@ export default async function handler(
     }
 
     // Validar API key llamando a Cal.com API
-    let calComUser: CalComMeResponse;
+    let calComResponse: any;
 
     try {
-      const response = await axios.get<CalComMeResponse>(
+      const response = await axios.get(
         'https://api.cal.com/v2/me',
         {
           headers: {
@@ -85,7 +78,8 @@ export default async function handler(
         }
       );
 
-      calComUser = response.data;
+      calComResponse = response.data;
+      console.log('Cal.com /v2/me response:', JSON.stringify(calComResponse, null, 2));
     } catch (error: any) {
       if (axios.isAxiosError(error)) {
         if (error.response?.status === 401 || error.response?.status === 403) {
@@ -94,8 +88,16 @@ export default async function handler(
           });
         }
       }
+      console.error('Error calling Cal.com API:', error.response?.data || error.message);
       throw new Error('Error al validar API Key con Cal.com');
     }
+
+    // Extraer username de la respuesta (puede estar en diferentes lugares)
+    const username = calComResponse.data?.username ||
+                     calComResponse.user?.username ||
+                     calComResponse.username ||
+                     calComResponse.data?.email?.split('@')[0] ||
+                     'usuario-cal';
 
     // Guardar API key en la base de datos
     const sql = neon(process.env.DATABASE_URL!);
@@ -104,14 +106,14 @@ export default async function handler(
       UPDATE clients
       SET
         cal_api_key = ${apiKey},
-        cal_username = ${calComUser.user.username},
+        cal_username = ${username},
         updated_at = NOW()
       WHERE id = ${client.id}
     `;
 
     return res.status(200).json({
       success: true,
-      username: calComUser.user.username,
+      username: username,
       message: 'API Key validada y guardada correctamente',
     });
 
