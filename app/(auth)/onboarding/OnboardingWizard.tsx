@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import WizardStep1 from "./wizard-step1";
-import WizardStep2 from "./wizard-step2";
+import WizardStep2Google from "./wizard-step2-google";
+import WizardStep3Availability from "./wizard-step3-availability";
 import WizardStep2B from "./wizard-step2b";
 
 interface OnboardingWizardProps {
@@ -12,10 +13,21 @@ interface OnboardingWizardProps {
 
 export default function OnboardingWizard({ clientData }: OnboardingWizardProps) {
   const router = useRouter();
-  const [currentStep, setCurrentStep] = useState(1);
-  const [currentSubStep, setCurrentSubStep] = useState<'2a' | '2b'>('2a'); // Sub-pasos del paso 2
+  const searchParams = useSearchParams();
+
+  // Si volvemos del OAuth de Google, arrancamos en el paso 2
+  const initialStep = searchParams.get("google") === "connected" ? 2 : 1;
+  const [currentStep, setCurrentStep] = useState(initialStep);
+
+  useEffect(() => {
+    if (searchParams.get("google") === "connected") {
+      window.history.replaceState({}, "", "/onboarding");
+    }
+  }, []);
   const [step1Data, setStep1Data] = useState<any>(null);
   const [currentClientData, setCurrentClientData] = useState(clientData);
+
+  const TOTAL_STEPS = 5;
 
   const handleStep1Next = async (data: any) => {
     try {
@@ -31,7 +43,6 @@ export default function OnboardingWizard({ clientData }: OnboardingWizardProps) 
       }
 
       setStep1Data(data);
-      // Actualizar datos del cliente con lo que acabamos de guardar
       setCurrentClientData({ ...currentClientData, ...data });
       setCurrentStep(2);
     } catch (error: any) {
@@ -39,28 +50,36 @@ export default function OnboardingWizard({ clientData }: OnboardingWizardProps) 
     }
   };
 
+  const stepLabels: Record<number, string> = {
+    1: "Identidad",
+    2: "Google Calendar",
+    3: "Disponibilidad",
+    4: "Eventos",
+    5: "Método de Pago",
+  };
+
   return (
     <div>
       {/* Progress Indicator */}
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-center gap-4">
-            {[1, 2, 3].map((step) => (
+          <div className="flex items-center justify-center gap-2">
+            {Array.from({ length: TOTAL_STEPS }, (_, i) => i + 1).map((step) => (
               <div key={step} className="flex items-center">
                 <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold transition-all ${
+                  className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-semibold text-sm transition-all ${
                     step === currentStep
                       ? "bg-blue-600 text-white"
                       : step < currentStep
                       ? "bg-green-500 text-white"
-                      : "bg-gray-200 text-gray-500"
+                      : "bg-gray-300 text-black"
                   }`}
                 >
-                  {step < currentStep ? "✓" : step}
+                  {step < currentStep ? "\u2713" : step}
                 </div>
-                {step < 3 && (
+                {step < TOTAL_STEPS && (
                   <div
-                    className={`w-16 h-1 mx-2 ${
+                    className={`w-8 sm:w-12 h-1 mx-1 ${
                       step < currentStep ? "bg-green-500" : "bg-gray-200"
                     }`}
                   />
@@ -70,10 +89,7 @@ export default function OnboardingWizard({ clientData }: OnboardingWizardProps) 
           </div>
           <div className="text-center mt-2">
             <p className="text-sm text-gray-600">
-              {currentStep === 1 && "Paso 1: Configurá tu Identidad"}
-              {currentStep === 2 && currentSubStep === '2a' && "Paso 2: Conectá Cal.com"}
-              {currentStep === 2 && currentSubStep === '2b' && "Paso 2: Configurá tus Eventos"}
-              {currentStep === 3 && "Paso 3: Conectá Mercado Pago"}
+              Paso {currentStep}: {stepLabels[currentStep]}
             </p>
           </div>
         </div>
@@ -100,36 +116,39 @@ export default function OnboardingWizard({ clientData }: OnboardingWizardProps) 
         />
       )}
 
-      {currentStep === 2 && currentSubStep === '2a' && (
-        <WizardStep2
-          onNext={() => setCurrentSubStep('2b')}
+      {currentStep === 2 && (
+        <WizardStep2Google
+          onNext={() => setCurrentStep(3)}
           onBack={() => setCurrentStep(1)}
-          clientData={currentClientData}
-        />
-      )}
-
-      {currentStep === 2 && currentSubStep === '2b' && (
-        <WizardStep2B
-          onNext={() => {
-            setCurrentStep(3);
-            setCurrentSubStep('2a'); // Reset for next time
-          }}
-          onBack={() => setCurrentSubStep('2a')}
         />
       )}
 
       {currentStep === 3 && (
+        <WizardStep3Availability
+          onNext={() => setCurrentStep(4)}
+          onBack={() => setCurrentStep(2)}
+        />
+      )}
+
+      {currentStep === 4 && (
+        <WizardStep2B
+          onNext={() => setCurrentStep(5)}
+          onBack={() => setCurrentStep(3)}
+        />
+      )}
+
+      {currentStep === 5 && (
         <div className="min-h-screen bg-gray-50 flex items-center justify-center">
           <div className="bg-white rounded-xl shadow-lg p-8 max-w-md">
             <h2 className="text-2xl font-bold text-gray-900 mb-4">
-              Paso 3: Conectá Mercado Pago
+              Paso 5: Método de Pago
             </h2>
             <p className="text-gray-600 mb-6">
-              Próximamente podrás conectar tu cuenta de Mercado Pago aquí
+              Próximamente podrás configurar Mercado Pago o transferencia bancaria aquí.
             </p>
             <div className="flex gap-3">
               <button
-                onClick={() => setCurrentStep(2)}
+                onClick={() => setCurrentStep(4)}
                 className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-3 px-6 rounded-lg transition"
               >
                 ← Volver
@@ -138,7 +157,7 @@ export default function OnboardingWizard({ clientData }: OnboardingWizardProps) 
                 onClick={() => router.push(`/biolink/${currentClientData.slug}`)}
                 className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-lg transition"
               >
-                Finalizar ✓
+                Finalizar
               </button>
             </div>
           </div>

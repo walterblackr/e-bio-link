@@ -4,7 +4,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { neon } from '@neondatabase/serverless';
 import { requireActiveClientFromRequest } from '../../../lib/auth/client-auth';
-import axios from 'axios';
 
 export default async function handler(
   req: NextApiRequest,
@@ -40,34 +39,16 @@ export default async function handler(
         descripcion,
         duracion_minutos,
         precio,
+        modalidad,
         activo,
       } = req.body;
 
-      // Actualizar en Cal.com si cambiaron datos relevantes
-      if (nombre || descripcion || duracion_minutos) {
-        try {
-          await axios.patch(
-            `https://api.cal.com/v2/event-types/${evento.cal_event_type_id}`,
-            {
-              ...(nombre && { title: nombre }),
-              ...(descripcion !== undefined && { description: descripcion }),
-              ...(duracion_minutos && { lengthInMinutes: duracion_minutos }),
-            },
-            {
-              headers: {
-                'Authorization': `Bearer ${client.cal_api_key}`,
-                'Content-Type': 'application/json',
-                'cal-api-version': '2024-06-14',
-              },
-            }
-          );
-        } catch (error: any) {
-          console.error('Error actualizando event type en Cal.com:', error.response?.data || error.message);
-          // Continuamos aunque falle la actualización en Cal.com
-        }
+      if (modalidad && !['virtual', 'presencial'].includes(modalidad)) {
+        return res.status(400).json({
+          error: 'Modalidad debe ser "virtual" o "presencial"'
+        });
       }
 
-      // Actualizar en nuestra base de datos
       const result = await sql`
         UPDATE eventos
         SET
@@ -75,6 +56,7 @@ export default async function handler(
           descripcion = ${descripcion !== undefined ? descripcion : evento.descripcion},
           duracion_minutos = ${duracion_minutos || evento.duracion_minutos},
           precio = ${precio !== undefined ? precio : evento.precio},
+          modalidad = ${modalidad || evento.modalidad || 'virtual'},
           activo = ${activo !== undefined ? activo : evento.activo},
           updated_at = NOW()
         WHERE id = ${id} AND client_id = ${client.id}
@@ -89,23 +71,6 @@ export default async function handler(
 
     // DELETE - Eliminar evento
     if (req.method === 'DELETE') {
-      // Eliminar de Cal.com
-      try {
-        await axios.delete(
-          `https://api.cal.com/v2/event-types/${evento.cal_event_type_id}`,
-          {
-            headers: {
-              'Authorization': `Bearer ${client.cal_api_key}`,
-              'cal-api-version': '2024-06-14',
-            },
-          }
-        );
-      } catch (error: any) {
-        console.error('Error eliminando event type de Cal.com:', error.response?.data || error.message);
-        // Continuamos aunque falle la eliminación en Cal.com
-      }
-
-      // Eliminar de nuestra base de datos
       await sql`
         DELETE FROM eventos
         WHERE id = ${id} AND client_id = ${client.id}

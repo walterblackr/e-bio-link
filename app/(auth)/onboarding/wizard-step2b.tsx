@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Edit2, Trash2, Clock, DollarSign, Calendar, CheckCircle, Info, ExternalLink } from "lucide-react";
+import { Plus, Edit2, Trash2, Clock, DollarSign, Calendar, CheckCircle } from "lucide-react";
 
 interface Evento {
   id: string;
@@ -9,6 +9,7 @@ interface Evento {
   descripcion: string;
   duracion_minutos: number;
   precio: number;
+  modalidad: string;
   activo: boolean;
 }
 
@@ -30,6 +31,7 @@ export default function WizardStep2B({ onNext, onBack }: WizardStep2BProps) {
     descripcion: "",
     duracion_minutos: 30,
     precio: 0,
+    modalidad: "virtual",
   });
 
   // Cargar eventos existentes
@@ -85,6 +87,7 @@ export default function WizardStep2B({ onNext, onBack }: WizardStep2BProps) {
         descripcion: "",
         duracion_minutos: 30,
         precio: 0,
+        modalidad: "virtual",
       });
       setShowForm(false);
       setEditingEvento(null);
@@ -103,6 +106,7 @@ export default function WizardStep2B({ onNext, onBack }: WizardStep2BProps) {
       descripcion: evento.descripcion,
       duracion_minutos: evento.duracion_minutos,
       precio: evento.precio,
+      modalidad: evento.modalidad || "virtual",
     });
     setShowForm(true);
   };
@@ -133,6 +137,7 @@ export default function WizardStep2B({ onNext, onBack }: WizardStep2BProps) {
       descripcion: "",
       duracion_minutos: 30,
       precio: 0,
+      modalidad: "virtual",
     });
     setError("");
   };
@@ -200,6 +205,13 @@ export default function WizardStep2B({ onNext, onBack }: WizardStep2BProps) {
                               <DollarSign className="w-3.5 h-3.5" />
                               ${evento.precio.toLocaleString('es-AR')}
                             </div>
+                            <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${
+                              evento.modalidad === 'presencial'
+                                ? 'bg-orange-100 text-orange-700'
+                                : 'bg-blue-100 text-blue-700'
+                            }`}>
+                              {evento.modalidad === 'presencial' ? 'Presencial' : 'Virtual'}
+                            </span>
                           </div>
                         </div>
                         <div className="flex items-center gap-2 ml-4">
@@ -220,53 +232,6 @@ export default function WizardStep2B({ onNext, onBack }: WizardStep2BProps) {
                         </div>
                       </div>
                     ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Información sobre configuración de horarios en Cal.com */}
-              {eventos.length > 0 && !showForm && (
-                <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                  <div className="flex items-start gap-3">
-                    <Info className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                    <div className="flex-1">
-                      <h4 className="text-sm font-semibold text-blue-900 mb-2">
-                        Recordá configurar tus horarios disponibles en Cal.com
-                      </h4>
-                      <p className="text-xs text-blue-800 mb-3">
-                        Ya creaste tus eventos, pero todavía necesitás configurar tus <strong>días y horarios de atención</strong> en Cal.com para que tus pacientes puedan reservar turnos.
-                      </p>
-
-                      <div className="space-y-2 mb-3">
-                        <p className="text-xs text-blue-800 font-medium">📅 ¿Cómo configurar tus horarios?</p>
-                        <ol className="list-decimal list-inside space-y-1 text-xs text-blue-800 ml-2">
-                          <li>Andá a <strong>Settings → Availability</strong> en Cal.com</li>
-                          <li>Configurá tus horarios de trabajo (días y horas)</li>
-                          <li>Guardá los cambios</li>
-                        </ol>
-                      </div>
-
-                      <div className="flex flex-wrap gap-2">
-                        <a
-                          href="https://app.cal.com/settings/my-account/general"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs text-blue-700 bg-white border border-blue-300 rounded-lg hover:bg-blue-50 transition-colors font-medium"
-                        >
-                          <ExternalLink className="w-3.5 h-3.5" />
-                          Ir a Cal.com Settings
-                        </a>
-                        <a
-                          href="https://cal.com/help/availabilities/edit-availability"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs text-blue-700 bg-white border border-blue-300 rounded-lg hover:bg-blue-50 transition-colors font-medium"
-                        >
-                          <ExternalLink className="w-3.5 h-3.5" />
-                          Ver documentación
-                        </a>
-                      </div>
-                    </div>
                   </div>
                 </div>
               )}
@@ -360,6 +325,51 @@ export default function WizardStep2B({ onNext, onBack }: WizardStep2BProps) {
                           />
                           <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">ARS</span>
                         </div>
+                      </div>
+                    </div>
+
+                    {/* Modalidad */}
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                        Modalidad *
+                      </label>
+                      <div className="flex gap-3">
+                        <label className={`flex-1 flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition-all ${
+                          formData.modalidad === 'virtual'
+                            ? 'bg-purple-50 border-purple-400'
+                            : 'bg-white border-gray-300 hover:border-gray-400'
+                        }`}>
+                          <input
+                            type="radio"
+                            name="modalidad"
+                            value="virtual"
+                            checked={formData.modalidad === 'virtual'}
+                            onChange={(e) => setFormData({ ...formData, modalidad: e.target.value })}
+                            className="text-purple-600 focus:ring-purple-500"
+                          />
+                          <div>
+                            <p className="text-sm font-medium text-gray-900">Virtual</p>
+                            <p className="text-xs text-gray-500">Google Meet</p>
+                          </div>
+                        </label>
+                        <label className={`flex-1 flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition-all ${
+                          formData.modalidad === 'presencial'
+                            ? 'bg-purple-50 border-purple-400'
+                            : 'bg-white border-gray-300 hover:border-gray-400'
+                        }`}>
+                          <input
+                            type="radio"
+                            name="modalidad"
+                            value="presencial"
+                            checked={formData.modalidad === 'presencial'}
+                            onChange={(e) => setFormData({ ...formData, modalidad: e.target.value })}
+                            className="text-purple-600 focus:ring-purple-500"
+                          />
+                          <div>
+                            <p className="text-sm font-medium text-gray-900">Presencial</p>
+                            <p className="text-xs text-gray-500">En consultorio</p>
+                          </div>
+                        </label>
                       </div>
                     </div>
 
