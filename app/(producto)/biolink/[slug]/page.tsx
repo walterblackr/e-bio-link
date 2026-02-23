@@ -4,14 +4,16 @@ import BioLinkTemplate from '@/app/components/BioLinkTemplate';
 
 // Tipo para los datos del médico desde la BD
 interface MedicoData {
+  slug: string;
   nombre_completo: string;
   foto_url: string;
   especialidad?: string;
   matricula?: string;
   descripcion?: string;
-  cal_username: string;
   botones_config: any[];
   tema_config: any;
+  tiene_eventos?: boolean;
+  cal_username?: string;
 }
 
 // En Next.js 15/16 params es una Promesa, hay que definirlo así:
@@ -30,14 +32,15 @@ export default async function BioLinkPage({ params }: PageProps) {
   // IMPORTANTE: NO traemos los tokens de seguridad (mp_access_token, etc)
   const response = await sql`
     SELECT
+      slug,
       nombre_completo,
       foto_url,
       especialidad,
       matricula,
       descripcion,
-      cal_username,
       botones_config,
-      tema_config
+      tema_config,
+      cal_username
     FROM clients
     WHERE slug = ${slug}
     LIMIT 1
@@ -50,8 +53,16 @@ export default async function BioLinkPage({ params }: PageProps) {
     notFound();
   }
 
-  // 5. Renderizamos el componente cliente con los datos reales
-  return <BioLinkTemplate data={medico} />;
+  // 5. Verificar si tiene eventos activos para mostrar el botón de turnos
+  const eventosResult = await sql`
+    SELECT COUNT(*) as count FROM eventos
+    WHERE client_id = (SELECT id FROM clients WHERE slug = ${slug} LIMIT 1)
+      AND activo = true
+  `;
+  const tiene_eventos = Number(eventosResult[0]?.count) > 0;
+
+  // 6. Renderizamos el componente cliente con los datos reales
+  return <BioLinkTemplate data={{ ...medico, tiene_eventos }} />;
 }
 
 // Opcional: Generar metadata dinámica para SEO y Open Graph (WhatsApp)

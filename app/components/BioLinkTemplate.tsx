@@ -5,18 +5,50 @@ import { useEffect } from "react";
 // Definimos la forma de los datos que esperamos recibir de la BD
 interface BioLinkProps {
   data: {
+    slug: string;
     nombre_completo: string;
     foto_url: string;
     especialidad?: string;
     matricula?: string;
     descripcion?: string;
-    cal_username: string;
     botones_config: any[];
     tema_config: any;
+    tiene_eventos?: boolean;
+    cal_username?: string; // backward compat: clientes migrados desde Cal.com
   };
 }
 
 export default function BioLinkTemplate({ data }: BioLinkProps) {
+  // Cargar embed de Cal.com solo si el cliente usa el sistema legacy (sin eventos nuevos)
+  useEffect(() => {
+    if (data.tiene_eventos || !data.cal_username) return;
+
+    (function (C: any, A: any, L: any) {
+      let p = function (a: any, ar: any) { a.q.push(ar); };
+      let d = C.document;
+      C.Cal = C.Cal || function () {
+        let cal = C.Cal; let ar: any = arguments;
+        if (!cal.loaded) {
+          cal.ns = {}; cal.q = cal.q || [];
+          d.head.appendChild(d.createElement("script")).src = A;
+          cal.loaded = true;
+        }
+        if (ar[0] === L) {
+          const api: any = function () { p(api, arguments); };
+          const namespace = ar[1]; api.q = api.q || [];
+          if (typeof namespace === "string") {
+            cal.ns[namespace] = cal.ns[namespace] || api;
+            p(cal.ns[namespace], ar); p(cal, ["initNamespace", namespace]);
+          } else p(cal, ar); return;
+        }
+        p(cal, ar);
+      };
+    })(window, "https://app.cal.com/embed/embed.js", "init");
+
+    (window as any).Cal("init", { origin: "https://app.cal.com" });
+    (window as any).Cal("ui", { hideEventTypeDetails: false, layout: "month_view" });
+  }, [data.cal_username, data.tiene_eventos]);
+
   // Extraemos valores con fallbacks por si vienen vacíos
   const theme = data.tema_config || {};
   const colors = {
@@ -27,53 +59,6 @@ export default function BioLinkTemplate({ data }: BioLinkProps) {
   };
 
   const buttons = Array.isArray(data.botones_config) ? data.botones_config : [];
-
-  // Construimos el link de Cal.com dinámicamente
-  // Apuntamos directamente al username para mostrar todos los event types disponibles
-  const calLink = data.cal_username ? data.cal_username : "";
-
-  useEffect(() => {
-    if (!data.cal_username) return; // No cargar Cal si no hay usuario
-
-    (function (C: any, A: any, L: any) {
-      let p = function (a: any, ar: any) {
-        a.q.push(ar);
-      };
-      let d = C.document;
-      C.Cal =
-        C.Cal ||
-        function () {
-          let cal = C.Cal;
-          let ar: any = arguments;
-          if (!cal.loaded) {
-            cal.ns = {};
-            cal.q = cal.q || [];
-            d.head.appendChild(d.createElement("script")).src = A;
-            cal.loaded = true;
-          }
-          if (ar[0] === L) {
-            const api: any = function () {
-              p(api, arguments);
-            };
-            const namespace = ar[1];
-            api.q = api.q || [];
-            if (typeof namespace === "string") {
-              cal.ns[namespace] = cal.ns[namespace] || api;
-              p(cal.ns[namespace], ar);
-              p(cal, ["initNamespace", namespace]);
-            } else p(cal, ar);
-            return;
-          }
-          p(cal, ar);
-        };
-    })(window, "https://app.cal.com/embed/embed.js", "init");
-
-    (window as any).Cal("init", { origin: "https://app.cal.com" });
-    (window as any).Cal("ui", {
-      hideEventTypeDetails: false,
-      layout: "month_view",
-    });
-  }, [data.cal_username]);
 
   return (
     <main
@@ -141,16 +126,25 @@ export default function BioLinkTemplate({ data }: BioLinkProps) {
           style={{ backgroundColor: colors.separator }}
         ></div>
 
-        {/* BOTÓN DE RESERVAR (CAL.COM) */}
-        {data.cal_username && (
+        {/* BOTÓN DE RESERVAR TURNO */}
+        {/* Nuevo sistema: tiene eventos configurados en la plataforma */}
+        {data.tiene_eventos && (
+          <a
+            href={`/reserva/${data.slug}`}
+            className="flex items-center justify-center w-full max-w-xs py-3 px-6 mb-4 rounded-full font-semibold transition-all transform hover:scale-105 bg-transparent border lowercase tracking-wider font-[family-name:var(--font-space-mono)]"
+            style={{ borderColor: colors.buttonBorder, color: colors.text }}
+          >
+            turnos
+          </a>
+        )}
+
+        {/* Backward compat: cliente legacy con Cal.com y sin eventos nuevos */}
+        {!data.tiene_eventos && data.cal_username && (
           <button
-            data-cal-link={calLink}
+            data-cal-link={data.cal_username}
             data-cal-config='{"layout":"month_view"}'
             className="flex items-center justify-center w-full max-w-xs py-3 px-6 mb-4 rounded-full font-semibold transition-all transform hover:scale-105 bg-transparent border lowercase tracking-wider font-[family-name:var(--font-space-mono)]"
-            style={{
-              borderColor: colors.buttonBorder,
-              color: colors.text,
-            }}
+            style={{ borderColor: colors.buttonBorder, color: colors.text }}
           >
             turnos
           </button>
