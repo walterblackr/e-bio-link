@@ -16,11 +16,11 @@ export default function OnboardingWizard({ clientData }: OnboardingWizardProps) 
   const searchParams = useSearchParams();
 
   // Si volvemos del OAuth de Google, arrancamos en el paso 2
-  const initialStep = searchParams.get("google") === "connected" ? 2 : 1;
+  const initialStep = searchParams?.get("google") === "connected" ? 2 : 1;
   const [currentStep, setCurrentStep] = useState(initialStep);
 
   useEffect(() => {
-    if (searchParams.get("google") === "connected") {
+    if (searchParams?.get("google") === "connected") {
       window.history.replaceState({}, "", "/onboarding");
     }
   }, []);
