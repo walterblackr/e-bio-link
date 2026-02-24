@@ -6,6 +6,7 @@ import WizardStep1 from "./wizard-step1";
 import WizardStep2Google from "./wizard-step2-google";
 import WizardStep3Availability from "./wizard-step3-availability";
 import WizardStep2B from "./wizard-step2b";
+import WizardStep5Payment from "./wizard-step5-payment";
 
 interface OnboardingWizardProps {
   clientData: any;
@@ -138,30 +139,11 @@ export default function OnboardingWizard({ clientData }: OnboardingWizardProps) 
       )}
 
       {currentStep === 5 && (
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-          <div className="bg-white rounded-xl shadow-lg p-8 max-w-md">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">
-              Paso 5: Método de Pago
-            </h2>
-            <p className="text-gray-600 mb-6">
-              Próximamente podrás configurar Mercado Pago o transferencia bancaria aquí.
-            </p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setCurrentStep(4)}
-                className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-3 px-6 rounded-lg transition"
-              >
-                ← Volver
-              </button>
-              <button
-                onClick={() => router.push(`/biolink/${currentClientData.slug}`)}
-                className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-lg transition"
-              >
-                Finalizar
-              </button>
-            </div>
-          </div>
-        </div>
+        <WizardStep5Payment
+          onNext={() => router.push(`/biolink/${currentClientData.slug}`)}
+          onBack={() => setCurrentStep(4)}
+          clientSlug={currentClientData.slug}
+        />
       )}
     </div>
   );
