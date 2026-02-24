@@ -3,92 +3,131 @@
 import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 
-interface TurnoData {
-  name: string;
-  email: string;
-  date: string;
-  bookingId: string;
-  clientSlug: string;
-  startTime?: string;
-  monto?: number;
-}
+// ─── Nuevo flujo: acepta ?booking_id=xxx&slug=xxx ─────────────────────────────
+// ─── Flujo legacy Cal.com: acepta ?uid=xxx&user=xxx&attendeeName=xxx... ────────
 
 function PagarContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
-  const [turno, setTurno] = useState<TurnoData | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [precio, setPrecio] = useState<number>(10000);
+  const [paying, setPaying] = useState(false);
 
-  // Cal.com envía estos parámetros en la URL
-  const bookingId = searchParams.get('uid');
+  // Nuevo flujo
+  const bookingIdParam = searchParams.get('booking_id');
+  const slugParam = searchParams.get('slug');
+
+  // Flujo legacy Cal.com
+  const calUid = searchParams.get('uid');
   const calUsername = searchParams.get('user');
-  const nameFromUrl = searchParams.get('attendeeName');
-  const emailFromUrl = searchParams.get('email');
-  const startTimeFromUrl = searchParams.get('startTime');
+  const calAttendeeName = searchParams.get('attendeeName');
+  const calEmail = searchParams.get('email');
+  const calStartTime = searchParams.get('startTime');
+
+  const isNewFlow = !!bookingIdParam;
+  const isLegacyFlow = !isNewFlow && !!calUid;
+
+  const [bookingData, setBookingData] = useState<any>(null);
+  const [legacyData, setLegacyData] = useState<any>(null);
+  const [precio, setPrecio] = useState<number>(0);
 
   useEffect(() => {
-    if (!bookingId) {
-      setError('No se encontró información del turno. Por favor reservá tu turno desde el calendario.');
-      setLoading(false);
-      return;
-    }
+    if (isNewFlow) {
+      if (!slugParam) {
+        setError('Falta el slug del profesional.');
+        setLoading(false);
+        return;
+      }
 
-    // Si tenemos todos los datos de Cal.com en la URL, usarlos directamente
-    if (nameFromUrl && emailFromUrl && startTimeFromUrl && calUsername) {
-      // Buscar el cliente por cal_username y obtener su precio
-      fetch(`/api/obtener-precio-consulta?calUsername=${calUsername}`)
-        .then((res) => res.json())
+      fetch(`/api/check-payment-status?booking_id=${bookingIdParam}`)
+        .then((r) => r.json())
         .then((data) => {
           if (data.error) {
-            setError(`No se encontró el médico con username: ${calUsername}`);
-            setLoading(false);
+            setError(data.error);
+            return;
+          }
+          setBookingData(data);
+        })
+        .catch(() => setError('Error al cargar los datos del turno.'))
+        .finally(() => setLoading(false));
+    } else if (isLegacyFlow) {
+      if (!calAttendeeName || !calEmail || !calStartTime || !calUsername) {
+        setError('Faltan datos del turno. Por favor reservá tu turno desde el calendario.');
+        setLoading(false);
+        return;
+      }
+
+      fetch(`/api/obtener-precio-consulta?calUsername=${calUsername}`)
+        .then((r) => r.json())
+        .then((data) => {
+          if (data.error) {
+            setError('No se encontró el médico.');
             return;
           }
 
-          const formattedDate = new Date(startTimeFromUrl).toLocaleString('es-AR', {
-            dateStyle: 'full',
-            timeStyle: 'short',
-          });
-
-          setTurno({
-            name: decodeURIComponent(nameFromUrl),
-            email: decodeURIComponent(emailFromUrl),
-            date: formattedDate,
-            bookingId: bookingId,
+          setLegacyData({
+            name: decodeURIComponent(calAttendeeName),
+            email: decodeURIComponent(calEmail),
+            date: new Date(calStartTime).toLocaleString('es-AR', {
+              dateStyle: 'full',
+              timeStyle: 'short',
+            }),
+            bookingId: calUid,
             clientSlug: data.slug,
-            startTime: startTimeFromUrl,
+            startTime: calStartTime,
           });
-
           setPrecio(parseFloat(data.monto_consulta));
-          setLoading(false);
         })
-        .catch((err) => {
-          console.error(err);
-          setError('Error al cargar los datos del médico');
-          setLoading(false);
-        });
+        .catch(() => setError('Error al cargar los datos del médico'))
+        .finally(() => setLoading(false));
     } else {
-      setError('Faltan datos del turno. Por favor reservá tu turno desde el calendario.');
+      setError('No se encontró información del turno. Por favor reservá tu turno desde el calendario.');
       setLoading(false);
     }
-  }, [bookingId, calUsername, nameFromUrl, emailFromUrl, startTimeFromUrl]);
+  }, []);
 
-  const handlePagar = async () => {
-    if (!turno) return;
+  const handlePagarNuevo = async () => {
+    if (!bookingIdParam || !slugParam) return;
+    setPaying(true);
 
-    setLoading(true);
     try {
       const response = await fetch('/api/crear-preferencia-pago', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          client_slug: turno.clientSlug,
-          paciente_nombre: turno.name,
-          paciente_email: turno.email,
-          cal_booking_id: turno.bookingId,
-          fecha_hora: turno.startTime || new Date().toISOString(),
+          booking_id: bookingIdParam,
+          client_slug: slugParam,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.init_point) {
+        window.location.href = data.init_point;
+      } else {
+        setError(`Error al generar el link de pago: ${data.error}`);
+        setPaying(false);
+      }
+    } catch {
+      setError('Error al procesar el pago');
+      setPaying(false);
+    }
+  };
+
+  const handlePagarLegacy = async () => {
+    if (!legacyData) return;
+    setPaying(true);
+
+    try {
+      const response = await fetch('/api/crear-preferencia-pago', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          client_slug: legacyData.clientSlug,
+          paciente_nombre: legacyData.name,
+          paciente_email: legacyData.email,
+          cal_booking_id: legacyData.bookingId,
+          fecha_hora: legacyData.startTime,
           monto: precio,
         }),
       });
@@ -98,48 +137,14 @@ function PagarContent() {
       if (data.init_point) {
         window.location.href = data.init_point;
       } else {
-        alert(`Error al generar el link de pago: ${data.details || data.error}`);
-        setLoading(false);
+        setError(`Error al generar el link de pago: ${data.details || data.error}`);
+        setPaying(false);
       }
-    } catch (error) {
-      console.error(error);
-      alert('Error al procesar el pago');
-      setLoading(false);
+    } catch {
+      setError('Error al procesar el pago');
+      setPaying(false);
     }
   };
-
-  // Estados de carga y error
-  if (!bookingId) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-gray-50">
-        <div className="bg-white shadow-lg rounded-lg p-8 max-w-md w-full text-center">
-          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg
-              className="w-8 h-8 text-red-600"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-          </div>
-          <h1 className="text-xl font-bold text-red-600 mb-2">Error: No hay turno identificado</h1>
-          <p className="text-gray-600 mb-6">Por favor iniciá tu reserva desde el calendario.</p>
-          <button
-            onClick={() => router.push('/')}
-            className="w-full bg-gray-600 hover:bg-gray-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
-          >
-            Volver al inicio
-          </button>
-        </div>
-      </div>
-    );
-  }
 
   if (loading) {
     return (
@@ -155,18 +160,8 @@ function PagarContent() {
       <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-gray-50">
         <div className="bg-white shadow-lg rounded-lg p-8 max-w-md w-full text-center">
           <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg
-              className="w-8 h-8 text-red-600"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
+            <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
           <h1 className="text-xl font-bold text-red-600 mb-2">Error</h1>
@@ -187,47 +182,64 @@ function PagarContent() {
       <div className="bg-white shadow-xl rounded-2xl p-8 max-w-md w-full">
         <div className="text-center mb-6">
           <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg
-              className="w-8 h-8 text-blue-600"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
+            <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
-          <h1 className="text-2xl font-bold text-gray-800 mb-2">Confirmar Turno</h1>
+          <h1 className="text-2xl font-bold text-gray-800 mb-2">Confirmar Pago</h1>
           <p className="text-gray-600 text-sm">Revisá los datos y procedé con el pago</p>
         </div>
 
-        {turno && (
+        {/* Nuevo flujo */}
+        {isNewFlow && bookingData && (
+          <div className="mb-6 bg-blue-50 p-5 rounded-xl border border-blue-100">
+            <div className="space-y-3">
+              {bookingData.paciente_nombre && (
+                <div>
+                  <p className="text-xs text-gray-500 font-semibold uppercase tracking-wide mb-1">Paciente</p>
+                  <p className="text-gray-900 font-medium">{bookingData.paciente_nombre}</p>
+                </div>
+              )}
+              {bookingData.fecha_hora && (
+                <div>
+                  <p className="text-xs text-gray-500 font-semibold uppercase tracking-wide mb-1">Fecha y Hora</p>
+                  <p className="text-gray-900 font-medium">
+                    {new Date(bookingData.fecha_hora).toLocaleString('es-AR', {
+                      dateStyle: 'full',
+                      timeStyle: 'short',
+                    })}
+                  </p>
+                </div>
+              )}
+            </div>
+            {bookingData.monto && (
+              <div className="mt-5 pt-5 border-t border-blue-200">
+                <p className="text-2xl font-bold text-green-600 text-center">
+                  ${parseFloat(bookingData.monto).toLocaleString('es-AR')}
+                </p>
+                <p className="text-xs text-gray-500 text-center mt-1">Total a pagar</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Flujo legacy Cal.com */}
+        {isLegacyFlow && legacyData && (
           <div className="mb-6 bg-blue-50 p-5 rounded-xl border border-blue-100">
             <div className="space-y-3">
               <div>
-                <p className="text-xs text-gray-500 font-semibold uppercase tracking-wide mb-1">
-                  Paciente
-                </p>
-                <p className="text-gray-900 font-medium">{turno.name}</p>
+                <p className="text-xs text-gray-500 font-semibold uppercase tracking-wide mb-1">Paciente</p>
+                <p className="text-gray-900 font-medium">{legacyData.name}</p>
               </div>
               <div>
-                <p className="text-xs text-gray-500 font-semibold uppercase tracking-wide mb-1">
-                  Email
-                </p>
-                <p className="text-gray-700">{turno.email}</p>
+                <p className="text-xs text-gray-500 font-semibold uppercase tracking-wide mb-1">Email</p>
+                <p className="text-gray-700">{legacyData.email}</p>
               </div>
               <div>
-                <p className="text-xs text-gray-500 font-semibold uppercase tracking-wide mb-1">
-                  Fecha y Hora
-                </p>
-                <p className="text-gray-900 font-medium">{turno.date}</p>
+                <p className="text-xs text-gray-500 font-semibold uppercase tracking-wide mb-1">Fecha y Hora</p>
+                <p className="text-gray-900 font-medium">{legacyData.date}</p>
               </div>
             </div>
-
             <div className="mt-5 pt-5 border-t border-blue-200">
               <p className="text-2xl font-bold text-green-600 text-center">
                 ${precio.toLocaleString('es-AR')}
@@ -238,11 +250,11 @@ function PagarContent() {
         )}
 
         <button
-          onClick={handlePagar}
-          disabled={loading}
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-6 rounded-xl transition-colors shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed mb-3"
+          onClick={isNewFlow ? handlePagarNuevo : handlePagarLegacy}
+          disabled={paying}
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-6 rounded-xl transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed mb-3"
         >
-          {loading ? (
+          {paying ? (
             <span className="flex items-center justify-center">
               <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -251,7 +263,7 @@ function PagarContent() {
               Procesando...
             </span>
           ) : (
-            '💳 Pagar con Mercado Pago'
+            'Pagar con Mercado Pago'
           )}
         </button>
 

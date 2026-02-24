@@ -100,6 +100,16 @@ export default function BookingFlow({ medico, eventos, diasActivos }: BookingFlo
   const [submitError, setSubmitError] = useState("");
   const [bookingResult, setBookingResult] = useState<any>(null);
 
+  // Step 4 - Mercado Pago
+  const [mpLoading, setMpLoading] = useState(false);
+  const [mpError, setMpError] = useState("");
+
+  // Step 4 - Comprobante de transferencia
+  const [comprobanteFile, setComprobanteFile] = useState<File | null>(null);
+  const [comprobanteUploading, setComprobanteUploading] = useState(false);
+  const [comprobanteDone, setComprobanteDone] = useState(false);
+  const [comprobanteError, setComprobanteError] = useState("");
+
   // ── Load slots when date changes ──────────────────────────────────────────
 
   const fetchSlots = useCallback(async (date: string) => {
@@ -215,6 +225,71 @@ export default function BookingFlow({ medico, eventos, diasActivos }: BookingFlo
       setSubmitError("Error de conexión. Intenta nuevamente.");
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  // ── Pagar con Mercado Pago ────────────────────────────────────────────────
+
+  async function handlePagarMP() {
+    if (!bookingResult?.booking_id) return;
+    setMpLoading(true);
+    setMpError("");
+
+    try {
+      const res = await fetch("/api/crear-preferencia-pago", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          booking_id: bookingResult.booking_id,
+          client_slug: medico.slug,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setMpError(data.error || "Error al generar el link de pago");
+        return;
+      }
+
+      // Redirigir a Mercado Pago
+      window.location.href = data.init_point;
+    } catch {
+      setMpError("Error de conexión. Intenta nuevamente.");
+    } finally {
+      setMpLoading(false);
+    }
+  }
+
+  // ── Subir comprobante de transferencia ────────────────────────────────────
+
+  async function handleUploadComprobante() {
+    if (!comprobanteFile || !bookingResult?.booking_id) return;
+    setComprobanteUploading(true);
+    setComprobanteError("");
+
+    try {
+      const formData = new FormData();
+      formData.append("file", comprobanteFile);
+      formData.append("booking_id", bookingResult.booking_id.toString());
+
+      const res = await fetch("/api/upload-comprobante", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setComprobanteError(data.error || "Error al subir el comprobante");
+        return;
+      }
+
+      setComprobanteDone(true);
+    } catch {
+      setComprobanteError("Error de conexión. Intenta nuevamente.");
+    } finally {
+      setComprobanteUploading(false);
     }
   }
 
@@ -632,41 +707,110 @@ export default function BookingFlow({ medico, eventos, diasActivos }: BookingFlo
 
             {/* Instrucciones de pago */}
             {bookingResult.payment_method === 'transfer' && bookingResult.transfer_data ? (
-              <div className="bg-blue-50 border border-blue-200 rounded-xl p-5 mb-5 text-left">
-                <h3 className="font-semibold text-blue-900 mb-3">Datos para transferencia</h3>
-                <div className="space-y-2 text-sm">
-                  {bookingResult.transfer_data.titular_cuenta && (
-                    <div className="flex items-start justify-between gap-2">
-                      <span className="text-blue-700">Titular:</span>
-                      <span className="font-semibold text-blue-900 text-right">{bookingResult.transfer_data.titular_cuenta}</span>
+              <div className="mb-5 text-left space-y-4">
+                <div className="bg-blue-50 border border-blue-200 rounded-xl p-5">
+                  <h3 className="font-semibold text-blue-900 mb-3">Datos para transferencia</h3>
+                  <div className="space-y-2 text-sm">
+                    {bookingResult.transfer_data.titular_cuenta && (
+                      <div className="flex items-start justify-between gap-2">
+                        <span className="text-blue-700">Titular:</span>
+                        <span className="font-semibold text-blue-900 text-right">{bookingResult.transfer_data.titular_cuenta}</span>
+                      </div>
+                    )}
+                    {bookingResult.transfer_data.banco_nombre && (
+                      <div className="flex items-start justify-between gap-2">
+                        <span className="text-blue-700">Banco:</span>
+                        <span className="font-semibold text-blue-900 text-right">{bookingResult.transfer_data.banco_nombre}</span>
+                      </div>
+                    )}
+                    {bookingResult.transfer_data.cbu_alias && (
+                      <div className="flex items-start justify-between gap-2">
+                        <span className="text-blue-700">CBU/Alias:</span>
+                        <span className="font-mono font-semibold text-blue-900 text-right break-all">{bookingResult.transfer_data.cbu_alias}</span>
+                      </div>
+                    )}
+                    <div className="flex items-start justify-between gap-2 pt-2 border-t border-blue-200">
+                      <span className="text-blue-700 font-semibold">Monto:</span>
+                      <span className="font-bold text-blue-900">{formatPrecio(bookingResult.transfer_data.monto)}</span>
                     </div>
-                  )}
-                  {bookingResult.transfer_data.banco_nombre && (
-                    <div className="flex items-start justify-between gap-2">
-                      <span className="text-blue-700">Banco:</span>
-                      <span className="font-semibold text-blue-900 text-right">{bookingResult.transfer_data.banco_nombre}</span>
-                    </div>
-                  )}
-                  {bookingResult.transfer_data.cbu_alias && (
-                    <div className="flex items-start justify-between gap-2">
-                      <span className="text-blue-700">CBU/Alias:</span>
-                      <span className="font-mono font-semibold text-blue-900 text-right break-all">{bookingResult.transfer_data.cbu_alias}</span>
-                    </div>
-                  )}
-                  <div className="flex items-start justify-between gap-2 pt-2 border-t border-blue-200">
-                    <span className="text-blue-700 font-semibold">Monto:</span>
-                    <span className="font-bold text-blue-900">{formatPrecio(bookingResult.transfer_data.monto)}</span>
                   </div>
+                  <p className="text-xs text-blue-600 mt-3">
+                    Una vez realizada la transferencia, subí el comprobante para agilizar la confirmación.
+                  </p>
                 </div>
-                <p className="text-xs text-blue-600 mt-3">
-                  Una vez realizada la transferencia, el profesional confirmará tu turno.
-                </p>
+
+                {/* Upload comprobante */}
+                {comprobanteDone ? (
+                  <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex items-center gap-3">
+                    <Check className="w-5 h-5 text-green-600 flex-shrink-0" />
+                    <div>
+                      <p className="text-sm font-semibold text-green-900">Comprobante enviado</p>
+                      <p className="text-xs text-green-600">El profesional recibirá la notificación y confirmará tu turno.</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-white border border-gray-200 rounded-xl p-4">
+                    <p className="text-sm font-semibold text-gray-900 mb-3">Subir comprobante de pago</p>
+                    <label className="block mb-3">
+                      <div className={`border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors ${
+                        comprobanteFile ? "border-indigo-400 bg-indigo-50" : "border-gray-300 hover:border-indigo-400"
+                      }`}>
+                        <input
+                          type="file"
+                          accept="image/*,.pdf"
+                          className="hidden"
+                          onChange={e => setComprobanteFile(e.target.files?.[0] || null)}
+                        />
+                        {comprobanteFile ? (
+                          <p className="text-sm text-indigo-700 font-medium truncate">{comprobanteFile.name}</p>
+                        ) : (
+                          <p className="text-sm text-gray-500">Tocá para seleccionar imagen o PDF</p>
+                        )}
+                      </div>
+                    </label>
+                    {comprobanteError && (
+                      <p className="text-xs text-red-500 mb-2">{comprobanteError}</p>
+                    )}
+                    <button
+                      onClick={handleUploadComprobante}
+                      disabled={!comprobanteFile || comprobanteUploading}
+                      className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed text-white font-semibold py-2.5 px-4 rounded-lg transition-colors text-sm flex items-center justify-center gap-2"
+                    >
+                      {comprobanteUploading ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                          Subiendo...
+                        </>
+                      ) : (
+                        "Enviar comprobante"
+                      )}
+                    </button>
+                  </div>
+                )}
               </div>
             ) : bookingResult.payment_method === 'mp' ? (
-              <div className="bg-blue-50 border border-blue-200 rounded-xl p-5 mb-5 text-left">
-                <p className="text-sm text-blue-700">
-                  El profesional te enviará las instrucciones de pago por email.
+              <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-5 mb-5 text-left">
+                <h3 className="font-semibold text-indigo-900 mb-2">Pagá con Mercado Pago</h3>
+                <p className="text-sm text-indigo-700 mb-4">
+                  Completá el pago de {selectedEvento && formatPrecio(selectedEvento.precio)} de forma segura a través de Mercado Pago.
                 </p>
+                {mpError && (
+                  <p className="text-xs text-red-500 mb-3">{mpError}</p>
+                )}
+                <button
+                  onClick={handlePagarMP}
+                  disabled={mpLoading}
+                  className="w-full bg-[#009ee3] hover:bg-[#007eb5] disabled:bg-[#009ee3]/50 disabled:cursor-not-allowed text-white font-bold py-3 px-6 rounded-xl transition-colors flex items-center justify-center gap-2"
+                >
+                  {mpLoading ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      Generando link...
+                    </>
+                  ) : (
+                    "Pagar con Mercado Pago →"
+                  )}
+                </button>
               </div>
             ) : null}
 
