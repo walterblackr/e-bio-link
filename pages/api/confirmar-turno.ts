@@ -4,6 +4,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { neon } from '@neondatabase/serverless';
 import { createEventForClient } from '../../lib/google-calendar';
 import { requireActiveClient } from '../../lib/auth/client-auth';
+import { sendBookingConfirmation, sendNewBookingNotification, sendBookingCancellation } from '../../lib/email';
 
 export default async function handler(
   req: NextApiRequest,
@@ -17,13 +18,23 @@ export default async function handler(
     // Requiere sesión activa del profesional
     const session = await requireActiveClient();
 
-    const { booking_id } = req.body;
+    const { booking_id, action = 'confirm' } = req.body;
 
     if (!booking_id) {
       return res.status(400).json({ error: 'booking_id requerido' });
     }
 
+    if (!['confirm', 'reject'].includes(action)) {
+      return res.status(400).json({ error: 'action debe ser "confirm" o "reject"' });
+    }
+
     const sql = neon(process.env.DATABASE_URL!);
+
+    // Datos del profesional para emails
+    const clientInfoResult = await sql`
+      SELECT nombre_completo, especialidad, email FROM clients WHERE id = ${session.id} LIMIT 1
+    `;
+    const clientInfo = clientInfoResult[0];
 
     // Obtener el booking con datos completos
     const bookingResult = await sql`
@@ -34,10 +45,12 @@ export default async function handler(
         b.paciente_email,
         b.paciente_telefono,
         b.fecha_hora,
+        b.monto,
         b.notas,
         b.evento_id,
         b.estado,
-        b.google_event_id
+        b.google_event_id,
+        b.meet_link
       FROM bookings b
       WHERE b.id = ${booking_id}
         AND b.client_id = ${session.id}
@@ -50,13 +63,31 @@ export default async function handler(
 
     const booking = bookingResult[0];
 
-    // Solo se puede confirmar si está en estado pending_confirmation o paid
-    if (!['pending_confirmation', 'paid', 'pending_payment'].includes(booking.estado)) {
+    const estadosAccionables = ['pending_confirmation', 'paid', 'pending_payment', 'pending'];
+    if (!estadosAccionables.includes(booking.estado)) {
       return res.status(400).json({
-        error: `No se puede confirmar un booking en estado '${booking.estado}'`,
+        error: `No se puede modificar un booking en estado '${booking.estado}'`,
       });
     }
 
+    // ── RECHAZO ───────────────────────────────────────────────────────────────
+    if (action === 'reject') {
+      await sql`
+        UPDATE bookings SET estado = 'cancelled' WHERE id = ${booking_id}
+      `;
+
+      sendBookingCancellation({
+        paciente_nombre: booking.paciente_nombre,
+        paciente_email: booking.paciente_email,
+        medico_nombre: clientInfo?.nombre_completo || '',
+        fecha_hora: booking.fecha_hora,
+      }).catch((e) => console.error('[Email] Error cancelación:', e.message));
+
+      console.log(`[confirmar-turno] Booking ${booking_id} rejected by professional`);
+      return res.status(200).json({ success: true, message: 'Turno rechazado', booking_id });
+    }
+
+    // ── CONFIRMACIÓN ─────────────────────────────────────────────────────────
     // Si ya tiene evento en Google Calendar, no crear otro
     if (booking.google_event_id) {
       // Solo actualizar estado
@@ -65,6 +96,29 @@ export default async function handler(
         SET estado = 'confirmed', confirmed_at = NOW()
         WHERE id = ${booking_id}
       `;
+
+      const emailData = {
+        paciente_nombre: booking.paciente_nombre,
+        paciente_email: booking.paciente_email,
+        medico_nombre: clientInfo?.nombre_completo || '',
+        medico_especialidad: clientInfo?.especialidad || undefined,
+        fecha_hora: booking.fecha_hora,
+        meet_link: booking.meet_link || null,
+        monto: booking.monto,
+      };
+      Promise.all([
+        sendBookingConfirmation(emailData).catch((e) =>
+          console.error('[Email] Error confirmación paciente:', e.message)
+        ),
+        clientInfo?.email
+          ? sendNewBookingNotification({
+              ...emailData,
+              medico_email: clientInfo.email,
+              paciente_telefono: booking.paciente_telefono || undefined,
+              notas: booking.notas || undefined,
+            }).catch((e) => console.error('[Email] Error notif profesional:', e.message))
+          : Promise.resolve(),
+      ]);
 
       return res.status(200).json({
         success: true,
@@ -121,6 +175,31 @@ export default async function handler(
     `;
 
     console.log(`[confirmar-turno] Booking ${booking_id} confirmed. Google Event: ${gcEvent.google_event_id}`);
+
+    const emailData = {
+      paciente_nombre: booking.paciente_nombre,
+      paciente_email: booking.paciente_email,
+      medico_nombre: clientInfo?.nombre_completo || '',
+      medico_especialidad: clientInfo?.especialidad || undefined,
+      fecha_hora: booking.fecha_hora,
+      evento_nombre: eventoNombre,
+      modalidad,
+      meet_link: gcEvent.meet_link || null,
+      monto: booking.monto,
+    };
+    Promise.all([
+      sendBookingConfirmation(emailData).catch((e) =>
+        console.error('[Email] Error confirmación paciente:', e.message)
+      ),
+      clientInfo?.email
+        ? sendNewBookingNotification({
+            ...emailData,
+            medico_email: clientInfo.email,
+            paciente_telefono: booking.paciente_telefono || undefined,
+            notas: booking.notas || undefined,
+          }).catch((e) => console.error('[Email] Error notif profesional:', e.message))
+        : Promise.resolve(),
+    ]);
 
     return res.status(200).json({
       success: true,
