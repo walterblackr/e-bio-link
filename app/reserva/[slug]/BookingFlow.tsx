@@ -186,6 +186,7 @@ export default function BookingFlow({ medico, eventos, diasActivos }: BookingFlo
     if (!form.nombre.trim()) errors.nombre = "El nombre es requerido";
     if (!form.email.trim()) errors.email = "El email es requerido";
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) errors.email = "Email inválido";
+    if (!form.telefono.trim()) errors.telefono = "El teléfono es requerido";
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   }
@@ -582,7 +583,7 @@ export default function BookingFlow({ medico, eventos, diasActivos }: BookingFlo
                   value={form.nombre}
                   onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))}
                   placeholder="Ej: María García"
-                  className={`w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+                  className={`w-full border rounded-lg px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
                     formErrors.nombre ? "border-red-400" : "border-gray-300"
                   }`}
                 />
@@ -598,7 +599,7 @@ export default function BookingFlow({ medico, eventos, diasActivos }: BookingFlo
                   value={form.email}
                   onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
                   placeholder="tu@email.com"
-                  className={`w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+                  className={`w-full border rounded-lg px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
                     formErrors.email ? "border-red-400" : "border-gray-300"
                   }`}
                 />
@@ -607,15 +608,18 @@ export default function BookingFlow({ medico, eventos, diasActivos }: BookingFlo
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Teléfono <span className="text-gray-400 text-xs">(opcional)</span>
+                  Teléfono <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="tel"
                   value={form.telefono}
                   onChange={e => setForm(f => ({ ...f, telefono: e.target.value }))}
                   placeholder="+54 9 11 1234-5678"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className={`w-full border rounded-lg px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+                    formErrors.telefono ? "border-red-400" : "border-gray-300"
+                  }`}
                 />
+                {formErrors.telefono && <p className="text-xs text-red-500 mt-1">{formErrors.telefono}</p>}
               </div>
 
               <div>
@@ -627,7 +631,7 @@ export default function BookingFlow({ medico, eventos, diasActivos }: BookingFlo
                   onChange={e => setForm(f => ({ ...f, notas: e.target.value }))}
                   placeholder="Contanos brevemente el motivo de tu consulta..."
                   rows={3}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
                 />
               </div>
             </div>
@@ -658,15 +662,33 @@ export default function BookingFlow({ medico, eventos, diasActivos }: BookingFlo
         {/* ─── STEP 4: Confirmación ───────────────────────────────────────── */}
         {step === 4 && bookingResult && selectedEvento && selectedSlot && (
           <div className="text-center">
-            {/* Success icon */}
-            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-5">
-              <Check className="w-10 h-10 text-green-600" />
-            </div>
-
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">¡Turno reservado!</h2>
-            <p className="text-gray-500 text-sm mb-6">
-              Número de reserva: <span className="font-mono font-semibold text-gray-700">#{bookingResult.booking_id}</span>
-            </p>
+            {/* Ícono según método de pago */}
+            {bookingResult.payment_method === 'transfer' ? (
+              <>
+                <div className="w-20 h-20 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-5">
+                  <svg className="w-10 h-10 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <h2 className="text-2xl font-bold text-gray-900 mb-1">Reserva recibida</h2>
+                <p className="text-amber-700 font-medium text-sm mb-1">Pendiente de confirmación</p>
+                <p className="text-gray-500 text-sm mb-6">
+                  Número de reserva: <span className="font-mono font-semibold text-gray-700">#{bookingResult.booking_id}</span>
+                </p>
+              </>
+            ) : (
+              <>
+                <div className="w-20 h-20 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-5">
+                  <svg className="w-10 h-10 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                  </svg>
+                </div>
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">¡Casi listo!</h2>
+                <p className="text-gray-500 text-sm mb-6">
+                  Número de reserva: <span className="font-mono font-semibold text-gray-700">#{bookingResult.booking_id}</span>
+                </p>
+              </>
+            )}
 
             {/* Detalles del turno */}
             <div className="bg-white border border-gray-200 rounded-xl p-5 mb-5 text-left space-y-3">
@@ -708,6 +730,25 @@ export default function BookingFlow({ medico, eventos, diasActivos }: BookingFlo
             {/* Instrucciones de pago */}
             {bookingResult.payment_method === 'transfer' && bookingResult.transfer_data ? (
               <div className="mb-5 text-left space-y-4">
+                {/* Aviso con flecha hacia el comprobante */}
+                {!comprobanteDone && (
+                  <div className="bg-amber-50 border border-amber-300 rounded-xl p-4 text-center">
+                    <p className="text-amber-900 font-semibold text-sm mb-1">
+                      Tu turno aún no está confirmado
+                    </p>
+                    <p className="text-amber-700 text-sm">
+                      Realizá la transferencia y subí el comprobante abajo para que el profesional confirme tu turno.
+                    </p>
+                    <div className="mt-3 flex justify-center">
+                      <svg
+                        className="w-7 h-7 text-amber-500 animate-bounce"
+                        fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </div>
+                )}
                 <div className="bg-blue-50 border border-blue-200 rounded-xl p-5">
                   <h3 className="font-semibold text-blue-900 mb-3">Datos para transferencia</h3>
                   <div className="space-y-2 text-sm">

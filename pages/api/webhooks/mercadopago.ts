@@ -3,6 +3,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { neon } from '@neondatabase/serverless';
 import { decrypt } from '../../../lib/encryption';
 import { createEventForClient, deleteEventForClient } from '../../../lib/google-calendar';
+import { sendBookingConfirmation, sendNewBookingNotification, sendBookingCancellation } from '../../../lib/email';
 import axios from 'axios';
 import crypto from 'crypto';
 
@@ -163,7 +164,7 @@ export default async function handler(
         try {
           // Incluye cal_api_key y google_refresh_token para bifurcar en calendar
           const clientResult = await sql`
-            SELECT id, slug, mp_access_token, nombre_completo, cal_api_key, google_refresh_token
+            SELECT id, slug, email, especialidad, mp_access_token, nombre_completo, cal_api_key, google_refresh_token
             FROM clients
             WHERE id = ${booking.client_id}
             LIMIT 1
@@ -262,6 +263,33 @@ export default async function handler(
             `;
 
             console.log(`[MP Webhook] Booking ${bookingMatch.id} confirmed via Google Calendar`);
+
+            // Emails de confirmación (no bloquean si fallan)
+            const emailData = {
+              paciente_nombre: bookingMatch.paciente_nombre,
+              paciente_email: bookingMatch.paciente_email,
+              medico_nombre: clientData.nombre_completo,
+              medico_especialidad: clientData.especialidad || undefined,
+              fecha_hora: bookingMatch.fecha_hora,
+              evento_nombre: eventoNombre,
+              modalidad,
+              meet_link: gcEvent.meet_link || null,
+              monto: bookingMatch.monto,
+            };
+            Promise.all([
+              sendBookingConfirmation(emailData).catch((e) =>
+                console.error('[Email] Error confirmación paciente:', e.message)
+              ),
+              clientData.email
+                ? sendNewBookingNotification({
+                    ...emailData,
+                    medico_email: clientData.email,
+                    paciente_telefono: bookingMatch.paciente_telefono || undefined,
+                    notas: bookingMatch.notas || undefined,
+                  }).catch((e) => console.error('[Email] Error notif profesional:', e.message))
+                : Promise.resolve(),
+            ]);
+
           } catch (gcError: any) {
             console.error('[MP Webhook] Error Google Calendar:', gcError.message);
             // Pago registrado; el profesional puede confirmar luego desde /api/confirmar-turno
@@ -306,6 +334,13 @@ export default async function handler(
         // Cancelar en el sistema correspondiente
         if (bookingMatch.google_event_id) {
           try { await deleteEventForClient(bookingMatch.client_id, bookingMatch.google_event_id); } catch { /* ignorar */ }
+          // Email de cancelación solo para el flujo Google Calendar
+          sendBookingCancellation({
+            paciente_nombre: bookingMatch.paciente_nombre,
+            paciente_email: bookingMatch.paciente_email,
+            medico_nombre: clientData.nombre_completo,
+            fecha_hora: bookingMatch.fecha_hora,
+          }).catch((e) => console.error('[Email] Error cancelación:', e.message));
         } else if (clientData.cal_api_key && bookingMatch.cal_booking_id) {
           try {
             await axios.post(
