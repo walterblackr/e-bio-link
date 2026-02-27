@@ -1,6 +1,7 @@
 // pages/api/slots/[slug].ts
 // Endpoint público: retorna slots disponibles para un profesional en una fecha dada
 // Query params: ?date=YYYY-MM-DD&evento_id=X
+// Soporta: múltiples bloques por día, buffers, antelación mínima, máximo por día
 
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { neon } from '@neondatabase/serverless';
@@ -10,7 +11,6 @@ import { getValidAccessToken, getFreeBusy } from '../../../lib/google-calendar';
 const TZ_OFFSET = '-03:00';
 
 function toArgentinaISO(date: string, time: string): string {
-  // date = "YYYY-MM-DD", time = "HH:MM"
   return `${date}T${time}:00${TZ_OFFSET}`;
 }
 
@@ -40,13 +40,11 @@ export default async function handler(
     return res.status(400).json({ error: 'Parámetros requeridos: date, evento_id' });
   }
 
-  // Validar formato de fecha
   const dateStr = date as string;
   if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
     return res.status(400).json({ error: 'Formato de fecha inválido. Use YYYY-MM-DD' });
   }
 
-  // No permitir fechas pasadas
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const requestedDate = new Date(dateStr + 'T00:00:00');
@@ -78,9 +76,10 @@ export default async function handler(
 
     const client = clientResult[0];
 
-    // 2. Obtener el evento y su duración
+    // 2. Obtener el evento con todos sus campos incluyendo configuración avanzada
     const eventoResult = await sql`
-      SELECT id, nombre, duracion_minutos, precio, modalidad, activo
+      SELECT id, nombre, duracion_minutos, precio, modalidad, activo,
+             buffer_antes, buffer_despues, antelacion_minima, max_por_dia
       FROM eventos
       WHERE id = ${evento_id as string}
         AND client_id = ${client.id}
@@ -94,91 +93,126 @@ export default async function handler(
 
     const evento = eventoResult[0];
     const duracion = evento.duracion_minutos as number;
+    const bufferAntes = (evento.buffer_antes as number) || 0;
+    const bufferDespues = (evento.buffer_despues as number) || 0;
+    const antelacionMinima = (evento.antelacion_minima as number) || 0;
+    const maxPorDia = evento.max_por_dia as number | null;
 
-    // 3. Determinar el día de la semana (0=Dom, 1=Lun, ..., 6=Sab)
-    // La fecha "YYYY-MM-DD" con T00:00:00 es medianoche local, pero para
-    // determinar el día de semana correctamente usamos el string directamente
+    // 3. Verificar máximo de turnos por día
+    if (maxPorDia !== null && maxPorDia > 0) {
+      const bookingCount = await sql`
+        SELECT COUNT(*)::int as count
+        FROM bookings
+        WHERE evento_id = ${evento.id}
+          AND DATE(fecha_hora AT TIME ZONE 'America/Argentina/Buenos_Aires') = ${dateStr}
+          AND estado NOT IN ('cancelled')
+      `;
+      const count = (bookingCount[0]?.count as number) || 0;
+      if (count >= maxPorDia) {
+        return res.status(200).json({
+          slots: [],
+          mensaje: `Límite de ${maxPorDia} turnos por día alcanzado`,
+        });
+      }
+    }
+
+    // 4. Determinar el día de la semana (0=Dom, 1=Lun, ..., 6=Sab)
     const [year, month, day] = dateStr.split('-').map(Number);
-    const dateObj = new Date(year, month - 1, day); // local time, no UTC
-    const diaSemana = dateObj.getDay(); // 0=Sunday
+    const dateObj = new Date(year, month - 1, day);
+    const diaSemana = dateObj.getDay();
 
-    // 4. Obtener disponibilidad para ese día
+    // 5. Obtener todos los bloques de disponibilidad del evento para ese día
     const disponibilidadResult = await sql`
-      SELECT hora_inicio, hora_fin, activo
+      SELECT hora_inicio, hora_fin
       FROM disponibilidad
-      WHERE client_id = ${client.id}
+      WHERE evento_id = ${evento.id}
         AND dia_semana = ${diaSemana}
-      LIMIT 1
+      ORDER BY hora_inicio ASC
     `;
 
-    if (disponibilidadResult.length === 0 || !disponibilidadResult[0].activo) {
+    if (disponibilidadResult.length === 0) {
       return res.status(200).json({ slots: [], mensaje: 'Sin disponibilidad para este día' });
     }
 
-    const disp = disponibilidadResult[0];
-    const horaInicio = (disp.hora_inicio as string).substring(0, 5); // "HH:MM"
-    const horaFin = (disp.hora_fin as string).substring(0, 5);
-
-    // 5. Generar todos los slots potenciales
-    const inicioMin = timeToMinutes(horaInicio);
-    const finMin = timeToMinutes(horaFin);
+    // 6. Generar slots potenciales de todos los bloques del día
     const potentialSlots: { start: string; end: string; label: string }[] = [];
 
-    for (let m = inicioMin; m + duracion <= finMin; m += duracion) {
-      const startTime = minutesToTime(m);
-      const endTime = minutesToTime(m + duracion);
-      potentialSlots.push({
-        start: toArgentinaISO(dateStr, startTime),
-        end: toArgentinaISO(dateStr, endTime),
-        label: startTime,
-      });
+    for (const bloque of disponibilidadResult) {
+      const horaInicio = (bloque.hora_inicio as string).substring(0, 5);
+      const horaFin = (bloque.hora_fin as string).substring(0, 5);
+      const inicioMin = timeToMinutes(horaInicio);
+      const finMin = timeToMinutes(horaFin);
+
+      for (let m = inicioMin; m + duracion <= finMin; m += duracion) {
+        const startTime = minutesToTime(m);
+        const endTime = minutesToTime(m + duracion);
+        potentialSlots.push({
+          start: toArgentinaISO(dateStr, startTime),
+          end: toArgentinaISO(dateStr, endTime),
+          label: startTime,
+        });
+      }
     }
 
     if (potentialSlots.length === 0) {
       return res.status(200).json({ slots: [] });
     }
 
-    // 6. Filtrar slots pasados si es hoy
-    // Argentina = UTC-3 (fijo, sin DST)
+    // 7. Filtrar por antelación mínima
+    // Calcular "ahora + antelacion_minima" en hora Argentina (UTC-3)
     const nowUTC = new Date();
+    const cutoffTime = new Date(nowUTC.getTime() + antelacionMinima * 60 * 1000);
+
     const nowArgentinaMs = nowUTC.getTime() - 3 * 60 * 60 * 1000;
     const todayArgentina = new Date(nowArgentinaMs).toISOString().substring(0, 10);
     const isToday = dateStr === todayArgentina;
 
     const futurePotentialSlots = isToday
-      ? potentialSlots.filter(slot => new Date(slot.start).getTime() > nowUTC.getTime())
+      ? potentialSlots.filter(slot => new Date(slot.start).getTime() > cutoffTime.getTime())
       : potentialSlots;
 
     if (futurePotentialSlots.length === 0) {
       return res.status(200).json({ slots: [] });
     }
 
-    // 7. Consultar Google Calendar FreeBusy (solo si tiene Google Calendar conectado)
+    // 8. Filtrar por Google Calendar FreeBusy (con buffers)
     let freeSlots = futurePotentialSlots;
 
     if (client.google_refresh_token) {
       try {
         const accessToken = await getValidAccessToken(client as any);
         const calendarId = client.google_calendar_id || 'primary';
-        const timeMin = toArgentinaISO(dateStr, horaInicio);
-        const timeMax = toArgentinaISO(dateStr, horaFin);
+
+        // Rango de consulta = inicio del primer bloque hasta fin del último (con margen de buffers)
+        const primerBloque = disponibilidadResult[0];
+        const ultimoBloque = disponibilidadResult[disponibilidadResult.length - 1];
+        const horaInicioConsulta = (primerBloque.hora_inicio as string).substring(0, 5);
+        const horaFinConsulta = (ultimoBloque.hora_fin as string).substring(0, 5);
+        const timeMin = toArgentinaISO(dateStr, horaInicioConsulta);
+        const timeMax = toArgentinaISO(dateStr, horaFinConsulta);
 
         const busySlots = await getFreeBusy(accessToken, calendarId, timeMin, timeMax);
 
-        // 8. Filtrar slots ocupados
+        // Expandir cada busy slot por los buffers
+        const busySlotsExpanded = busySlots.map(busy => ({
+          start: new Date(busy.start).getTime() - bufferAntes * 60 * 1000,
+          end: new Date(busy.end).getTime() + bufferDespues * 60 * 1000,
+        }));
+
+        // Un slot es libre si no se superpone con ningún busy (expandido)
         freeSlots = futurePotentialSlots.filter(slot => {
           const slotStart = new Date(slot.start).getTime();
           const slotEnd = new Date(slot.end).getTime();
-          return !busySlots.some(busy => {
-            const busyStart = new Date(busy.start).getTime();
-            const busyEnd = new Date(busy.end).getTime();
-            return slotStart < busyEnd && slotEnd > busyStart;
-          });
+
+          // También aplicar buffer del slot: el slot ocupa bufferAntes antes y bufferDespues después
+          const slotWithBufferStart = slotStart - bufferAntes * 60 * 1000;
+          const slotWithBufferEnd = slotEnd + bufferDespues * 60 * 1000;
+
+          return !busySlotsExpanded.some(busy =>
+            slotWithBufferStart < busy.end && slotWithBufferEnd > busy.start
+          );
         });
       } catch (googleError: any) {
-        // Si Google Calendar falla (token inválido/expirado), devolvemos
-        // todos los slots de disponibilidad sin filtrar por calendario.
-        // El médico deberá reconectar Google Calendar desde su perfil.
         console.warn('Google Calendar FreeBusy falló, mostrando slots sin filtrar:', googleError.message);
       }
     }

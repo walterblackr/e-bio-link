@@ -210,7 +210,7 @@ export default function WizardStep5Payment({
                   value={cbuAlias}
                   onChange={(e) => setCbuAlias(e.target.value)}
                   placeholder="ej: mi.alias o 0000003100012345678901"
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  className="w-full px-3 py-2 text-sm text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 />
               </div>
 
@@ -223,7 +223,7 @@ export default function WizardStep5Payment({
                   value={bancoNombre}
                   onChange={(e) => setBancoNombre(e.target.value)}
                   placeholder="ej: Banco Galicia, Mercado Pago"
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  className="w-full px-3 py-2 text-sm text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 />
               </div>
 
@@ -236,7 +236,7 @@ export default function WizardStep5Payment({
                   value={titularCuenta}
                   onChange={(e) => setTitularCuenta(e.target.value)}
                   placeholder="ej: Juan Pérez"
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  className="w-full px-3 py-2 text-sm text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 />
               </div>
             </div>

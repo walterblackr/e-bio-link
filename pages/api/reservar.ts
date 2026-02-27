@@ -69,7 +69,7 @@ export default async function handler(
 
     // 2. Obtener el evento
     const eventoResult = await sql`
-      SELECT id, nombre, duracion_minutos, precio, modalidad
+      SELECT id, nombre, duracion_minutos, precio, modalidad, max_por_dia
       FROM eventos
       WHERE id = ${evento_id}
         AND client_id = ${client.id}
@@ -83,7 +83,25 @@ export default async function handler(
 
     const evento = eventoResult[0];
 
-    // 3. Crear booking en DB con estado 'pending_payment'
+    // 3. Re-verificar max_por_dia (previene race conditions con la consulta de slots)
+    if (evento.max_por_dia !== null && evento.max_por_dia > 0) {
+      const fechaDate = new Date(fecha_hora).toISOString().substring(0, 10);
+      const bookingCount = await sql`
+        SELECT COUNT(*)::int as count
+        FROM bookings
+        WHERE evento_id = ${evento.id}
+          AND DATE(fecha_hora AT TIME ZONE 'America/Argentina/Buenos_Aires') = ${fechaDate}
+          AND estado NOT IN ('cancelled')
+      `;
+      const count = (bookingCount[0]?.count as number) || 0;
+      if (count >= evento.max_por_dia) {
+        return res.status(409).json({
+          error: `No hay más disponibilidad para este tipo de consulta en la fecha seleccionada (límite de ${evento.max_por_dia} turnos/día alcanzado)`,
+        });
+      }
+    }
+
+    // 5. Crear booking en DB con estado 'pending_payment'
     // Nota: la verificación de disponibilidad en Google Calendar se omite aquí
     // El evento se crea en Google Calendar post-confirmación de pago
     const bookingResult = await sql`
@@ -117,6 +135,7 @@ export default async function handler(
     const bookingId = bookingResult[0].id;
 
     // 6. Responder con booking_id y método de pago
+
     const paymentMethod = client.payment_method || 'transfer';
 
     const response: any = {

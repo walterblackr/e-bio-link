@@ -41,6 +41,10 @@ export default async function handler(
         precio,
         modalidad,
         activo,
+        buffer_antes,
+        buffer_despues,
+        antelacion_minima,
+        max_por_dia,
       } = req.body;
 
       if (modalidad && !['virtual', 'presencial'].includes(modalidad)) {
@@ -58,6 +62,10 @@ export default async function handler(
           precio = ${precio !== undefined ? precio : evento.precio},
           modalidad = ${modalidad || evento.modalidad || 'virtual'},
           activo = ${activo !== undefined ? activo : evento.activo},
+          buffer_antes = ${buffer_antes !== undefined ? buffer_antes : (evento.buffer_antes ?? 0)},
+          buffer_despues = ${buffer_despues !== undefined ? buffer_despues : (evento.buffer_despues ?? 0)},
+          antelacion_minima = ${antelacion_minima !== undefined ? antelacion_minima : (evento.antelacion_minima ?? 0)},
+          max_por_dia = ${max_por_dia !== undefined ? max_por_dia : evento.max_por_dia},
           updated_at = NOW()
         WHERE id = ${id} AND client_id = ${client.id}
         RETURNING *

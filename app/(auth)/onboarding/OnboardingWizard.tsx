@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import WizardStep1 from "./wizard-step1";
 import WizardStep2Google from "./wizard-step2-google";
-import WizardStep3Availability from "./wizard-step3-availability";
 import WizardStep2B from "./wizard-step2b";
 import WizardStep5Payment from "./wizard-step5-payment";
 
@@ -25,10 +24,11 @@ export default function OnboardingWizard({ clientData }: OnboardingWizardProps) 
       window.history.replaceState({}, "", "/onboarding");
     }
   }, []);
+
   const [step1Data, setStep1Data] = useState<any>(null);
   const [currentClientData, setCurrentClientData] = useState(clientData);
 
-  const TOTAL_STEPS = 5;
+  const TOTAL_STEPS = 4;
 
   const handleStep1Next = async (data: any) => {
     try {
@@ -54,9 +54,8 @@ export default function OnboardingWizard({ clientData }: OnboardingWizardProps) 
   const stepLabels: Record<number, string> = {
     1: "Identidad",
     2: "Google Calendar",
-    3: "Disponibilidad",
-    4: "Eventos",
-    5: "Método de Pago",
+    3: "Consultas",
+    4: "Método de Pago",
   };
 
   return (
@@ -125,23 +124,16 @@ export default function OnboardingWizard({ clientData }: OnboardingWizardProps) 
       )}
 
       {currentStep === 3 && (
-        <WizardStep3Availability
+        <WizardStep2B
           onNext={() => setCurrentStep(4)}
           onBack={() => setCurrentStep(2)}
         />
       )}
 
       {currentStep === 4 && (
-        <WizardStep2B
-          onNext={() => setCurrentStep(5)}
-          onBack={() => setCurrentStep(3)}
-        />
-      )}
-
-      {currentStep === 5 && (
         <WizardStep5Payment
           onNext={() => router.push(`/biolink/${currentClientData.slug}`)}
-          onBack={() => setCurrentStep(4)}
+          onBack={() => setCurrentStep(3)}
           clientSlug={currentClientData.slug}
         />
       )}
