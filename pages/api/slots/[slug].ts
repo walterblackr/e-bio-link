@@ -175,15 +175,35 @@ export default async function handler(
       return res.status(200).json({ slots: [] });
     }
 
-    // 8. Filtrar por Google Calendar FreeBusy (con buffers)
-    let freeSlots = futurePotentialSlots;
+    // 8. Filtrar slots ya reservados en la BD (pending o confirmados)
+    // Previene doble-reserva durante el período de pago pendiente (sin GC event aún)
+    const existingBookings = await sql`
+      SELECT fecha_hora
+      FROM bookings
+      WHERE client_id = ${client.id}
+        AND estado NOT IN ('cancelled')
+        AND fecha_hora >= ${futurePotentialSlots[0].start}
+        AND fecha_hora <= ${futurePotentialSlots[futurePotentialSlots.length - 1].start}
+    `;
+
+    const bookedMs = new Set(
+      existingBookings.map(b => new Date(b.fecha_hora as string).getTime())
+    );
+
+    const availableSlots = futurePotentialSlots.filter(
+      slot => !bookedMs.has(new Date(slot.start).getTime())
+    );
+
+    // 9. Filtrar por Google Calendar FreeBusy (con buffers)
+    // El buffer se aplica UNA sola vez al slot candidato (no a ambos lados)
+    let freeSlots = availableSlots;
 
     if (client.google_refresh_token) {
       try {
         const accessToken = await getValidAccessToken(client as any);
         const calendarId = client.google_calendar_id || 'primary';
 
-        // Rango de consulta = inicio del primer bloque hasta fin del último (con margen de buffers)
+        // Rango de consulta = inicio del primer bloque hasta fin del último
         const primerBloque = disponibilidadResult[0];
         const ultimoBloque = disponibilidadResult[disponibilidadResult.length - 1];
         const horaInicioConsulta = (primerBloque.hora_inicio as string).substring(0, 5);
@@ -193,24 +213,16 @@ export default async function handler(
 
         const busySlots = await getFreeBusy(accessToken, calendarId, timeMin, timeMax);
 
-        // Expandir cada busy slot por los buffers
-        const busySlotsExpanded = busySlots.map(busy => ({
-          start: new Date(busy.start).getTime() - bufferAntes * 60 * 1000,
-          end: new Date(busy.end).getTime() + bufferDespues * 60 * 1000,
-        }));
+        // Un slot es libre si la ventana extendida (slot + buffers) no se superpone con ningún busy
+        freeSlots = availableSlots.filter(slot => {
+          const effectiveStart = new Date(slot.start).getTime() - bufferAntes * 60 * 1000;
+          const effectiveEnd = new Date(slot.end).getTime() + bufferDespues * 60 * 1000;
 
-        // Un slot es libre si no se superpone con ningún busy (expandido)
-        freeSlots = futurePotentialSlots.filter(slot => {
-          const slotStart = new Date(slot.start).getTime();
-          const slotEnd = new Date(slot.end).getTime();
-
-          // También aplicar buffer del slot: el slot ocupa bufferAntes antes y bufferDespues después
-          const slotWithBufferStart = slotStart - bufferAntes * 60 * 1000;
-          const slotWithBufferEnd = slotEnd + bufferDespues * 60 * 1000;
-
-          return !busySlotsExpanded.some(busy =>
-            slotWithBufferStart < busy.end && slotWithBufferEnd > busy.start
-          );
+          return !busySlots.some(busy => {
+            const busyStart = new Date(busy.start).getTime();
+            const busyEnd = new Date(busy.end).getTime();
+            return effectiveStart < busyEnd && effectiveEnd > busyStart;
+          });
         });
       } catch (googleError: any) {
         console.warn('Google Calendar FreeBusy falló, mostrando slots sin filtrar:', googleError.message);
