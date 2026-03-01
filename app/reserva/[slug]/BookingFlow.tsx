@@ -13,6 +13,7 @@ interface Evento {
   duracion_minutos: number;
   precio: number;
   modalidad: "virtual" | "presencial";
+  diasActivos: number[]; // 0=Dom, 1=Lun, ..., 6=Sab
 }
 
 interface Medico {
@@ -34,7 +35,6 @@ interface Slot {
 interface BookingFlowProps {
   medico: Medico;
   eventos: Evento[];
-  diasActivos: number[]; // 0=Dom, 1=Lun, ..., 6=Sab
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -67,7 +67,7 @@ function toYMD(year: number, month: number, day: number): string {
 
 // ─── Main Component ──────────────────────────────────────────────────────────
 
-export default function BookingFlow({ medico, eventos, diasActivos }: BookingFlowProps) {
+export default function BookingFlow({ medico, eventos }: BookingFlowProps) {
   const router = useRouter();
 
   // Steps: 1=evento, 2=fecha+slot, 3=datos, 4=confirmación
@@ -482,7 +482,7 @@ export default function BookingFlow({ medico, eventos, diasActivos }: BookingFlo
                   const isPast = isDatePast(calYear, calMonth, day);
                   const isSelected = selectedDate === dateStr;
                   const diaSemana = new Date(calYear, calMonth, day).getDay();
-                  const isAvailable = diasActivos.includes(diaSemana);
+                  const isAvailable = selectedEvento ? selectedEvento.diasActivos.includes(diaSemana) : false;
                   const isDisabled = isPast || !isAvailable;
 
                   return (

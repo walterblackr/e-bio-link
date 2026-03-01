@@ -3,7 +3,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { neon } from '@neondatabase/serverless';
 import { createEventForClient } from '../../lib/google-calendar';
-import { requireActiveClient } from '../../lib/auth/client-auth';
+import { requireActiveClientFromRequest } from '../../lib/auth/client-auth';
 import { sendBookingConfirmation, sendNewBookingNotification, sendBookingCancellation } from '../../lib/email';
 
 export default async function handler(
@@ -15,8 +15,8 @@ export default async function handler(
   }
 
   try {
-    // Requiere sesión activa del profesional
-    const session = await requireActiveClient();
+    // Requiere sesión activa del profesional (Pages Router: usa req)
+    const session = await requireActiveClientFromRequest(req);
 
     const { booking_id, action = 'confirm' } = req.body;
 
@@ -76,7 +76,7 @@ export default async function handler(
         UPDATE bookings SET estado = 'cancelled' WHERE id = ${booking_id}
       `;
 
-      sendBookingCancellation({
+      await sendBookingCancellation({
         paciente_nombre: booking.paciente_nombre,
         paciente_email: booking.paciente_email,
         medico_nombre: clientInfo?.nombre_completo || '',
@@ -106,7 +106,7 @@ export default async function handler(
         meet_link: booking.meet_link || null,
         monto: booking.monto,
       };
-      Promise.all([
+      await Promise.all([
         sendBookingConfirmation(emailData).catch((e) =>
           console.error('[Email] Error confirmación paciente:', e.message)
         ),
@@ -134,13 +134,13 @@ export default async function handler(
 
     if (booking.evento_id) {
       const eventoResult = await sql`
-        SELECT nombre, duracion, modalidad
+        SELECT nombre, duracion_minutos, modalidad
         FROM eventos
         WHERE id = ${booking.evento_id}
         LIMIT 1
       `;
       if (eventoResult.length > 0) {
-        duracion = eventoResult[0].duracion || 30;
+        duracion = eventoResult[0].duracion_minutos || 30;
         modalidad = eventoResult[0].modalidad || 'virtual';
         eventoNombre = eventoResult[0].nombre || 'Consulta';
       }
@@ -187,7 +187,7 @@ export default async function handler(
       meet_link: gcEvent.meet_link || null,
       monto: booking.monto,
     };
-    Promise.all([
+    await Promise.all([
       sendBookingConfirmation(emailData).catch((e) =>
         console.error('[Email] Error confirmación paciente:', e.message)
       ),

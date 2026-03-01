@@ -25,7 +25,6 @@ export default function OnboardingWizard({ clientData }: OnboardingWizardProps) 
     }
   }, []);
 
-  const [step1Data, setStep1Data] = useState<any>(null);
   const [currentClientData, setCurrentClientData] = useState(clientData);
 
   const TOTAL_STEPS = 4;
@@ -43,7 +42,6 @@ export default function OnboardingWizard({ clientData }: OnboardingWizardProps) 
         throw new Error(error.error || "Error al guardar los datos");
       }
 
-      setStep1Data(data);
       setCurrentClientData({ ...currentClientData, ...data });
       setCurrentStep(2);
     } catch (error: any) {
@@ -105,7 +103,6 @@ export default function OnboardingWizard({ clientData }: OnboardingWizardProps) 
             matricula: currentClientData.matricula || "",
             descripcion: currentClientData.descripcion || "",
             foto_url: currentClientData.foto_url || "",
-            monto_consulta: currentClientData.monto_consulta || 10000,
             tema_config: typeof currentClientData.tema_config === 'string'
               ? JSON.parse(currentClientData.tema_config)
               : currentClientData.tema_config || undefined,

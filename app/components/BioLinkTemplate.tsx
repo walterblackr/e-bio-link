@@ -168,6 +168,21 @@ export default function BioLinkTemplate({ data }: BioLinkProps) {
             </a>
           ))}
         </div>
+
+        {/* Footer ebiolink */}
+        <div className="mt-8 pt-4">
+          <a
+            href="https://ebiolink.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-1.5 opacity-40 hover:opacity-60 transition-opacity"
+          >
+            <img src="/ebiolink.png" alt="ebiolink" className="h-4 w-auto" />
+            <span className="text-[10px] font-medium" style={{ color: colors.text }}>
+              ebiolink
+            </span>
+          </a>
+        </div>
       </div>
     </main>
   );

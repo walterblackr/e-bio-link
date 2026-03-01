@@ -23,7 +23,6 @@ export default async function handler(
       matricula,
       descripcion,
       foto_url,
-      monto_consulta,
       tema_config,
       botones_config,
     } = req.body;
@@ -31,10 +30,6 @@ export default async function handler(
     // Validaciones básicas
     if (!nombre_completo || !especialidad || !matricula) {
       return res.status(400).json({ error: 'Campos requeridos faltantes' });
-    }
-
-    if (!monto_consulta || monto_consulta < 0) {
-      return res.status(400).json({ error: 'Monto de consulta inválido' });
     }
 
     const sql = neon(process.env.DATABASE_URL!);
@@ -48,7 +43,6 @@ export default async function handler(
         matricula = ${matricula},
         descripcion = ${descripcion || ''},
         foto_url = ${foto_url || ''},
-        monto_consulta = ${monto_consulta},
         tema_config = ${JSON.stringify(tema_config)},
         botones_config = ${JSON.stringify(botones_config || [])},
         updated_at = NOW()

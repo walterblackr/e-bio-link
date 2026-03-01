@@ -3,7 +3,7 @@
 import { useState } from "react";
 import BioLinkPreview from "../../components/BioLinkPreview";
 import PhotoUploader from "../../components/PhotoUploader";
-import { Plus, X } from "lucide-react";
+import { Plus, X, Palette } from "lucide-react";
 
 // Paletas predefinidas
 const COLOR_PALETTES = [
@@ -56,7 +56,7 @@ export default function WizardStep1({ onNext, initialData }: WizardStep1Props) {
         p.colors.buttonBorder === colors.buttonBorder
     );
 
-    return matchingPalette?.id || COLOR_PALETTES[0].id;
+    return matchingPalette?.id || "custom";
   };
 
   const initialTheme = initialData?.tema_config || COLOR_PALETTES[0].colors;
@@ -68,22 +68,34 @@ export default function WizardStep1({ onNext, initialData }: WizardStep1Props) {
     matricula: initialData?.matricula || "",
     descripcion: initialData?.descripcion || "",
     foto_url: initialData?.foto_url || "",
-    monto_consulta: initialData?.monto_consulta || 10000,
     tema_config: initialTheme,
     botones_config: initialData?.botones_config || [],
   });
 
   const [selectedPalette, setSelectedPalette] = useState(initialPalette);
-  const [showCustomColors, setShowCustomColors] = useState(false);
+  const [showCustomColors, setShowCustomColors] = useState(initialPalette === "custom");
   const [newLink, setNewLink] = useState({ texto: "", url: "" });
   const [showAddLink, setShowAddLink] = useState(false);
 
   const handlePaletteChange = (paletteId: string) => {
+    if (paletteId === "custom") {
+      setSelectedPalette("custom");
+      setShowCustomColors(true);
+      return;
+    }
     const palette = COLOR_PALETTES.find((p) => p.id === paletteId);
     if (palette) {
       setSelectedPalette(paletteId);
+      setShowCustomColors(false);
       setFormData({ ...formData, tema_config: palette.colors });
     }
+  };
+
+  const handleCustomColorChange = (field: string, value: string) => {
+    setFormData({
+      ...formData,
+      tema_config: { ...formData.tema_config, [field]: value },
+    });
   };
 
   const handleAddLink = () => {
@@ -218,28 +230,6 @@ export default function WizardStep1({ onNext, initialData }: WizardStep1Props) {
                     <p className="text-xs text-gray-400 mt-0.5">Máximo 160 caracteres</p>
                   </div>
 
-                  {/* Precio de Consulta */}
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1.5">
-                      Precio de Consulta *
-                    </label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
-                      <input
-                        type="text"
-                        inputMode="numeric"
-                        value={formData.monto_consulta ? formData.monto_consulta.toLocaleString('es-AR') : ''}
-                        onChange={(e) => {
-                          const value = e.target.value.replace(/[^0-9]/g, '');
-                          setFormData({ ...formData, monto_consulta: value ? Number(value) : 0 });
-                        }}
-                        placeholder="10.000"
-                        required
-                        className="w-full pl-7 pr-12 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                      />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">ARS</span>
-                    </div>
-                  </div>
                 </div>
               </div>
 
@@ -252,10 +242,12 @@ export default function WizardStep1({ onNext, initialData }: WizardStep1Props) {
                   Tema y Colores
                 </h2>
 
-                <div className="space-y-2">
-                  <p className="text-xs text-gray-500 mb-2">
-                    Elegí una paleta de colores para tu biolink
+                <div className="space-y-3">
+                  <p className="text-xs text-gray-500">
+                    Elegí una paleta de colores o personalizá los colores
                   </p>
+
+                  {/* Paletas predefinidas */}
                   <div className="grid grid-cols-3 gap-2">
                     {COLOR_PALETTES.map((palette) => (
                       <button
@@ -285,7 +277,59 @@ export default function WizardStep1({ onNext, initialData }: WizardStep1Props) {
                         <p className="text-[10px] font-medium text-gray-700">{palette.name}</p>
                       </button>
                     ))}
+
+                    {/* Opción Personalizado */}
+                    <button
+                      type="button"
+                      onClick={() => handlePaletteChange("custom")}
+                      className={`p-2 rounded-lg border transition-all ${
+                        selectedPalette === "custom"
+                          ? "border-blue-500 bg-blue-50 ring-2 ring-blue-100"
+                          : "border-gray-300 hover:border-gray-400"
+                      }`}
+                    >
+                      <div className="flex items-center gap-1.5 mb-1.5">
+                        <Palette className="w-4 h-4 text-gray-500" />
+                      </div>
+                      <p className="text-[10px] font-medium text-gray-700">Personalizado</p>
+                    </button>
                   </div>
+
+                  {/* Color pickers custom */}
+                  {showCustomColors && (
+                    <div className="p-3 bg-gray-50 rounded-lg border border-gray-200 space-y-3">
+                      {[
+                        { key: "background", label: "Fondo" },
+                        { key: "text", label: "Texto" },
+                        { key: "buttonBorder", label: "Bordes / Botones" },
+                        { key: "separator", label: "Separador" },
+                      ].map(({ key, label }) => (
+                        <div key={key} className="flex items-center gap-3">
+                          <input
+                            type="color"
+                            value={(formData.tema_config as any)[key] || "#000000"}
+                            onChange={(e) => handleCustomColorChange(key, e.target.value)}
+                            className="w-8 h-8 rounded cursor-pointer border border-gray-300 p-0.5"
+                          />
+                          <div className="flex-1">
+                            <label className="block text-xs font-medium text-gray-600">{label}</label>
+                            <input
+                              type="text"
+                              value={(formData.tema_config as any)[key] || ""}
+                              onChange={(e) => {
+                                const v = e.target.value;
+                                if (/^#[0-9a-fA-F]{0,6}$/.test(v) || v === "") {
+                                  handleCustomColorChange(key, v);
+                                }
+                              }}
+                              placeholder="#000000"
+                              className="w-24 px-2 py-1 text-xs text-gray-900 bg-white border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 font-mono"
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
 

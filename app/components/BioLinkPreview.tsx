@@ -8,7 +8,6 @@ interface BioLinkPreviewProps {
     especialidad: string;
     matricula: string;
     descripcion: string;
-    monto_consulta: number;
     botones_config: any[];
     tema_config: {
       background?: string;
@@ -133,6 +132,21 @@ export default function BioLinkPreview({ data }: BioLinkPreviewProps) {
             Tus botones aparecerán aquí
           </p>
         )}
+
+        {/* Footer ebiolink */}
+        <div className="mt-auto pt-8 pb-4">
+          <a
+            href="https://ebiolink.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-1.5 opacity-40 hover:opacity-60 transition-opacity"
+          >
+            <img src="/ebiolink.png" alt="ebiolink" className="h-4 w-auto" />
+            <span className="text-[10px] font-medium" style={{ color: colors.text }}>
+              ebiolink
+            </span>
+          </a>
+        </div>
       </div>
     </div>
   );

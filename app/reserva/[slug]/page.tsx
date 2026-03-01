@@ -58,15 +58,28 @@ export default async function ReservaPage({ params }: PageProps) {
     );
   }
 
-  // Obtener días de semana activos (0=Dom, 1=Lun, ..., 6=Sab)
-  const disponibilidadResult = await sql`
-    SELECT dia_semana
+  // Obtener días activos POR EVENTO (cada evento tiene su propia disponibilidad)
+  const diasPorEventoResult = await sql`
+    SELECT DISTINCT evento_id, dia_semana
     FROM disponibilidad
     WHERE client_id = ${medico.id}
-      AND activo = true
+      AND evento_id IS NOT NULL
     ORDER BY dia_semana ASC
   `;
-  const diasActivos = disponibilidadResult.map((d: any) => d.dia_semana as number);
+
+  // Construir mapa evento_id -> diasActivos[]
+  const diasPorEvento: Record<string, number[]> = {};
+  for (const row of diasPorEventoResult) {
+    const eid = String(row.evento_id);
+    if (!diasPorEvento[eid]) diasPorEvento[eid] = [];
+    diasPorEvento[eid].push(row.dia_semana as number);
+  }
+
+  // Agregar diasActivos a cada evento
+  const eventosConDias = eventosResult.map((e: any) => ({
+    ...e,
+    diasActivos: diasPorEvento[String(e.id)] || [],
+  }));
 
   return (
     <BookingFlow
@@ -82,8 +95,7 @@ export default async function ReservaPage({ params }: PageProps) {
           : medico.tema_config,
         payment_method: medico.payment_method || 'transfer',
       }}
-      eventos={eventosResult as any[]}
-      diasActivos={diasActivos}
+      eventos={eventosConDias as any[]}
     />
   );
 }
