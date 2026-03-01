@@ -145,7 +145,8 @@ export default async function handler(
           b.mp_preference_id,
           b.mp_payment_id,
           b.google_event_id,
-          b.estado
+          b.estado,
+          b.monto
         FROM bookings b
         WHERE b.estado IN ('pending_payment', 'pending', 'paid')
         ORDER BY b.created_at DESC
@@ -287,7 +288,7 @@ export default async function handler(
                     paciente_telefono: bookingMatch.paciente_telefono || undefined,
                     notas: bookingMatch.notas || undefined,
                   }).catch((e) => console.error('[Email] Error notif profesional:', e.message))
-                : Promise.resolve(),
+                : (console.warn(`[Email] Médico sin email registrado: client_id=${clientData.id}, slug=${clientData.slug}`), Promise.resolve()),
             ]);
 
           } catch (gcError: any) {
