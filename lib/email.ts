@@ -2,7 +2,7 @@
 import { Resend } from 'resend';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
-const FROM = process.env.EMAIL_FROM || 'turnos@ebiolink.com';
+const FROM = process.env.EMAIL_FROM || 'ebiolinkarg@gmail.com';
 
 // ── Tipos ────────────────────────────────────────────────────────────────────
 
@@ -265,4 +265,113 @@ export async function sendBookingCancellation(data: BookingEmailData): Promise<v
   });
 
   console.log(`[Email] Cancelación enviada a ${data.paciente_email}`);
+}
+
+// ── 4. Notificación al médico con comprobante + botones confirmar/rechazar ────
+
+interface ComprobanteNotifData {
+  medico_email: string;
+  medico_nombre: string;
+  paciente_nombre: string;
+  paciente_email: string;
+  paciente_telefono?: string;
+  fecha_hora: string;
+  evento_nombre: string;
+  monto?: number | string;
+  comprobante_url: string;
+  confirm_url: string;
+  reject_url: string;
+}
+
+export async function sendComprobanteNotification(data: ComprobanteNotifData): Promise<void> {
+  if (!process.env.RESEND_API_KEY) {
+    console.warn('[Email] RESEND_API_KEY no configurada — email no enviado');
+    return;
+  }
+
+  const fecha = formatFecha(data.fecha_hora);
+
+  const html = `
+    <!DOCTYPE html><html><head><style>${baseStyle()}
+    .btn-confirm { display:inline-block; background:#16a34a; color:#ffffff !important; padding:14px 28px; border-radius:8px; font-weight:700; font-size:15px; text-decoration:none; margin:8px 4px; }
+    .btn-reject  { display:inline-block; background:#dc2626; color:#ffffff !important; padding:14px 28px; border-radius:8px; font-weight:700; font-size:15px; text-decoration:none; margin:8px 4px; }
+    .comprobante-link { display:inline-block; background:#f0f9ff; border:1px solid #0ea5e9; color:#0369a1; padding:10px 20px; border-radius:8px; font-size:13px; font-weight:600; text-decoration:none; margin:12px 0; }
+    .aviso { background:#fefce8; border:1px solid #fde047; border-radius:8px; padding:14px 18px; margin:20px 0; font-size:13px; color:#713f12; }
+    </style></head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h1>Nuevo comprobante de pago</h1>
+          <p>e-bio-link — Un paciente realizó la transferencia</p>
+        </div>
+        <div class="body">
+          <p style="margin:0 0 20px;font-size:15px;color:#374151;">
+            Hola <strong>${data.medico_nombre}</strong>, el paciente <strong>${data.paciente_nombre}</strong> subió el comprobante de pago de su turno.
+          </p>
+
+          <div class="field">
+            <div class="label">Paciente</div>
+            <div class="value">${data.paciente_nombre}</div>
+          </div>
+
+          <div class="field">
+            <div class="label">Email</div>
+            <div class="value">${data.paciente_email}</div>
+          </div>
+
+          ${data.paciente_telefono ? `
+          <div class="field">
+            <div class="label">Teléfono</div>
+            <div class="value">${data.paciente_telefono}</div>
+          </div>` : ''}
+
+          <div class="field">
+            <div class="label">Tipo de consulta</div>
+            <div class="value">${data.evento_nombre}</div>
+          </div>
+
+          <div class="field">
+            <div class="label">Fecha y hora</div>
+            <div class="value">${fecha}</div>
+          </div>
+
+          ${data.monto ? `<div class="amount">$${parseFloat(String(data.monto)).toLocaleString('es-AR')}</div>` : ''}
+
+          <hr class="divider" />
+
+          <p style="margin:0 0 10px;font-size:14px;font-weight:600;color:#374151;">Comprobante de transferencia:</p>
+          <a href="${data.comprobante_url}" class="comprobante-link" target="_blank">
+            Ver comprobante →
+          </a>
+
+          <div class="aviso">
+            <strong>Antes de confirmar:</strong> Verificá en tu cuenta bancaria que el monto haya ingresado correctamente.
+          </div>
+
+          <hr class="divider" />
+
+          <p style="margin:0 0 16px;font-size:14px;color:#374151;text-align:center;">Una vez verificado el pago, usá los botones para confirmar o rechazar el turno:</p>
+
+          <div style="text-align:center;">
+            <a href="${data.confirm_url}" class="btn-confirm">Confirmar turno</a>
+            <a href="${data.reject_url}" class="btn-reject">Rechazar turno</a>
+          </div>
+
+          <p style="margin:16px 0 0;font-size:12px;color:#9ca3af;text-align:center;">
+            Al confirmar, el paciente recibirá un email de confirmación automáticamente.
+          </p>
+        </div>
+        <div class="footer">e-bio-link · Este es un correo automático.</div>
+      </div>
+    </body></html>
+  `;
+
+  await resend.emails.send({
+    from: FROM,
+    to: data.medico_email,
+    subject: `Nuevo comprobante: ${data.paciente_nombre} — ${new Date(data.fecha_hora).toLocaleDateString('es-AR')}`,
+    html,
+  });
+
+  console.log(`[Email] Notificación de comprobante enviada a ${data.medico_email}`);
 }

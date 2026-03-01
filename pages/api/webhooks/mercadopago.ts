@@ -230,10 +230,10 @@ export default async function handler(
 
             if (bookingMatch.evento_id) {
               const eventoResult = await sql`
-                SELECT nombre, duracion, modalidad FROM eventos WHERE id = ${bookingMatch.evento_id} LIMIT 1
+                SELECT nombre, duracion_minutos, modalidad FROM eventos WHERE id = ${bookingMatch.evento_id} LIMIT 1
               `;
               if (eventoResult.length > 0) {
-                duracion = eventoResult[0].duracion || 30;
+                duracion = eventoResult[0].duracion_minutos || 30;
                 modalidad = eventoResult[0].modalidad || 'virtual';
                 eventoNombre = eventoResult[0].nombre || 'Consulta';
               }
@@ -276,7 +276,7 @@ export default async function handler(
               meet_link: gcEvent.meet_link || null,
               monto: bookingMatch.monto,
             };
-            Promise.all([
+            await Promise.all([
               sendBookingConfirmation(emailData).catch((e) =>
                 console.error('[Email] Error confirmación paciente:', e.message)
               ),

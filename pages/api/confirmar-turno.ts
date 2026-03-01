@@ -149,32 +149,37 @@ export default async function handler(
     const fechaInicio = new Date(booking.fecha_hora);
     const fechaFin = new Date(fechaInicio.getTime() + duracion * 60 * 1000);
 
-    // Crear evento en Google Calendar
-    const gcEvent = await createEventForClient(booking.client_id, {
-      booking_id: booking.id,
-      titulo: `${eventoNombre} - ${booking.paciente_nombre}`,
-      descripcion: `Turno confirmado vía e-bio-link`,
-      fecha_hora: fechaInicio.toISOString(),
-      fecha_hora_fin: fechaFin.toISOString(),
-      paciente_nombre: booking.paciente_nombre,
-      paciente_email: booking.paciente_email,
-      paciente_telefono: booking.paciente_telefono || '',
-      modalidad,
-      notas: booking.notas,
-    });
+    // Intentar crear evento en Google Calendar (no bloquea si el cliente no lo tiene conectado)
+    let gcEvent: { google_event_id: string; meet_link: string | null; html_link: string } | null = null;
+    try {
+      gcEvent = await createEventForClient(booking.client_id, {
+        booking_id: booking.id,
+        titulo: `${eventoNombre} - ${booking.paciente_nombre}`,
+        descripcion: `Turno confirmado vía e-bio-link`,
+        fecha_hora: fechaInicio.toISOString(),
+        fecha_hora_fin: fechaFin.toISOString(),
+        paciente_nombre: booking.paciente_nombre,
+        paciente_email: booking.paciente_email,
+        paciente_telefono: booking.paciente_telefono || '',
+        modalidad,
+        notas: booking.notas,
+      });
+    } catch (gcError: any) {
+      console.error('[confirmar-turno] Google Calendar no disponible:', gcError.message);
+    }
 
     // Actualizar booking
     await sql`
       UPDATE bookings
       SET
-        google_event_id = ${gcEvent.google_event_id},
-        meet_link = ${gcEvent.meet_link},
+        google_event_id = ${gcEvent?.google_event_id || null},
+        meet_link = ${gcEvent?.meet_link || null},
         estado = 'confirmed',
         confirmed_at = NOW()
       WHERE id = ${booking_id}
     `;
 
-    console.log(`[confirmar-turno] Booking ${booking_id} confirmed. Google Event: ${gcEvent.google_event_id}`);
+    console.log(`[confirmar-turno] Booking ${booking_id} confirmed. Google Event: ${gcEvent?.google_event_id || 'none'}`);
 
     const emailData = {
       paciente_nombre: booking.paciente_nombre,
@@ -184,7 +189,7 @@ export default async function handler(
       fecha_hora: booking.fecha_hora,
       evento_nombre: eventoNombre,
       modalidad,
-      meet_link: gcEvent.meet_link || null,
+      meet_link: gcEvent?.meet_link || null,
       monto: booking.monto,
     };
     await Promise.all([
@@ -203,10 +208,10 @@ export default async function handler(
 
     return res.status(200).json({
       success: true,
-      message: 'Turno confirmado y evento creado en Google Calendar',
+      message: gcEvent ? 'Turno confirmado y evento creado en Google Calendar' : 'Turno confirmado (sin Google Calendar)',
       booking_id,
-      google_event_id: gcEvent.google_event_id,
-      meet_link: gcEvent.meet_link,
+      google_event_id: gcEvent?.google_event_id || null,
+      meet_link: gcEvent?.meet_link || null,
     });
   } catch (error: any) {
     console.error('Error confirming booking:', error);
