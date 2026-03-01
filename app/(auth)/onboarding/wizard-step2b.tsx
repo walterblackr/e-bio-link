@@ -25,7 +25,6 @@ interface Evento {
   precio: number;
   modalidad: string;
   activo: boolean;
-  buffer_antes: number;
   buffer_despues: number;
   antelacion_minima: number;
   max_por_dia: number | null;
@@ -79,7 +78,6 @@ export default function WizardStep2B({ onNext, onBack }: WizardStep2BProps) {
     duracion_minutos: 30,
     precio: 0,
     modalidad: "virtual",
-    buffer_antes: 0,
     buffer_despues: 0,
     antelacion_minima: 0,   // stored in minutes
     max_por_dia: "" as string, // "" = sin límite
@@ -250,7 +248,6 @@ export default function WizardStep2B({ onNext, onBack }: WizardStep2BProps) {
       duracion_minutos: evento.duracion_minutos,
       precio: evento.precio,
       modalidad: evento.modalidad || "virtual",
-      buffer_antes: evento.buffer_antes ?? 0,
       buffer_despues: evento.buffer_despues ?? 0,
       antelacion_minima: evento.antelacion_minima ?? 0,
       max_por_dia: evento.max_por_dia !== null && evento.max_por_dia !== undefined
@@ -258,7 +255,6 @@ export default function WizardStep2B({ onNext, onBack }: WizardStep2BProps) {
         : "",
     });
     setShowAvanzado(
-      (evento.buffer_antes ?? 0) > 0 ||
       (evento.buffer_despues ?? 0) > 0 ||
       (evento.antelacion_minima ?? 0) > 0 ||
       evento.max_por_dia !== null
@@ -321,7 +317,6 @@ export default function WizardStep2B({ onNext, onBack }: WizardStep2BProps) {
       duracion_minutos: 30,
       precio: 0,
       modalidad: "virtual",
-      buffer_antes: 0,
       buffer_despues: 0,
       antelacion_minima: 0,
       max_por_dia: "",
@@ -395,7 +390,7 @@ export default function WizardStep2B({ onNext, onBack }: WizardStep2BProps) {
                             }`}>
                               {evento.modalidad === "presencial" ? "Presencial" : "Virtual"}
                             </span>
-                            {((evento.buffer_antes ?? 0) > 0 || (evento.buffer_despues ?? 0) > 0) && (
+                            {(evento.buffer_despues ?? 0) > 0 && (
                               <span className="inline-flex items-center gap-1 text-gray-400">
                                 <Settings className="w-3 h-3" />
                                 buffer
@@ -666,36 +661,23 @@ export default function WizardStep2B({ onNext, onBack }: WizardStep2BProps) {
 
                       {showAvanzado && (
                         <div className="mt-4 space-y-3">
-                          {/* Buffers */}
-                          <div className="grid grid-cols-2 gap-3">
-                            <div>
-                              <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                                Buffer antes (min)
-                              </label>
-                              <select
-                                value={formData.buffer_antes}
-                                onChange={(e) => setFormData({ ...formData, buffer_antes: Number(e.target.value) })}
-                                className="w-full px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                              >
-                                {BUFFERS.map((b) => (
-                                  <option key={b} value={b}>{b === 0 ? "Sin buffer" : `${b} min`}</option>
-                                ))}
-                              </select>
-                            </div>
-                            <div>
-                              <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                                Buffer después (min)
-                              </label>
-                              <select
-                                value={formData.buffer_despues}
-                                onChange={(e) => setFormData({ ...formData, buffer_despues: Number(e.target.value) })}
-                                className="w-full px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                              >
-                                {BUFFERS.map((b) => (
-                                  <option key={b} value={b}>{b === 0 ? "Sin buffer" : `${b} min`}</option>
-                                ))}
-                              </select>
-                            </div>
+                          {/* Buffer entre consultas */}
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                              Buffer entre consultas (min)
+                            </label>
+                            <select
+                              value={formData.buffer_despues}
+                              onChange={(e) => setFormData({ ...formData, buffer_despues: Number(e.target.value) })}
+                              className="w-full px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            >
+                              {BUFFERS.map((b) => (
+                                <option key={b} value={b}>{b === 0 ? "Sin buffer" : `${b} min`}</option>
+                              ))}
+                            </select>
+                            <p className="text-xs text-gray-400 mt-1">
+                              Tiempo libre entre turnos. Ej: duración 45 min + buffer 15 min = turnos cada 60 min.
+                            </p>
                           </div>
 
                           {/* Antelación mínima */}

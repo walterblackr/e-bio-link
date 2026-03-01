@@ -24,7 +24,6 @@ export default async function handler(
           precio,
           modalidad,
           activo,
-          buffer_antes,
           buffer_despues,
           antelacion_minima,
           max_por_dia,
@@ -45,7 +44,6 @@ export default async function handler(
         duracion_minutos,
         precio,
         modalidad,
-        buffer_antes,
         buffer_despues,
         antelacion_minima,
         max_por_dia,
@@ -74,7 +72,6 @@ export default async function handler(
           precio,
           modalidad,
           activo,
-          buffer_antes,
           buffer_despues,
           antelacion_minima,
           max_por_dia
@@ -86,7 +83,6 @@ export default async function handler(
           ${precio},
           ${modalidad || 'virtual'},
           true,
-          ${buffer_antes ?? 0},
           ${buffer_despues ?? 0},
           ${antelacion_minima ?? 0},
           ${max_por_dia ?? null}

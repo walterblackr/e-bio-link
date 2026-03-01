@@ -79,7 +79,7 @@ export default async function handler(
     // 2. Obtener el evento con todos sus campos incluyendo configuración avanzada
     const eventoResult = await sql`
       SELECT id, nombre, duracion_minutos, precio, modalidad, activo,
-             buffer_antes, buffer_despues, antelacion_minima, max_por_dia
+             buffer_despues, antelacion_minima, max_por_dia
       FROM eventos
       WHERE id = ${evento_id as string}
         AND client_id = ${client.id}
@@ -93,7 +93,6 @@ export default async function handler(
 
     const evento = eventoResult[0];
     const duracion = evento.duracion_minutos as number;
-    const bufferAntes = (evento.buffer_antes as number) || 0;
     const bufferDespues = (evento.buffer_despues as number) || 0;
     const antelacionMinima = (evento.antelacion_minima as number) || 0;
     const maxPorDia = evento.max_por_dia as number | null;
@@ -143,7 +142,7 @@ export default async function handler(
       const inicioMin = timeToMinutes(horaInicio);
       const finMin = timeToMinutes(horaFin);
 
-      for (let m = inicioMin; m + duracion <= finMin; m += duracion) {
+      for (let m = inicioMin; m + duracion <= finMin; m += duracion + bufferDespues) {
         const startTime = minutesToTime(m);
         const endTime = minutesToTime(m + duracion);
         potentialSlots.push({
@@ -213,15 +212,15 @@ export default async function handler(
 
         const busySlots = await getFreeBusy(accessToken, calendarId, timeMin, timeMax);
 
-        // Un slot es libre si la ventana extendida (slot + buffers) no se superpone con ningún busy
+        // Un slot es libre si su tiempo real (sin buffers) no se superpone con ningún busy
         freeSlots = availableSlots.filter(slot => {
-          const effectiveStart = new Date(slot.start).getTime() - bufferAntes * 60 * 1000;
-          const effectiveEnd = new Date(slot.end).getTime() + bufferDespues * 60 * 1000;
+          const slotStart = new Date(slot.start).getTime();
+          const slotEnd = new Date(slot.end).getTime();
 
           return !busySlots.some(busy => {
             const busyStart = new Date(busy.start).getTime();
             const busyEnd = new Date(busy.end).getTime();
-            return effectiveStart < busyEnd && effectiveEnd > busyStart;
+            return slotStart < busyEnd && slotEnd > busyStart;
           });
         });
       } catch (googleError: any) {
