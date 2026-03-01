@@ -164,7 +164,7 @@ export default function BioLinkTemplate({ data }: BioLinkProps) {
                 color: colors.text,
               }}
             >
-              {btn.label || "Enlace"}
+              {btn.texto || btn.label || "Enlace"}
             </a>
           ))}
         </div>
