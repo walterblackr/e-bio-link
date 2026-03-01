@@ -56,6 +56,14 @@ const HORAS_OPTIONS = [
 const DURACIONES = [15, 20, 30, 45, 60, 90];
 const BUFFERS = [0, 5, 10, 15, 20, 30];
 
+function bloquesSeSuperponen(bloques: BloqueHorario[]): boolean {
+  const sorted = [...bloques].sort((a, b) => a.hora_inicio.localeCompare(b.hora_inicio));
+  for (let i = 0; i < sorted.length - 1; i++) {
+    if (sorted[i].hora_fin > sorted[i + 1].hora_inicio) return true;
+  }
+  return false;
+}
+
 const defaultDias = (): DiaDisponibilidad[] =>
   DIAS_SEMANA.map((d) => ({
     dia_semana: d.num,
@@ -84,6 +92,8 @@ export default function WizardStep2B({ onNext, onBack }: WizardStep2BProps) {
   });
 
   const [dias, setDias] = useState<DiaDisponibilidad[]>(defaultDias());
+  // Bloques de otros eventos (para validar superposición antes de guardar)
+  const [otrosSlots, setOtrosSlots] = useState<{ dia_semana: number; hora_inicio: string; hora_fin: string }[]>([]);
 
   useEffect(() => {
     loadEventos();
@@ -99,6 +109,31 @@ export default function WizardStep2B({ onNext, onBack }: WizardStep2BProps) {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Carga los bloques horarios de todos los eventos excepto el que se está editando,
+  // para poder validar superposiciones en el frontend antes de tocar la BD.
+  const loadOtrosSlots = async (excludeEventoId?: string) => {
+    const eventosRes = await fetch("/api/eventos");
+    if (!eventosRes.ok) return;
+    const { eventos: lista } = await eventosRes.json();
+
+    const slots: { dia_semana: number; hora_inicio: string; hora_fin: string }[] = [];
+    for (const ev of lista as Evento[]) {
+      if (excludeEventoId && ev.id === excludeEventoId) continue;
+      try {
+        const res = await fetch(`/api/disponibilidad?evento_id=${ev.id}`);
+        if (!res.ok) continue;
+        const data = await res.json();
+        for (const dia of data.disponibilidad || []) {
+          if (!dia.activo) continue;
+          for (const bloque of dia.bloques || []) {
+            slots.push({ dia_semana: dia.dia_semana, hora_inicio: bloque.hora_inicio, hora_fin: bloque.hora_fin });
+          }
+        }
+      } catch {}
+    }
+    setOtrosSlots(slots);
   };
 
   // ── Disponibilidad helpers ──────────────────────────────────────────────
@@ -161,16 +196,16 @@ export default function WizardStep2B({ onNext, onBack }: WizardStep2BProps) {
           return `${nombre}: la hora de inicio debe ser menor a la hora de fin`;
         }
       }
-      if (dia.bloques.length > 1) {
-        const sorted = [...dia.bloques].sort((a, b) =>
-          a.hora_inicio.localeCompare(b.hora_inicio)
-        );
-        for (let i = 0; i < sorted.length - 1; i++) {
-          if (sorted[i].hora_fin > sorted[i + 1].hora_inicio) {
-            const nombre = DIAS_SEMANA.find((d) => d.num === dia.dia_semana)?.nombre;
-            return `${nombre}: los bloques horarios se superponen`;
-          }
-        }
+      // Superposición dentro del mismo bloque del día
+      if (dia.bloques.length > 1 && bloquesSeSuperponen(dia.bloques)) {
+        const nombre = DIAS_SEMANA.find((d) => d.num === dia.dia_semana)?.nombre;
+        return `${nombre}: los bloques horarios se superponen`;
+      }
+      // Superposición con otros tipos de consulta ya configurados
+      const otrosEnEseDia = otrosSlots.filter((s) => s.dia_semana === dia.dia_semana);
+      if (otrosEnEseDia.length > 0 && bloquesSeSuperponen([...dia.bloques, ...otrosEnEseDia])) {
+        const nombre = DIAS_SEMANA.find((d) => d.num === dia.dia_semana)?.nombre;
+        return `${nombre}: los horarios se superponen con otro tipo de consulta ya configurado. Ajustá los bloques para que no se pisen.`;
       }
     }
     if (!dias.some((d) => d.activo)) {
@@ -216,6 +251,12 @@ export default function WizardStep2B({ onNext, onBack }: WizardStep2BProps) {
       }
 
       const eventoId = eventoData.evento?.id || editingEvento?.id;
+
+      // Si el evento fue recién creado, actualizamos editingEvento para que
+      // un reintento (p.ej. por error en disponibilidad) use PUT y no duplique
+      if (!editingEvento && eventoData.evento) {
+        setEditingEvento(eventoData.evento);
+      }
 
       // Guardar disponibilidad del evento
       const dispRes = await fetch("/api/disponibilidad", {
@@ -289,6 +330,7 @@ export default function WizardStep2B({ onNext, onBack }: WizardStep2BProps) {
       setDias(defaultDias());
     }
 
+    loadOtrosSlots(evento.id);
     setShowForm(true);
   };
 
@@ -423,7 +465,7 @@ export default function WizardStep2B({ onNext, onBack }: WizardStep2BProps) {
               {/* Botón Agregar */}
               {!showForm && (
                 <button
-                  onClick={() => { setDias(defaultDias()); setShowForm(true); }}
+                  onClick={() => { setDias(defaultDias()); loadOtrosSlots(); setShowForm(true); }}
                   className="w-full py-3 border-2 border-dashed border-gray-300 rounded-lg text-sm text-gray-600 hover:border-purple-400 hover:text-purple-600 hover:bg-purple-50 transition-all flex items-center justify-center gap-2 font-medium"
                 >
                   <Plus className="w-5 h-5" />

@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { CheckCircle, CreditCard, Building2, Loader2 } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { CheckCircle, CreditCard, Building2, Loader2, ExternalLink } from "lucide-react";
 
 interface WizardStep5PaymentProps {
   onNext: () => void;
@@ -14,8 +15,12 @@ export default function WizardStep5Payment({
   onBack,
   clientSlug,
 }: WizardStep5PaymentProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [connectingMP, setConnectingMP] = useState(false);
   const [error, setError] = useState("");
 
   // Datos del formulario
@@ -25,9 +30,8 @@ export default function WizardStep5Payment({
   const [bancoNombre, setBancoNombre] = useState("");
   const [titularCuenta, setTitularCuenta] = useState("");
 
-  // Cargar configuración actual
-  useEffect(() => {
-    fetch("/api/onboarding/step5")
+  const loadData = () => {
+    return fetch("/api/onboarding/step5")
       .then((r) => r.json())
       .then((data) => {
         setPaymentMethod(data.payment_method || "mp");
@@ -36,9 +40,42 @@ export default function WizardStep5Payment({
         setBancoNombre(data.banco_nombre || "");
         setTitularCuenta(data.titular_cuenta || "");
       })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+      .catch(() => {});
+  };
+
+  // Cargar configuración actual y detectar retorno del OAuth de MP
+  useEffect(() => {
+    const mpParam = searchParams.get("mp");
+
+    if (mpParam === "connected") {
+      // Volvimos del OAuth de MP exitosamente — recargar datos y limpiar URL
+      loadData().finally(() => {
+        setLoading(false);
+        router.replace("/onboarding");
+      });
+    } else {
+      loadData().finally(() => setLoading(false));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const handleConnectMP = async () => {
+    setConnectingMP(true);
+    setError("");
+    try {
+      const res = await fetch("/api/mp/auth-url");
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Error al obtener el link de Mercado Pago");
+        return;
+      }
+      window.location.href = data.url;
+    } catch {
+      setError("Error de conexión. Intentá nuevamente.");
+    } finally {
+      setConnectingMP(false);
+    }
+  };
 
   const handleSave = async () => {
     setError("");
@@ -160,12 +197,24 @@ export default function WizardStep5Payment({
           {paymentMethod === "mp" ? (
             <div className="space-y-4">
               <div className="bg-gray-50 rounded-lg p-4">
-                <p className="text-sm text-gray-600 mb-1">
+                <p className="text-sm text-gray-600 mb-2">
                   Mercado Pago procesa los pagos automáticamente y te acredita el dinero en tu cuenta.
                 </p>
-                <p className="text-xs text-gray-400">
-                  Aplica comisión de Mercado Pago por transacción.
-                </p>
+                <div className="bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
+                  <p className="text-xs text-amber-800 font-medium">
+                    Comisión: ~6% + IVA por transacción (retiro inmediato).
+                    Podés reducirla si diferís el retiro desde tu cuenta de MP.
+                  </p>
+                </div>
+                <a
+                  href="/metodos-de-cobro"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 mt-2 text-xs text-blue-600 hover:underline"
+                >
+                  Comparar métodos de cobro
+                  <ExternalLink className="w-3 h-3" />
+                </a>
               </div>
 
               {mpConnected ? (
@@ -181,12 +230,21 @@ export default function WizardStep5Payment({
                   <p className="text-sm text-amber-800 font-medium mb-3">
                     Necesitás conectar tu cuenta de Mercado Pago
                   </p>
-                  <a
-                    href={`https://auth.mercadopago.com.ar/authorization?client_id=${process.env.NEXT_PUBLIC_MP_CLIENT_ID || ''}&response_type=code&platform_id=mp&redirect_uri=${encodeURIComponent((process.env.NEXT_PUBLIC_APP_URL || 'https://e-bio-link.vercel.app') + '/api/callback')}`}
-                    className="inline-block bg-[#009ee3] hover:bg-[#007eb5] text-white font-semibold py-2.5 px-5 rounded-lg text-sm transition-colors"
+                  <button
+                    type="button"
+                    onClick={handleConnectMP}
+                    disabled={connectingMP}
+                    className="inline-flex items-center gap-2 bg-[#009ee3] hover:bg-[#007eb5] disabled:bg-[#009ee3]/60 text-white font-semibold py-2.5 px-5 rounded-lg text-sm transition-colors"
                   >
-                    Conectar Mercado Pago
-                  </a>
+                    {connectingMP ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Redirigiendo...
+                      </>
+                    ) : (
+                      "Conectar Mercado Pago"
+                    )}
+                  </button>
                 </div>
               )}
             </div>
@@ -199,6 +257,15 @@ export default function WizardStep5Payment({
                 <p className="text-xs text-gray-400">
                   Sin comisiones. Requiere tu confirmación para cada turno.
                 </p>
+                <a
+                  href="/metodos-de-cobro"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 mt-2 text-xs text-blue-600 hover:underline"
+                >
+                  Comparar métodos de cobro
+                  <ExternalLink className="w-3 h-3" />
+                </a>
               </div>
 
               <div>

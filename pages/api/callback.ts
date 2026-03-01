@@ -155,7 +155,7 @@ export default async function handler(
 
     // 6. Verificar que el cliente existe en la BD
     const existingClient = await sql`
-      SELECT id, slug, nombre_completo FROM clients WHERE id = ${clientId}
+      SELECT id FROM clients WHERE id = ${clientId}
     `;
 
     if (existingClient.length === 0) {
@@ -169,9 +169,6 @@ export default async function handler(
         </div>
       `);
     }
-
-    const client = existingClient[0];
-    const slug = client.slug;
 
     // 7. Encriptar tokens antes de guardarlos
     const encryptedAccessToken = encrypt(access_token);
@@ -193,74 +190,8 @@ export default async function handler(
       WHERE session_id = ${sessionId}
     `;
 
-    // 10. Respuesta de éxito
-    const safeClientName = escapeHtml(client.nombre_completo || 'Cliente');
-    const safeSlug = escapeHtml(slug);
-    const biolinkUrl = `https://e-bio-link.vercel.app/biolink/${safeSlug}`;
-
-    return res.status(200).send(`
-      <!DOCTYPE html>
-      <html lang="es">
-      <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Conexión Exitosa</title>
-        <style>
-          body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0;
-          }
-          .container {
-            background: white;
-            padding: 40px;
-            border-radius: 16px;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-            max-width: 500px;
-            text-align: center;
-          }
-          h1 { color: #009EE3; margin-bottom: 20px; }
-          .biolink {
-            background: #f8fafc;
-            padding: 16px;
-            border-radius: 8px;
-            margin: 20px 0;
-            word-break: break-all;
-          }
-          .biolink a {
-            color: #2563eb;
-            text-decoration: none;
-            font-weight: 600;
-          }
-          .biolink a:hover {
-            text-decoration: underline;
-          }
-          .note {
-            color: #64748b;
-            font-size: 14px;
-            margin-top: 20px;
-          }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <h1>¡Conexión Exitosa! ✅</h1>
-          <p>La cuenta de <strong>${safeClientName}</strong> se conectó correctamente a Mercado Pago.</p>
-
-          <div class="biolink">
-            <p style="margin: 0 0 8px 0; font-size: 14px; color: #64748b;">Tu biolink:</p>
-            <a href="${biolinkUrl}" target="_blank">${biolinkUrl}</a>
-          </div>
-
-          <p class="note">Ya podés cerrar esta ventana y configurar tu perfil.</p>
-        </div>
-      </body>
-      </html>
-    `);
+    // 10. Redirigir al onboarding con indicador de conexión exitosa
+    return res.redirect(302, '/onboarding?mp=connected');
 
   } catch (error) {
     // 12. Manejo de errores seguro
