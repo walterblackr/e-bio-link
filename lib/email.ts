@@ -1,6 +1,5 @@
 // Envío de emails transaccionales con Resend
 import { Resend } from 'resend';
-import { parseArgentinaDate } from './date-utils';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 const FROM = process.env.EMAIL_FROM || 'ebiolinkarg@gmail.com';
@@ -29,7 +28,7 @@ interface ProfesionalNotifData extends BookingEmailData {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function formatFecha(iso: string): string {
-  return parseArgentinaDate(iso).toLocaleString('es-AR', {
+  return new Date(iso).toLocaleString('es-AR', {
     weekday: 'long',
     day: 'numeric',
     month: 'long',

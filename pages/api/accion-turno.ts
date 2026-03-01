@@ -4,7 +4,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { neon } from '@neondatabase/serverless';
 import { verifyActionToken } from '../../lib/booking-token';
-import { parseArgentinaDate } from '../../lib/date-utils';
 import { createEventForClient } from '../../lib/google-calendar';
 import { sendBookingConfirmation, sendBookingCancellation } from '../../lib/email';
 
@@ -136,7 +135,7 @@ export default async function handler(
 
   // ── CONFIRMAR ─────────────────────────────────────────────────────────────
   if (action === 'confirm') {
-    const fechaInicio = parseArgentinaDate(booking.fecha_hora);
+    const fechaInicio = new Date(booking.fecha_hora);
     const fechaFin = new Date(fechaInicio.getTime() + duracion * 60 * 1000);
 
     // Intentar crear evento en Google Calendar (no bloquea si falla)

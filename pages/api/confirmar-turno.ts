@@ -3,7 +3,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { neon } from '@neondatabase/serverless';
 import { createEventForClient } from '../../lib/google-calendar';
-import { parseArgentinaDate } from '../../lib/date-utils';
 import { requireActiveClientFromRequest } from '../../lib/auth/client-auth';
 import { sendBookingConfirmation, sendNewBookingNotification, sendBookingCancellation } from '../../lib/email';
 
@@ -147,7 +146,7 @@ export default async function handler(
       }
     }
 
-    const fechaInicio = parseArgentinaDate(booking.fecha_hora);
+    const fechaInicio = new Date(booking.fecha_hora);
     const fechaFin = new Date(fechaInicio.getTime() + duracion * 60 * 1000);
 
     // Intentar crear evento en Google Calendar (no bloquea si el cliente no lo tiene conectado)
