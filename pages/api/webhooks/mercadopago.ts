@@ -3,6 +3,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { neon } from '@neondatabase/serverless';
 import { decrypt } from '../../../lib/encryption';
 import { createEventForClient, deleteEventForClient } from '../../../lib/google-calendar';
+import { parseArgentinaDate } from '../../../lib/date-utils';
 import { sendBookingConfirmation, sendNewBookingNotification, sendBookingCancellation } from '../../../lib/email';
 import axios from 'axios';
 import crypto from 'crypto';
@@ -239,7 +240,7 @@ export default async function handler(
               }
             }
 
-            const fechaInicio = new Date(bookingMatch.fecha_hora);
+            const fechaInicio = parseArgentinaDate(bookingMatch.fecha_hora);
             const fechaFin = new Date(fechaInicio.getTime() + duracion * 60 * 1000);
 
             const gcEvent = await createEventForClient(bookingMatch.client_id, {
