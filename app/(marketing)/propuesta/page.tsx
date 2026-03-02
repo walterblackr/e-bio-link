@@ -211,6 +211,9 @@ export default function PropuestaComercial() {
 
         <footer className={styles.footer}>
           <p>© 2025 - Gestión Profesional de Turnos Médicos</p>
+          <Link href="/login" style={{ fontSize: '13px', color: '#9ca3af', textDecoration: 'none', marginTop: '8px', display: 'inline-block' }}>
+            Iniciar sesión →
+          </Link>
         </footer>
       </div>
   );

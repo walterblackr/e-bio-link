@@ -30,6 +30,25 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // Si está en /panel, verificar sesión de cliente activo
+  if (pathname.startsWith('/panel')) {
+    const clientSession = request.cookies.get('client_session');
+
+    if (!clientSession) {
+      return NextResponse.redirect(new URL('/login', request.url));
+    }
+
+    try {
+      const session = JSON.parse(clientSession.value);
+      if (!session.id || !session.email) throw new Error('Invalid session');
+      return NextResponse.next();
+    } catch {
+      const response = NextResponse.redirect(new URL('/login', request.url));
+      response.cookies.delete('client_session');
+      return response;
+    }
+  }
+
   // Si está en /onboarding, verificar sesión de cliente activo
   if (pathname.startsWith('/onboarding')) {
     const clientSession = request.cookies.get('client_session');
@@ -67,5 +86,7 @@ export const config = {
   matcher: [
     '/admin/:path*',
     '/onboarding/:path*',
+    '/panel/:path*',
+    '/panel',
   ],
 };

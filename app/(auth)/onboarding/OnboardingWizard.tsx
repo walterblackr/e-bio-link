@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import WizardStep1 from "./wizard-step1";
 import WizardStep2Google from "./wizard-step2-google";
 import WizardStep2B from "./wizard-step2b";
@@ -15,9 +16,16 @@ export default function OnboardingWizard({ clientData }: OnboardingWizardProps) 
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Si volvemos del OAuth de Google, arrancamos en el paso 2
-  const initialStep = searchParams?.get("google") === "connected" ? 2 : 1;
-  const [currentStep, setCurrentStep] = useState(initialStep);
+  // Detectar desde dónde viene el médico
+  const fromPanel = searchParams?.get("from") === "panel";
+  const stepParam = parseInt(searchParams?.get("step") || "1");
+
+  // Prioridad: google=connected → step 2 | ?step=X → ese step | default → 1
+  const computedInitialStep = searchParams?.get("google") === "connected"
+    ? 2
+    : (stepParam >= 1 && stepParam <= 4 ? stepParam : 1);
+
+  const [currentStep, setCurrentStep] = useState(computedInitialStep);
 
   useEffect(() => {
     if (searchParams?.get("google") === "connected") {
@@ -61,6 +69,13 @@ export default function OnboardingWizard({ clientData }: OnboardingWizardProps) 
       {/* Progress Indicator */}
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-6 py-4">
+          {fromPanel && (
+            <div style={{ marginBottom: '12px' }}>
+              <Link href="/panel" style={{ fontSize: '13px', color: '#6366f1', textDecoration: 'none', fontWeight: 500 }}>
+                ← Volver al panel
+              </Link>
+            </div>
+          )}
           <div className="flex items-center justify-center gap-2">
             {Array.from({ length: TOTAL_STEPS }, (_, i) => i + 1).map((step) => (
               <div key={step} className="flex items-center">
@@ -129,7 +144,7 @@ export default function OnboardingWizard({ clientData }: OnboardingWizardProps) 
 
       {currentStep === 4 && (
         <WizardStep5Payment
-          onNext={() => router.push(`/biolink/${currentClientData.slug}`)}
+          onNext={() => router.push(fromPanel ? '/panel' : `/biolink/${currentClientData.slug}`)}
           onBack={() => setCurrentStep(3)}
           clientSlug={currentClientData.slug}
         />
