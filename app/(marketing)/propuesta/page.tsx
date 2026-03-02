@@ -1,7 +1,45 @@
 "use client";
-import React from 'react';
-import { Clock, ArrowRight, TrendingDown, AlertCircle, CreditCard, Calendar, CheckCircle, Star } from 'lucide-react';
+import Link from 'next/link';
+import { Clock, ArrowRight, TrendingDown, AlertCircle, CreditCard, Calendar, CheckCircle, Star, Banknote } from 'lucide-react';
 import styles from './propuesta.module.css';
+
+function PlanFeatures({ highlighted = false }: { highlighted?: boolean }) {
+  const check = highlighted ? '#1d4ed8' : '#16a34a';
+  const features = [
+    { icon: null, text: 'Biolink personalizado (ebiolink.com/tu-nombre)' },
+    { icon: null, text: 'Agenda online — pacientes reservan solos, 24/7' },
+    { icon: null, text: 'Sincronización con Google Calendar' },
+    { icon: null, text: 'Videollamadas vía Google Meet (consultas virtuales)' },
+    { icon: null, text: 'Confirmación automática de turnos por email' },
+  ];
+
+  return (
+    <ul style={{ listStyle: 'none', padding: 0, margin: '16px 0', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+      {features.map((f, i) => (
+        <li key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '13px', color: '#374151' }}>
+          <CheckCircle size={15} style={{ color: check, flexShrink: 0, marginTop: '1px' }} />
+          {f.text}
+        </li>
+      ))}
+      {/* Ítem destacado: método de pago */}
+      <li style={{
+        display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '13px',
+        background: highlighted ? '#eff6ff' : '#f0fdf4',
+        border: `1px solid ${highlighted ? '#bfdbfe' : '#bbf7d0'}`,
+        borderRadius: '8px', padding: '8px 10px', marginTop: '4px',
+      }}>
+        <div style={{ display: 'flex', gap: '4px', flexShrink: 0, marginTop: '1px' }}>
+          <CreditCard size={14} style={{ color: '#7c3aed' }} />
+          <Banknote size={14} style={{ color: '#059669' }} />
+        </div>
+        <span style={{ color: '#1f2937', fontWeight: 600 }}>
+          Cobro con Mercado Pago o Transferencia —{' '}
+          <span style={{ color: highlighted ? '#1d4ed8' : '#16a34a' }}>vos elegís</span>
+        </span>
+      </li>
+    </ul>
+  );
+}
 
 export default function PropuestaComercial() {
   return (
@@ -122,29 +160,13 @@ export default function PropuestaComercial() {
                 <h3 className={styles.planTitle}>Plan Mensual</h3>
                 <p className={styles.planDescription}>Menor inversión inicial.</p>
                 <div className={styles.planPriceContainer}>
-                  <span className={styles.planPriceNormal}>$18.000</span>
+                  <span className={styles.planPriceNormal}>$19.990</span>
                   <span className={styles.planPriceLabel}>/ mes</span>
                 </div>
-
-                <div className={styles.planDetailsNormal}>
-                  <div className={styles.planDetailRow}>
-                    <span className={styles.planDetailLabel}>Costo mensual:</span>
-                    <span className={styles.planDetailValueNormal}>$18.000</span>
-                  </div>
-                  <div className={styles.planDetailRow}>
-                    <span className={styles.planDetailLabel}>Equivalencia:</span>
-                    <span className={styles.planDetailValueNormal}>1/2 consulta</span>
-                  </div>
-                </div>
-
-                <a
-                  href="https://wa.me/5492994091255?text=Hola!%20Me%20interesa%20el%20Plan%20Mensual%20de%20$18.000"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={`${styles.planButton} ${styles.planButtonSecondary}`}
-                >
+                <PlanFeatures />
+                <Link href="/register?plan=monthly" className={`${styles.planButton} ${styles.planButtonSecondary}`}>
                   Elegir Mensual
-                </a>
+                </Link>
               </div>
 
               {/* PLAN ANUAL */}
@@ -156,26 +178,13 @@ export default function PropuestaComercial() {
                   <span className={styles.planPrice}>$120.000</span>
                   <span className={styles.planPriceLabel}>/ único</span>
                 </div>
-
-                <div className={styles.planDetails}>
-                  <div className={styles.planDetailRow}>
-                    <span className={styles.planDetailLabel}>Costo mensual real:</span>
-                    <span className={styles.planDetailValue}>$10.000</span>
-                  </div>
-                  <div className={styles.planDetailRow}>
-                    <span className={styles.planDetailLabel}>Equivalencia:</span>
-                    <span className={styles.planDetailValueStrong}>3 consultas</span>
-                  </div>
+                <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px' }}>
+                  equivale a <strong style={{ color: '#1d4ed8' }}>$10.000/mes</strong>
                 </div>
-
-                <a
-                  href="https://wa.me/5492994091255?text=Hola!%20Me%20interesa%20el%20Plan%20Anual%20de%20$120.000"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={`${styles.planButton} ${styles.planButtonPrimary}`}
-                >
+                <PlanFeatures highlighted />
+                <Link href="/register?plan=annual" className={`${styles.planButton} ${styles.planButtonPrimary}`}>
                   Elegir Anual
-                </a>
+                </Link>
               </div>
 
               {/* PLAN SEMESTRAL */}
@@ -186,66 +195,15 @@ export default function PropuestaComercial() {
                   <span className={styles.planPriceNormal}>$80.000</span>
                   <span className={styles.planPriceLabel}>/ único</span>
                 </div>
-
-                <div className={styles.planDetailsNormal}>
-                  <div className={styles.planDetailRow}>
-                    <span className={styles.planDetailLabel}>Costo mensual:</span>
-                    <span className={styles.planDetailValueNormal}>$13.333</span>
-                  </div>
-                  <div className={styles.planDetailRow}>
-                    <span className={styles.planDetailLabel}>Equivalencia:</span>
-                    <span className={styles.planDetailValueNormal}>2.2 consultas</span>
-                  </div>
+                <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px' }}>
+                  equivale a <strong style={{ color: '#374151' }}>$13.333/mes</strong>
                 </div>
-
-                <a
-                  href="https://wa.me/5492994091255?text=Hola!%20Me%20interesa%20el%20Plan%20Semestral%20de%20$80.000"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={`${styles.planButton} ${styles.planButtonSecondary}`}
-                >
+                <PlanFeatures />
+                <Link href="/register?plan=semestral" className={`${styles.planButton} ${styles.planButtonSecondary}`}>
                   Elegir Semestral
-                </a>
+                </Link>
               </div>
 
-            </div>
-          </section>
-
-          {/* FEATURES */}
-          <section className={styles.featuresSection}>
-            <div className={styles.featuresBg}></div>
-
-            <h2 className={styles.featuresTitle}>✓ Todos los planes incluyen</h2>
-
-            <div className={styles.featuresGrid}>
-              <div className={styles.featureItem}>
-                <div className="feature-icon feature-icon-blue">
-                  <CreditCard size={24} />
-                </div>
-                <h3 className={styles.featureTitle}>Cobro Anticipado</h3>
-                <p className={styles.featureDescription}>Integración total Mercado Pago</p>
-              </div>
-              <div className={styles.featureItem}>
-                <div className="feature-icon feature-icon-purple">
-                  <Calendar size={24} />
-                </div>
-                <h3 className={styles.featureTitle}>Sincronización</h3>
-                <p className={styles.featureDescription}>Google Calendar & Outlook</p>
-              </div>
-              <div className={styles.featureItem}>
-                <div className="feature-icon feature-icon-green">
-                  <CheckCircle size={24} />
-                </div>
-                <h3 className={styles.featureTitle}>Biolink Propio</h3>
-                <p className={styles.featureDescription}>Web personalizada con tu marca</p>
-              </div>
-              <div className={styles.featureItem}>
-                <div className="feature-icon feature-icon-orange">
-                  <Star size={24} />
-                </div>
-                <h3 className={styles.featureTitle}>Configuración Inicial</h3>
-                <p className={styles.featureDescription}>Setup completo de tu perfil</p>
-              </div>
             </div>
           </section>
 

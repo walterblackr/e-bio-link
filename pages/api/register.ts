@@ -7,9 +7,9 @@ import { hashPassword } from '../../lib/auth/client-auth';
 import axios from 'axios';
 
 const PLAN_PRICES = {
-  monthly: { price: 50, title: 'Plan Mensual', duration: '1 mes' },
-  semestral: { price: 50, title: 'Plan Semestral', duration: '6 meses' },
-  annual: { price: 50, title: 'Plan Anual', duration: '12 meses' },
+  monthly:   { price: 19990,  title: 'Suscripción Mensual',   duration: '1 mes' },
+  semestral: { price: 80000,  title: 'Suscripción Semestral', duration: '6 meses' },
+  annual:    { price: 120000, title: 'Suscripción Anual',      duration: '12 meses' },
 };
 
 export default async function handler(
