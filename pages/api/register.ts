@@ -51,22 +51,43 @@ export default async function handler(
 
     const sql = neon(process.env.DATABASE_URL!);
 
-    // Verificar que el email no exista
+    // Verificar email: solo bloquear si la cuenta ya está activa
     const emailCheck = await sql`
-      SELECT id FROM clients WHERE email = ${email} LIMIT 1
+      SELECT id, status, created_at FROM clients WHERE email = ${email} LIMIT 1
     `;
 
     if (emailCheck.length > 0) {
-      return res.status(400).json({ error: 'El email ya está registrado' });
+      if (emailCheck[0].status === 'active') {
+        return res.status(400).json({ error: 'El email ya está registrado' });
+      }
+      // pending_payment: si es reciente (< 20 min) puede haber un pago en curso
+      const minutesOld = (Date.now() - new Date(emailCheck[0].created_at).getTime()) / 60000;
+      if (minutesOld < 20) {
+        return res.status(400).json({
+          error: 'Ya iniciaste un registro hace menos de 20 minutos. Si pagaste, verificá el estado de tu pago.',
+          client_id: emailCheck[0].id,
+          check_payment: true,
+        });
+      }
+      // Registro viejo sin pago → eliminar y permitir nuevo intento
+      await sql`DELETE FROM clients WHERE id = ${emailCheck[0].id}`;
     }
 
-    // Verificar que el slug no exista
+    // Verificar slug: solo bloquear si la cuenta ya está activa o si hay un pago reciente en curso
     const slugCheck = await sql`
-      SELECT id FROM clients WHERE slug = ${slug} LIMIT 1
+      SELECT id, status, created_at FROM clients WHERE slug = ${slug} LIMIT 1
     `;
 
     if (slugCheck.length > 0) {
-      return res.status(400).json({ error: 'El slug ya está en uso' });
+      if (slugCheck[0].status === 'active') {
+        return res.status(400).json({ error: 'Esta URL ya está en uso' });
+      }
+      const minutesOld = (Date.now() - new Date(slugCheck[0].created_at).getTime()) / 60000;
+      if (minutesOld < 20) {
+        return res.status(400).json({ error: 'Esta URL está siendo usada por otro registro en curso.' });
+      }
+      // Registro viejo sin pago → liberar el slug
+      await sql`DELETE FROM clients WHERE id = ${slugCheck[0].id}`;
     }
 
     // Hash de la contraseña

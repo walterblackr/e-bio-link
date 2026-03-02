@@ -38,19 +38,24 @@ export default async function handler(
 
     const sql = neon(process.env.DATABASE_URL!);
 
-    // Buscar si el slug ya existe
+    // Buscar si el slug ya existe en una cuenta activa o en un pago reciente en curso
     const result = await sql`
-      SELECT id
+      SELECT id, status, created_at
       FROM clients
       WHERE slug = ${slug}
       LIMIT 1
     `;
 
     if (result.length > 0) {
-      return res.status(200).json({
-        available: false,
-        message: 'Este slug ya está en uso',
-      });
+      if (result[0].status === 'active') {
+        return res.status(200).json({ available: false, message: 'Este slug ya está en uso' });
+      }
+      // pending_payment: bloquear solo si es reciente (< 20 min, puede haber pago en curso)
+      const minutesOld = (Date.now() - new Date(result[0].created_at).getTime()) / 60000;
+      if (minutesOld < 20) {
+        return res.status(200).json({ available: false, message: 'Esta URL está siendo usada en este momento' });
+      }
+      // Registro viejo sin pago → slug disponible
     }
 
     return res.status(200).json({

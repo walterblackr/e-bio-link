@@ -27,6 +27,7 @@ function RegisterForm() {
   const [slugStatus, setSlugStatus] = useState<'idle' | 'checking' | 'available' | 'unavailable'>('idle');
   const [slugMessage, setSlugMessage] = useState('');
   const [error, setError] = useState('');
+  const [pendingClientId, setPendingClientId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   // Verificar disponibilidad del slug con debounce
@@ -78,6 +79,7 @@ function RegisterForm() {
     }
 
     setLoading(true);
+    setPendingClientId(null);
 
     try {
       const res = await fetch('/api/register', {
@@ -94,6 +96,9 @@ function RegisterForm() {
       const data = await res.json();
 
       if (!res.ok) {
+        if (data.check_payment && data.client_id) {
+          setPendingClientId(data.client_id);
+        }
         throw new Error(data.error || 'Error al registrarse');
       }
 
@@ -242,6 +247,16 @@ function RegisterForm() {
           {error && (
             <div style={{ background: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626', padding: '10px 14px', borderRadius: '8px', fontSize: '13px' }}>
               {error}
+              {pendingClientId && (
+                <div style={{ marginTop: '8px' }}>
+                  <a
+                    href={`/success?client_id=${pendingClientId}`}
+                    style={{ color: '#dc2626', fontWeight: 700, textDecoration: 'underline' }}
+                  >
+                    Ver estado de tu pago →
+                  </a>
+                </div>
+              )}
             </div>
           )}
 
