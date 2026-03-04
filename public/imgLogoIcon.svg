@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 56">
+  <defs>
+    <!-- Parte de A encima de B (izquierda) -->
+    <clipPath id="af">
+      <rect x="0" y="0" width="30" height="56"/>
+    </clipPath>
+    <!-- Parte de A detrás de B (derecha) -->
+    <clipPath id="ab">
+      <rect x="30" y="0" width="60" height="56"/>
+    </clipPath>
+  </defs>
+
+  <!--
+    Eslabón A: rect x=15,y=4,w=18,h=40 → centro (24,24)
+    Tras rotate(-42°) la esquina top-left queda en ≈(3.9,15.2)
+    Con stroke 2.8 → borde exterior ≈ (2.5,15.2) → seguro dentro del viewBox
+
+    Eslabón B: mismo tamaño, centro desplazado a (38,30)
+  -->
+
+  <!-- Eslabón B (capa del medio) -->
+  <rect x="29" y="10" width="18" height="40" rx="9"
+        fill="none" stroke="white" stroke-width="2.8"
+        transform="rotate(-42 38 30)"/>
+
+  <!-- Eslabón A — parte trasera (detrás de B) -->
+  <g clip-path="url(#ab)">
+    <rect x="15" y="4" width="18" height="40" rx="9"
+          fill="none" stroke="white" stroke-width="2.8"
+          transform="rotate(-42 24 24)"/>
+  </g>
+
+  <!-- Eslabón A — parte delantera (encima de B) -->
+  <g clip-path="url(#af)">
+    <rect x="15" y="4" width="18" height="40" rx="9"
+          fill="none" stroke="white" stroke-width="2.8"
+          transform="rotate(-42 24 24)"/>
+  </g>
+</svg>

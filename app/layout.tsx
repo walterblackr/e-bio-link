@@ -1,15 +1,21 @@
 // src/app/layout.js
-import { Inter, Space_Mono } from "next/font/google"; // Importamos la nueva fuente
+import { Inter, Space_Mono, Shadows_Into_Light } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
 
-// Configuramos la fuente monoespaciada
 const spaceMono = Space_Mono({
-  weight: ['400', '700'], // Importamos pesos normal y negrita
+  weight: ['400', '700'],
   subsets: ["latin"],
-  variable: '--font-space-mono' // Creamos una variable CSS
+  variable: '--font-space-mono',
+});
+
+const shadowsFont = Shadows_Into_Light({
+  weight: '400',
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-shadows',
 });
 
 // Metadata básica - páginas hijas pueden sobrescribirla
@@ -55,7 +61,7 @@ export default function RootLayout({
         </noscript>
       </head>
       {/* Agregamos la variable de la fuente al body */}
-      <body className={`${inter.className} ${spaceMono.variable}`}>
+      <body className={`${inter.className} ${spaceMono.variable} ${shadowsFont.variable}`}>
         {children}
       </body>
     </html>

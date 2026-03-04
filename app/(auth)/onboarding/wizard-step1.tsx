@@ -149,7 +149,7 @@ export default function WizardStep1({ onNext, initialData }: WizardStep1Props) {
         {/* Split Screen Layout - 60/40 */}
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
           {/* FORMULARIO - Izquierda (3 columnas = 60%) */}
-          <div className="lg:col-span-3 bg-white rounded-xl border border-gray-200 p-5 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 140px)' }}>
+          <div className="lg:col-span-3 bg-white rounded-xl border border-gray-200 p-5">
             <form onSubmit={handleSubmit} className="space-y-5">
               {/* Información Personal */}
               <div>
@@ -428,8 +428,8 @@ export default function WizardStep1({ onNext, initialData }: WizardStep1Props) {
           </div>
 
           {/* PREVIEW - Derecha (2 columnas = 40%) */}
-          <div className="lg:col-span-2 lg:sticky lg:top-6 lg:self-start">
-            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <div className="lg:col-span-2 lg:sticky lg:top-0 lg:self-start lg:h-screen lg:flex lg:flex-col lg:items-center lg:justify-center">
+            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden w-full">
               {/* Header del Preview */}
               <div className="bg-gray-50 border-b border-gray-200 px-4 py-2.5">
                 <div className="flex items-center justify-between">
@@ -446,7 +446,7 @@ export default function WizardStep1({ onNext, initialData }: WizardStep1Props) {
                     <div
                       className="overflow-y-auto"
                       style={{
-                        height: "580px",
+                        height: "520px",
                         scrollbarWidth: "thin",
                       }}
                     >

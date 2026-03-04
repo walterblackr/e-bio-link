@@ -139,11 +139,10 @@ export default function BioLinkPreview({ data }: BioLinkPreviewProps) {
             href="https://ebiolink.com"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center justify-center gap-1.5 opacity-40 hover:opacity-60 transition-opacity"
+            className="flex items-center justify-center opacity-40 hover:opacity-60 transition-opacity"
           >
-            <img src="/ebiolink.png" alt="ebiolink" className="h-4 w-auto" />
-            <span className="text-[10px] font-medium" style={{ color: colors.text }}>
-              ebiolink
+            <span style={{ fontFamily: 'var(--font-shadows)', fontSize: '15px', color: colors.text }}>
+              e-bio-link
             </span>
           </a>
         </div>

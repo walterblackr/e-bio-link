@@ -4,8 +4,8 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import {
   User, Calendar, CreditCard, ExternalLink, LogOut,
-  CheckCircle, XCircle, Clock, FileText, Phone, Mail,
-  Loader2, AlertCircle, Eye
+  CheckCircle, XCircle, Clock, Mail,
+  Loader2, AlertCircle, Settings, CalendarDays, FileText, Menu
 } from 'lucide-react';
 
 interface Client {
@@ -13,6 +13,7 @@ interface Client {
   email: string;
   slug: string;
   nombre_completo: string;
+  foto_url?: string | null;
   status: string;
   subscription_type: string | null;
 }
@@ -23,6 +24,7 @@ interface Booking {
   paciente_email: string;
   paciente_telefono: string | null;
   fecha_hora: string;
+  created_at: string;
   monto: number | null;
   estado: string;
   payment_method: string | null;
@@ -34,20 +36,21 @@ interface Booking {
 }
 
 type TabFilter = 'todos' | 'pendientes' | 'confirmados' | 'cancelados';
+type Section = 'config' | 'turnos';
 
 const ESTADO_LABELS: Record<string, { label: string; color: string; bg: string }> = {
-  pending_payment:     { label: 'Esperando comprobante', color: '#92400e', bg: '#fef3c7' },
-  pending_confirmation:{ label: 'Por confirmar',         color: '#1e40af', bg: '#dbeafe' },
-  pending:             { label: 'Pendiente',              color: '#6b7280', bg: '#f3f4f6' },
-  confirmed:           { label: 'Confirmado',             color: '#065f46', bg: '#d1fae5' },
-  cancelled:           { label: 'Cancelado',              color: '#991b1b', bg: '#fee2e2' },
-  paid:                { label: 'Pagado (MP)',             color: '#065f46', bg: '#d1fae5' },
+  pending_payment:      { label: 'Esperando comprobante', color: '#92400e', bg: '#fef3c7' },
+  pending_confirmation: { label: 'Por confirmar',         color: '#1e40af', bg: '#dbeafe' },
+  pending:              { label: 'Pendiente',              color: '#6b7280', bg: '#f3f4f6' },
+  confirmed:            { label: 'Confirmado',             color: '#065f46', bg: '#d1fae5' },
+  cancelled:            { label: 'Cancelado',              color: '#991b1b', bg: '#fee2e2' },
+  paid:                 { label: 'Pagado (MP)',             color: '#065f46', bg: '#d1fae5' },
 };
 
 const PLAN_LABELS: Record<string, string> = {
-  monthly:   'Plan Mensual',
-  semestral: 'Plan Semestral',
-  annual:    'Plan Anual',
+  monthly:   'Mensual',
+  semestral: 'Semestral',
+  annual:    'Anual',
 };
 
 function formatFecha(iso: string) {
@@ -64,13 +67,17 @@ function formatMonto(monto: number | null) {
 }
 
 export default function PanelClient({ client }: { client: Client }) {
+  const [section, setSection] = useState<Section>('config');
+  const [isMobile, setIsMobile] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [bookings, setBookings] = useState<Booking[]>([]);
-  const [loadingBookings, setLoadingBookings] = useState(true);
+  const [loadingBookings, setLoadingBookings] = useState(false);
   const [tab, setTab] = useState<TabFilter>('todos');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [actionMsg, setActionMsg] = useState<{ id: string; msg: string; ok: boolean } | null>(null);
 
   const fetchBookings = useCallback(async () => {
+    setLoadingBookings(true);
     try {
       const res = await fetch('/api/mis-turnos');
       if (res.ok) {
@@ -85,8 +92,21 @@ export default function PanelClient({ client }: { client: Client }) {
   }, []);
 
   useEffect(() => {
-    fetchBookings();
-  }, [fetchBookings]);
+    if (section === 'turnos' && bookings.length === 0) {
+      fetchBookings();
+    }
+  }, [section, bookings.length, fetchBookings]);
+
+  useEffect(() => {
+    const check = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      if (mobile) setSidebarOpen(false);
+    };
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
 
   const handleAction = async (bookingId: string, action: 'confirm' | 'reject') => {
     setActionLoading(bookingId + action);
@@ -125,281 +145,456 @@ export default function PanelClient({ client }: { client: Client }) {
 
   const pendientesCount = bookings.filter(b => b.estado === 'pending_confirmation').length;
 
-  return (
-    <div style={{ minHeight: '100vh', background: '#f1f5f9', fontFamily: 'Arial, Helvetica, sans-serif' }}>
+  const SIDEBAR_WIDTH = 220;
 
-      {/* Header */}
-      <div style={{ background: '#fff', borderBottom: '1px solid #e2e8f0', padding: '0 24px' }}>
-        <div style={{ maxWidth: '1100px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '64px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <span style={{ fontSize: '14px', fontWeight: 700, color: '#4f46e5' }}>e-bio-link</span>
-            <span style={{ color: '#d1d5db' }}>|</span>
-            <span style={{ fontSize: '14px', color: '#374151', fontWeight: 600 }}>
-              {client.nombre_completo || client.email}
+  return (
+    <div style={{ display: 'flex', minHeight: '100vh', fontFamily: 'Arial, Helvetica, sans-serif' }}>
+
+      {/* Backdrop (solo mobile) */}
+      {sidebarOpen && isMobile && (
+        <div
+          onClick={() => setSidebarOpen(false)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 99 }}
+        />
+      )}
+
+      {/* Sidebar */}
+      <aside style={{
+        position: 'fixed', top: 0, left: 0,
+        width: sidebarOpen ? `${SIDEBAR_WIDTH}px` : '0',
+        height: '100vh',
+        background: '#1e293b',
+        overflow: 'hidden',
+        transition: 'width 0.22s ease',
+        zIndex: 100,
+        flexShrink: 0,
+      }}>
+        {/* Contenedor interno — siempre 220px de ancho para que no se deforme el contenido */}
+        <div style={{ width: `${SIDEBAR_WIDTH}px`, height: '100%', display: 'flex', flexDirection: 'column' }}>
+
+          {/* Logo */}
+          <div style={{ padding: '18px 16px 14px', borderBottom: '1px solid #334155', display: 'flex', alignItems: 'center', gap: '9px' }}>
+            <img
+              src="/imgLogoIcon.svg"
+              alt=""
+              style={{ width: '30px', height: '30px', flexShrink: 0 }}
+            />
+            <span style={{
+              fontFamily: 'var(--font-shadows)',
+              color: 'white',
+              fontSize: '19px',
+              letterSpacing: '0.5px',
+              lineHeight: 1,
+            }}>
+              e-bio-link
             </span>
+          </div>
+
+          {/* Info médico */}
+          <div style={{ padding: '14px 16px', borderBottom: '1px solid #334155' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              {client.foto_url ? (
+                <img
+                  src={client.foto_url}
+                  alt={client.nombre_completo}
+                  style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
+                />
+              ) : (
+                <div style={{
+                  width: 36, height: 36, borderRadius: '50%',
+                  background: '#4f46e5', color: '#fff',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 14, fontWeight: 700, flexShrink: 0,
+                }}>
+                  {(client.nombre_completo || client.email).charAt(0).toUpperCase()}
+                </div>
+              )}
+              <div style={{ minWidth: 0 }}>
+                <div style={{ color: '#f1f5f9', fontWeight: 600, fontSize: '13px', lineHeight: '1.3', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {client.nombre_completo || client.email}
+                </div>
+                <div style={{ color: '#64748b', fontSize: '11px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{client.email}</div>
+              </div>
+            </div>
             {client.subscription_type && (
-              <span style={{ fontSize: '11px', fontWeight: 700, background: '#ede9fe', color: '#5b21b6', borderRadius: '20px', padding: '2px 10px' }}>
-                {PLAN_LABELS[client.subscription_type] || client.subscription_type}
-              </span>
+              <div style={{ marginTop: '10px' }}>
+                <span style={{ fontSize: '11px', fontWeight: 700, background: '#312e81', color: '#a5b4fc', borderRadius: '20px', padding: '2px 10px' }}>
+                  Plan {PLAN_LABELS[client.subscription_type] || client.subscription_type}
+                </span>
+              </div>
             )}
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+
+          {/* Menú principal */}
+          <nav style={{ flex: 1, padding: '12px 8px', overflowY: 'auto' }}>
+            <div style={{ fontSize: '10px', fontWeight: 700, color: '#475569', letterSpacing: '0.08em', padding: '4px 10px 8px', textTransform: 'uppercase' }}>
+              Menú
+            </div>
+
+            <button
+              onClick={() => setSection('config')}
+              style={{
+                width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
+                padding: '10px 12px', borderRadius: '8px', border: 'none', cursor: 'pointer',
+                background: section === 'config' ? '#4f46e5' : 'transparent',
+                color: section === 'config' ? '#fff' : '#94a3b8',
+                fontSize: '14px', fontWeight: section === 'config' ? 600 : 500,
+                marginBottom: '4px', textAlign: 'left',
+                transition: 'background 0.15s, color 0.15s',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              <Settings size={16} style={{ flexShrink: 0 }} />
+              Configuración
+            </button>
+
+            <button
+              onClick={() => setSection('turnos')}
+              style={{
+                width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
+                padding: '10px 12px', borderRadius: '8px', border: 'none', cursor: 'pointer',
+                background: section === 'turnos' ? '#4f46e5' : 'transparent',
+                color: section === 'turnos' ? '#fff' : '#94a3b8',
+                fontSize: '14px', fontWeight: section === 'turnos' ? 600 : 500,
+                textAlign: 'left',
+                transition: 'background 0.15s, color 0.15s',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              <Calendar size={16} style={{ flexShrink: 0 }} />
+              <span style={{ flex: 1 }}>Turnos</span>
+              {pendientesCount > 0 && (
+                <span style={{
+                  fontSize: '11px', fontWeight: 700,
+                  background: section === 'turnos' ? 'rgba(255,255,255,0.25)' : '#f59e0b',
+                  color: section === 'turnos' ? '#fff' : '#78350f',
+                  borderRadius: '20px', padding: '1px 7px', flexShrink: 0,
+                }}>
+                  {pendientesCount}
+                </span>
+              )}
+            </button>
+          </nav>
+
+          {/* Footer sidebar */}
+          <div style={{ padding: '12px 8px', borderTop: '1px solid #334155' }}>
             <a
               href={`/biolink/${client.slug}`}
               target="_blank"
               rel="noopener noreferrer"
-              style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#4f46e5', textDecoration: 'none', fontWeight: 500 }}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '6px',
+                fontSize: '13px', color: '#94a3b8', textDecoration: 'none',
+                padding: '8px 12px', borderRadius: '6px',
+                marginBottom: '4px', whiteSpace: 'nowrap',
+              }}
             >
-              <ExternalLink size={14} /> Ver mi página
+              <ExternalLink size={13} /> Ver mi página
             </a>
             <button
               onClick={handleLogout}
-              style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#6b7280', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 500 }}
+              style={{
+                width: '100%', display: 'flex', alignItems: 'center', gap: '6px',
+                padding: '8px 12px', borderRadius: '6px',
+                background: 'none', border: 'none', cursor: 'pointer',
+                fontSize: '13px', color: '#94a3b8', textAlign: 'left',
+                whiteSpace: 'nowrap',
+              }}
             >
-              <LogOut size={14} /> Salir
+              <LogOut size={13} /> Salir
             </button>
           </div>
+
         </div>
-      </div>
+      </aside>
 
-      <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '32px 24px' }}>
+      {/* Contenido principal */}
+      <main style={{
+        marginLeft: sidebarOpen ? `${SIDEBAR_WIDTH}px` : '0',
+        flex: 1,
+        background: '#f1f5f9',
+        minHeight: '100vh',
+        transition: 'margin-left 0.22s ease',
+      }}>
 
-        {/* Biolink URL */}
-        <div style={{ background: '#ede9fe', borderRadius: '10px', padding: '12px 16px', marginBottom: '28px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <span style={{ fontSize: '13px', color: '#5b21b6', fontWeight: 600 }}>Tu página pública:</span>
-          <a
-            href={`/biolink/${client.slug}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{ fontSize: '13px', color: '#4f46e5', fontWeight: 700, textDecoration: 'none' }}
+        {/* Top bar */}
+        <div style={{
+          background: '#fff', borderBottom: '1px solid #e2e8f0',
+          padding: '0 20px', height: '56px',
+          display: 'flex', alignItems: 'center', gap: '12px',
+          position: 'sticky', top: 0, zIndex: 50,
+        }}>
+          {/* Hamburger */}
+          <button
+            onClick={() => setSidebarOpen(o => !o)}
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer',
+              color: '#6b7280', padding: '6px', borderRadius: '6px',
+              display: 'flex', alignItems: 'center',
+              flexShrink: 0,
+            }}
           >
-            ebiolink.com/{client.slug}
-          </a>
-        </div>
+            <Menu size={20} />
+          </button>
 
-        {/* Sección: Configuración */}
-        <h2 style={{ fontSize: '16px', fontWeight: 700, color: '#111827', marginBottom: '12px' }}>
-          Tu configuración
-        </h2>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', marginBottom: '36px' }}>
-
-          <Link
-            href="/onboarding?step=1&from=panel"
-            style={{ background: '#fff', borderRadius: '12px', padding: '20px', border: '1.5px solid #e2e8f0', textDecoration: 'none', display: 'flex', alignItems: 'flex-start', gap: '14px', transition: 'border-color 0.15s' }}
-          >
-            <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: '#ede9fe', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <User size={20} color="#7c3aed" />
-            </div>
-            <div>
-              <p style={{ fontSize: '14px', fontWeight: 700, color: '#111827', margin: 0 }}>Perfil e imagen</p>
-              <p style={{ fontSize: '12px', color: '#6b7280', margin: '4px 0 0' }}>Nombre, foto, bio y colores</p>
-            </div>
-          </Link>
-
-          <Link
-            href="/onboarding?step=3&from=panel"
-            style={{ background: '#fff', borderRadius: '12px', padding: '20px', border: '1.5px solid #e2e8f0', textDecoration: 'none', display: 'flex', alignItems: 'flex-start', gap: '14px' }}
-          >
-            <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: '#dbeafe', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <Calendar size={20} color="#2563eb" />
-            </div>
-            <div>
-              <p style={{ fontSize: '14px', fontWeight: 700, color: '#111827', margin: 0 }}>Consultas y horarios</p>
-              <p style={{ fontSize: '12px', color: '#6b7280', margin: '4px 0 0' }}>Tipos de consulta y disponibilidad</p>
-            </div>
-          </Link>
-
-          <Link
-            href="/onboarding?step=4&from=panel"
-            style={{ background: '#fff', borderRadius: '12px', padding: '20px', border: '1.5px solid #e2e8f0', textDecoration: 'none', display: 'flex', alignItems: 'flex-start', gap: '14px' }}
-          >
-            <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: '#d1fae5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <CreditCard size={20} color="#059669" />
-            </div>
-            <div>
-              <p style={{ fontSize: '14px', fontWeight: 700, color: '#111827', margin: 0 }}>Método de cobro</p>
-              <p style={{ fontSize: '12px', color: '#6b7280', margin: '4px 0 0' }}>Mercado Pago o transferencia</p>
-            </div>
-          </Link>
-        </div>
-
-        {/* Sección: Turnos */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-          <h2 style={{ fontSize: '16px', fontWeight: 700, color: '#111827', margin: 0 }}>
-            Turnos recientes
-            {pendientesCount > 0 && (
-              <span style={{ marginLeft: '10px', fontSize: '12px', fontWeight: 700, background: '#fef3c7', color: '#92400e', borderRadius: '20px', padding: '2px 10px' }}>
+          {/* Título + badge */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <h1 style={{ fontSize: '16px', fontWeight: 700, color: '#111827', margin: 0, whiteSpace: 'nowrap' }}>
+              {section === 'config' ? 'Configuración' : 'Turnos'}
+            </h1>
+            {section === 'turnos' && pendientesCount > 0 && (
+              <span style={{ fontSize: '11px', fontWeight: 700, background: '#fef3c7', color: '#92400e', borderRadius: '20px', padding: '2px 10px', whiteSpace: 'nowrap' }}>
                 {pendientesCount} por confirmar
               </span>
             )}
-          </h2>
+          </div>
         </div>
 
-        {/* Tabs */}
-        <div style={{ display: 'flex', gap: '4px', marginBottom: '16px', background: '#f1f5f9', borderRadius: '8px', padding: '4px', width: 'fit-content' }}>
-          {(['todos', 'pendientes', 'confirmados', 'cancelados'] as TabFilter[]).map((t) => (
-            <button
-              key={t}
-              onClick={() => setTab(t)}
-              style={{
-                padding: '6px 14px',
-                fontSize: '13px',
-                fontWeight: tab === t ? 700 : 500,
-                color: tab === t ? '#4f46e5' : '#6b7280',
-                background: tab === t ? '#fff' : 'transparent',
-                border: 'none',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                boxShadow: tab === t ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
-                textTransform: 'capitalize',
-              }}
-            >
-              {t}
-            </button>
-          ))}
-        </div>
+        <div style={{ padding: isMobile ? '16px' : '28px' }}>
 
-        {/* Tabla */}
-        <div style={{ background: '#fff', borderRadius: '12px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
-          {loadingBookings ? (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '48px', gap: '10px', color: '#9ca3af' }}>
-              <Loader2 size={20} className="animate-spin" />
-              <span style={{ fontSize: '14px' }}>Cargando turnos...</span>
-            </div>
-          ) : filteredBookings.length === 0 ? (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '48px', color: '#9ca3af' }}>
-              <Calendar size={32} style={{ marginBottom: '12px', opacity: 0.4 }} />
-              <p style={{ fontSize: '14px', fontWeight: 500 }}>No hay turnos {tab !== 'todos' ? `${tab}` : ''}.</p>
-            </div>
-          ) : (
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
-                    {['Fecha y hora', 'Tipo', 'Paciente', 'Contacto', 'Monto', 'Estado', 'Acciones'].map((h) => (
-                      <th key={h} style={{ padding: '10px 16px', fontSize: '12px', fontWeight: 700, color: '#6b7280', textAlign: 'left', whiteSpace: 'nowrap' }}>
-                        {h}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredBookings.map((b, i) => {
-                    const estado = ESTADO_LABELS[b.estado] || { label: b.estado, color: '#6b7280', bg: '#f3f4f6' };
-                    const isLast = i === filteredBookings.length - 1;
-                    return (
-                      <tr key={b.id} style={{ borderBottom: isLast ? 'none' : '1px solid #f1f5f9' }}>
-                        <td style={{ padding: '12px 16px', fontSize: '13px', color: '#374151', whiteSpace: 'nowrap' }}>
-                          <div style={{ fontWeight: 600 }}>{formatFecha(b.fecha_hora)}</div>
-                          {b.modalidad && (
-                            <div style={{ fontSize: '11px', color: '#9ca3af', marginTop: '2px' }}>
-                              {b.modalidad === 'virtual' ? '📹 Virtual' : '🏥 Presencial'}
-                            </div>
-                          )}
-                        </td>
-                        <td style={{ padding: '12px 16px', fontSize: '13px', color: '#374151' }}>
-                          {b.evento_nombre || '—'}
-                        </td>
-                        <td style={{ padding: '12px 16px' }}>
-                          <div style={{ fontSize: '13px', fontWeight: 600, color: '#111827' }}>{b.paciente_nombre}</div>
-                          {b.notas && (
-                            <div style={{ fontSize: '11px', color: '#9ca3af', marginTop: '2px', maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                              {b.notas}
-                            </div>
-                          )}
-                        </td>
-                        <td style={{ padding: '12px 16px' }}>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                            <a href={`mailto:${b.paciente_email}`} style={{ fontSize: '12px', color: '#4f46e5', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                              <Mail size={11} /> {b.paciente_email}
-                            </a>
-                            {b.paciente_telefono && (
-                              <a href={`https://wa.me/${b.paciente_telefono.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: '12px', color: '#059669', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                <Phone size={11} /> {b.paciente_telefono}
-                              </a>
-                            )}
-                          </div>
-                        </td>
-                        <td style={{ padding: '12px 16px', fontSize: '13px', fontWeight: 600, color: '#111827', whiteSpace: 'nowrap' }}>
-                          {formatMonto(b.monto)}
-                          {b.payment_method === 'transfer' && (
-                            <div style={{ fontSize: '11px', color: '#9ca3af', fontWeight: 400 }}>Transferencia</div>
-                          )}
-                          {b.payment_method === 'mp' && (
-                            <div style={{ fontSize: '11px', color: '#9ca3af', fontWeight: 400 }}>Mercado Pago</div>
-                          )}
-                        </td>
-                        <td style={{ padding: '12px 16px' }}>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                            <span style={{ fontSize: '11px', fontWeight: 700, color: estado.color, background: estado.bg, borderRadius: '20px', padding: '2px 8px', whiteSpace: 'nowrap', width: 'fit-content' }}>
-                              {estado.label}
-                            </span>
-                            {b.comprobante_url && (
-                              <a
-                                href={b.comprobante_url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                style={{ fontSize: '11px', color: '#4f46e5', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '3px' }}
-                              >
-                                <Eye size={11} /> Ver comprobante
-                              </a>
-                            )}
-                            {b.meet_link && (
-                              <a
-                                href={b.meet_link}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                style={{ fontSize: '11px', color: '#059669', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '3px' }}
-                              >
-                                <ExternalLink size={11} /> Google Meet
-                              </a>
-                            )}
-                          </div>
-                        </td>
-                        <td style={{ padding: '12px 16px' }}>
-                          {b.estado === 'pending_confirmation' && (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                              {actionMsg?.id === b.id ? (
-                                <div style={{ fontSize: '12px', fontWeight: 600, color: actionMsg.ok ? '#065f46' : '#991b1b', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                  {actionMsg.ok ? <CheckCircle size={13} /> : <AlertCircle size={13} />}
-                                  {actionMsg.msg}
-                                </div>
-                              ) : (
-                                <>
-                                  <button
-                                    onClick={() => handleAction(b.id, 'confirm')}
-                                    disabled={actionLoading !== null}
-                                    style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '5px 10px', fontSize: '12px', fontWeight: 700, background: '#d1fae5', color: '#065f46', border: 'none', borderRadius: '6px', cursor: 'pointer', whiteSpace: 'nowrap' }}
-                                  >
-                                    {actionLoading === b.id + 'confirm' ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle size={12} />}
-                                    Confirmar
-                                  </button>
-                                  <button
-                                    onClick={() => handleAction(b.id, 'reject')}
-                                    disabled={actionLoading !== null}
-                                    style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '5px 10px', fontSize: '12px', fontWeight: 700, background: '#fee2e2', color: '#991b1b', border: 'none', borderRadius: '6px', cursor: 'pointer', whiteSpace: 'nowrap' }}
-                                  >
-                                    {actionLoading === b.id + 'reject' ? <Loader2 size={12} className="animate-spin" /> : <XCircle size={12} />}
-                                    Rechazar
-                                  </button>
-                                </>
-                              )}
-                            </div>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+          {/* ====== SECCIÓN: CONFIGURACIÓN ====== */}
+          {section === 'config' && (
+            <>
+              <p style={{ fontSize: '13px', color: '#6b7280', marginBottom: '20px', marginTop: 0 }}>
+                Editá cada sección de tu perfil público desde acá.
+              </p>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(220px, 100%), 1fr))', gap: '14px' }}>
+
+                <Link href="/onboarding?step=1&from=panel" style={{ background: '#fff', borderRadius: '12px', padding: '20px', border: '1.5px solid #e2e8f0', textDecoration: 'none', display: 'flex', alignItems: 'flex-start', gap: '14px' }}>
+                  <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: '#ede9fe', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <User size={20} color="#7c3aed" />
+                  </div>
+                  <div>
+                    <p style={{ fontSize: '14px', fontWeight: 700, color: '#111827', margin: 0 }}>Perfil e imagen</p>
+                    <p style={{ fontSize: '12px', color: '#6b7280', margin: '4px 0 0' }}>Nombre, foto, bio y colores</p>
+                  </div>
+                </Link>
+
+                <Link href="/onboarding?step=2&from=panel" style={{ background: '#fff', borderRadius: '12px', padding: '20px', border: '1.5px solid #e2e8f0', textDecoration: 'none', display: 'flex', alignItems: 'flex-start', gap: '14px' }}>
+                  <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: '#ccfbf1', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <CalendarDays size={20} color="#0d9488" />
+                  </div>
+                  <div>
+                    <p style={{ fontSize: '14px', fontWeight: 700, color: '#111827', margin: 0 }}>Google Calendar</p>
+                    <p style={{ fontSize: '12px', color: '#6b7280', margin: '4px 0 0' }}>Conectá tu agenda de Google</p>
+                  </div>
+                </Link>
+
+                <Link href="/onboarding?step=3&from=panel" style={{ background: '#fff', borderRadius: '12px', padding: '20px', border: '1.5px solid #e2e8f0', textDecoration: 'none', display: 'flex', alignItems: 'flex-start', gap: '14px' }}>
+                  <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: '#dbeafe', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <Clock size={20} color="#2563eb" />
+                  </div>
+                  <div>
+                    <p style={{ fontSize: '14px', fontWeight: 700, color: '#111827', margin: 0 }}>Consultas y horarios</p>
+                    <p style={{ fontSize: '12px', color: '#6b7280', margin: '4px 0 0' }}>Tipos de consulta y disponibilidad</p>
+                  </div>
+                </Link>
+
+                <Link href="/onboarding?step=4&from=panel" style={{ background: '#fff', borderRadius: '12px', padding: '20px', border: '1.5px solid #e2e8f0', textDecoration: 'none', display: 'flex', alignItems: 'flex-start', gap: '14px' }}>
+                  <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: '#d1fae5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <CreditCard size={20} color="#059669" />
+                  </div>
+                  <div>
+                    <p style={{ fontSize: '14px', fontWeight: 700, color: '#111827', margin: 0 }}>Método de cobro</p>
+                    <p style={{ fontSize: '12px', color: '#6b7280', margin: '4px 0 0' }}>Mercado Pago o transferencia</p>
+                  </div>
+                </Link>
+
+              </div>
+            </>
           )}
-        </div>
 
-        <p style={{ fontSize: '12px', color: '#9ca3af', marginTop: '12px', textAlign: 'center' }}>
-          Mostrando los últimos 50 turnos
-        </p>
-      </div>
+          {/* ====== SECCIÓN: TURNOS ====== */}
+          {section === 'turnos' && (
+            <>
+              {/* Tabs */}
+              <div style={{ display: 'flex', gap: '4px', marginBottom: '16px', background: '#e2e8f0', borderRadius: '8px', padding: '4px', width: 'fit-content' }}>
+                {(['todos', 'pendientes', 'confirmados', 'cancelados'] as TabFilter[]).map((t) => (
+                  <button
+                    key={t}
+                    onClick={() => setTab(t)}
+                    style={{
+                      padding: '6px 14px',
+                      fontSize: '13px',
+                      fontWeight: tab === t ? 700 : 500,
+                      color: tab === t ? '#4f46e5' : '#6b7280',
+                      background: tab === t ? '#fff' : 'transparent',
+                      border: 'none',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      boxShadow: tab === t ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+                      textTransform: 'capitalize',
+                    }}
+                  >
+                    {t}
+                  </button>
+                ))}
+              </div>
+
+              {/* Tabla */}
+              <div style={{ background: '#fff', borderRadius: '12px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+                {loadingBookings ? (
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '48px', gap: '10px', color: '#9ca3af' }}>
+                    <Loader2 size={20} className="animate-spin" />
+                    <span style={{ fontSize: '14px' }}>Cargando turnos...</span>
+                  </div>
+                ) : filteredBookings.length === 0 ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '48px', color: '#9ca3af' }}>
+                    <Calendar size={32} style={{ marginBottom: '12px', opacity: 0.4 }} />
+                    <p style={{ fontSize: '14px', fontWeight: 500 }}>No hay turnos{tab !== 'todos' ? ` ${tab}` : ''}.</p>
+                  </div>
+                ) : (
+                  <div style={{ overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                      <thead>
+                        <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                          {['Solicitado', 'Turno', 'Tipo', 'Paciente', 'Contacto', 'Monto', 'Estado', 'Comprobante', 'Acciones'].map((h) => (
+                            <th key={h} style={{ padding: '10px 14px', fontSize: '11px', fontWeight: 700, color: '#6b7280', textAlign: 'left', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                              {h}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredBookings.map((b, i) => {
+                          const estado = ESTADO_LABELS[b.estado] || { label: b.estado, color: '#6b7280', bg: '#f3f4f6' };
+                          const isLast = i === filteredBookings.length - 1;
+                          return (
+                            <tr key={b.id} style={{ borderBottom: isLast ? 'none' : '1px solid #f1f5f9' }}>
+
+                              <td style={{ padding: '12px 14px', fontSize: '12px', color: '#6b7280', whiteSpace: 'nowrap' }}>
+                                {formatFecha(b.created_at)}
+                              </td>
+
+                              <td style={{ padding: '12px 14px', fontSize: '12px', color: '#374151', whiteSpace: 'nowrap' }}>
+                                <div style={{ fontWeight: 600 }}>{formatFecha(b.fecha_hora)}</div>
+                                {b.modalidad && (
+                                  <div style={{ fontSize: '11px', color: '#9ca3af', marginTop: '2px' }}>
+                                    {b.modalidad === 'virtual' ? '📹 Virtual' : '🏥 Presencial'}
+                                  </div>
+                                )}
+                              </td>
+
+                              <td style={{ padding: '12px 14px', fontSize: '13px', color: '#374151', whiteSpace: 'nowrap' }}>
+                                {b.evento_nombre || '—'}
+                              </td>
+
+                              <td style={{ padding: '12px 14px' }}>
+                                <div style={{ fontSize: '13px', fontWeight: 600, color: '#111827' }}>{b.paciente_nombre}</div>
+                                {b.notas && (
+                                  <div style={{ fontSize: '11px', color: '#9ca3af', marginTop: '2px', maxWidth: '160px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                    {b.notas}
+                                  </div>
+                                )}
+                              </td>
+
+                              <td style={{ padding: '12px 14px' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                                  <a href={`mailto:${b.paciente_email}`} style={{ fontSize: '12px', color: '#4f46e5', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <Mail size={11} /> {b.paciente_email}
+                                  </a>
+                                  {b.paciente_telefono && (
+                                    <a href={`https://wa.me/${b.paciente_telefono.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: '12px', color: '#059669', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                      📱 {b.paciente_telefono}
+                                    </a>
+                                  )}
+                                </div>
+                              </td>
+
+                              <td style={{ padding: '12px 14px', fontSize: '13px', fontWeight: 600, color: '#111827', whiteSpace: 'nowrap' }}>
+                                {formatMonto(b.monto)}
+                                {b.payment_method === 'transfer' && (
+                                  <div style={{ fontSize: '11px', color: '#9ca3af', fontWeight: 400 }}>Transferencia</div>
+                                )}
+                                {b.payment_method === 'mp' && (
+                                  <div style={{ fontSize: '11px', color: '#9ca3af', fontWeight: 400 }}>Mercado Pago</div>
+                                )}
+                              </td>
+
+                              <td style={{ padding: '12px 14px' }}>
+                                <span style={{ fontSize: '11px', fontWeight: 700, color: estado.color, background: estado.bg, borderRadius: '20px', padding: '3px 9px', whiteSpace: 'nowrap' }}>
+                                  {estado.label}
+                                </span>
+                                {b.meet_link && (
+                                  <div style={{ marginTop: '4px' }}>
+                                    <a href={b.meet_link} target="_blank" rel="noopener noreferrer" style={{ fontSize: '11px', color: '#059669', textDecoration: 'none' }}>
+                                      📹 Google Meet
+                                    </a>
+                                  </div>
+                                )}
+                              </td>
+
+                              <td style={{ padding: '12px 14px' }}>
+                                {b.comprobante_url ? (
+                                  <a
+                                    href={b.comprobante_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    style={{
+                                      display: 'inline-flex', alignItems: 'center', gap: '5px',
+                                      padding: '5px 10px',
+                                      fontSize: '12px', fontWeight: 600,
+                                      color: '#4f46e5', background: '#ede9fe',
+                                      borderRadius: '6px', textDecoration: 'none', whiteSpace: 'nowrap',
+                                    }}
+                                  >
+                                    <FileText size={12} /> Ver →
+                                  </a>
+                                ) : (
+                                  <span style={{ fontSize: '12px', color: '#d1d5db' }}>—</span>
+                                )}
+                              </td>
+
+                              <td style={{ padding: '12px 14px' }}>
+                                {b.estado === 'pending_confirmation' ? (
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                    {actionMsg?.id === b.id ? (
+                                      <div style={{ fontSize: '12px', fontWeight: 600, color: actionMsg.ok ? '#065f46' : '#991b1b', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                        {actionMsg.ok ? <CheckCircle size={13} /> : <AlertCircle size={13} />}
+                                        {actionMsg.msg}
+                                      </div>
+                                    ) : (
+                                      <>
+                                        <button
+                                          onClick={() => handleAction(b.id, 'confirm')}
+                                          disabled={actionLoading !== null}
+                                          style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '5px 10px', fontSize: '12px', fontWeight: 700, background: '#d1fae5', color: '#065f46', border: 'none', borderRadius: '6px', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                                        >
+                                          {actionLoading === b.id + 'confirm' ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle size={12} />}
+                                          Confirmar
+                                        </button>
+                                        <button
+                                          onClick={() => handleAction(b.id, 'reject')}
+                                          disabled={actionLoading !== null}
+                                          style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '5px 10px', fontSize: '12px', fontWeight: 700, background: '#fee2e2', color: '#991b1b', border: 'none', borderRadius: '6px', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                                        >
+                                          {actionLoading === b.id + 'reject' ? <Loader2 size={12} className="animate-spin" /> : <XCircle size={12} />}
+                                          Rechazar
+                                        </button>
+                                      </>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <span style={{ fontSize: '12px', color: '#d1d5db' }}>—</span>
+                                )}
+                              </td>
+
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+              <p style={{ fontSize: '12px', color: '#9ca3af', marginTop: '10px', textAlign: 'center' }}>
+                Mostrando los últimos 50 turnos
+              </p>
+            </>
+          )}
+
+        </div>
+      </main>
     </div>
   );
 }

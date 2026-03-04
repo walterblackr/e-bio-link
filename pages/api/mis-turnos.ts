@@ -36,7 +36,9 @@ export default async function handler(
       FROM bookings b
       LEFT JOIN eventos e ON b.evento_id = e.id
       WHERE b.client_id = ${session.id}
-      ORDER BY b.fecha_hora DESC
+      ORDER BY
+        CASE WHEN b.estado = 'pending_confirmation' THEN 0 ELSE 1 END ASC,
+        b.created_at DESC
       LIMIT 50
     `;
 

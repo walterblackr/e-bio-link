@@ -114,7 +114,7 @@ function RegisterForm() {
 
       {/* Logo */}
       <div style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-        <span style={{ fontSize: '15px', fontWeight: 600, color: '#4b5563', letterSpacing: '-0.01em' }}>e-bio-link</span>
+        <span style={{ fontFamily: 'var(--font-shadows)', fontSize: '28px', color: '#4b5563' }}>e-bio-link</span>
       </div>
 
       {/* Pasos */}
