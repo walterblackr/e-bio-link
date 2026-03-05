@@ -20,7 +20,7 @@ export const config = {
   },
 };
 
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://ebiolink.com';
+const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://ebiolink.app';
 
 export default async function handler(
   req: NextApiRequest,

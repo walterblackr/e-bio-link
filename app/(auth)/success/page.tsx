@@ -86,7 +86,7 @@ function SuccessContent() {
                     <span className="font-semibold">Email:</span> {clientData.email}
                   </p>
                   <p className="text-sm text-gray-700">
-                    <span className="font-semibold">Tu URL:</span> ebiolink.com/{clientData.slug}
+                    <span className="font-semibold">Tu URL:</span> ebiolink.app/{clientData.slug}
                   </p>
                 </div>
               )}
@@ -123,7 +123,7 @@ function SuccessContent() {
                       href={`/biolink/${clientData.slug}`}
                       className="text-indigo-600 hover:underline"
                     >
-                      ebiolink.com/{clientData.slug}
+                      ebiolink.app/{clientData.slug}
                     </a>
                   </p>
                 </div>

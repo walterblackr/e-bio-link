@@ -172,7 +172,7 @@ export default function BioLinkTemplate({ data }: BioLinkProps) {
         {/* Footer ebiolink */}
         <div className="mt-8 pt-4">
           <a
-            href="https://ebiolink.com"
+            href="https://ebiolink.app"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center justify-center opacity-40 hover:opacity-60 transition-opacity"

@@ -25,7 +25,7 @@ const DEMO_URL      = "https://e-bio-link-cr-v-bruce.vercel.app/";
 const CONTACT_EMAIL = "mailto:ebiolinkarg@gmail.com";
 
 const FEATURES = [
-  { icon: <Link2 size={20} />,      title: "Biolink personalizado",     desc: "Tu perfil en ebiolink.com/tu-nombre con foto, bio y colores de tu marca.",                                       accent: "#818cf8" },
+  { icon: <Link2 size={20} />,      title: "Biolink personalizado",     desc: "Tu perfil en ebiolink.app/tu-nombre con foto, bio y colores de tu marca.",                                       accent: "#818cf8" },
   { icon: <Calendar size={20} />,   title: "Agenda online 24/7",        desc: "Los pacientes reservan solos desde cualquier dispositivo, sin llamadas ni mensajes.",                            accent: "#60a5fa" },
   { icon: <CalendarDays size={20}/>, title: "Google Calendar",          desc: "Sincronización automática con tu cuenta de Google actual. Nada nuevo que aprender.",                             accent: "#4ade80" },
   { icon: <Video size={20} />,      title: "Google Meet automático",    desc: "El link de videollamada se genera solo para consultas virtuales. Sin pasos extra.",                              accent: "#f87171" },
@@ -35,7 +35,7 @@ const FEATURES = [
 ];
 
 const PLAN_FEATURES = [
-  "Biolink personalizado (ebiolink.com/tu-nombre)",
+  "Biolink personalizado (ebiolink.app/tu-nombre)",
   "Agenda online — pacientes reservan solos, 24/7",
   "Sincronización con Google Calendar",
   "Videollamadas vía Google Meet (consultas virtuales)",
@@ -238,7 +238,7 @@ export default function Home() {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", borderTop: `1px solid ${C.border}`, paddingTop: "40px", width: "100%", maxWidth: "580px" }}>
           {[
             { num: "16 hs/mes", label: "recuperadas en gestión" },
-            { num: "−30%",      label: "tasa de ausentismo" },
+            { num: "+30%",      label: "de ingresos recuperados" },
             { num: "15 min",    label: "para configurar todo" },
           ].map((s, i) => (
             <div key={i} style={{ textAlign: "center", borderLeft: i > 0 ? `1px solid ${C.border}` : "none", padding: "0 16px" }}>

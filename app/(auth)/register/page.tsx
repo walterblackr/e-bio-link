@@ -174,14 +174,14 @@ function RegisterForm() {
               Tu URL personalizada
             </label>
             <p style={{ fontSize: '12px', color: '#6b7280', marginBottom: '6px' }}>
-              Dirección de tu página pública. Ej: <strong style={{ color: '#4b5563' }}>ebiolink.com/dra-garcia</strong>
+              Dirección de tu página pública. Ej: <strong style={{ color: '#4b5563' }}>ebiolink.app/dra-garcia</strong>
             </p>
             <div style={{ display: 'flex', alignItems: 'center', border: '1.5px solid #d1d5db', borderRadius: '8px', overflow: 'hidden', background: '#fff', transition: 'border-color 0.15s' }}
               onFocusCapture={(e) => (e.currentTarget.style.borderColor = '#4f46e5')}
               onBlurCapture={(e) => (e.currentTarget.style.borderColor = '#d1d5db')}
             >
               <span style={{ padding: '10px 10px 10px 14px', fontSize: '13px', color: '#9ca3af', whiteSpace: 'nowrap', borderRight: '1px solid #e5e7eb', background: '#f9fafb' }}>
-                ebiolink.com/
+                ebiolink.app/
               </span>
               <input
                 id="slug"

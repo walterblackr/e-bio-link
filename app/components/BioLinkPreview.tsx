@@ -136,7 +136,7 @@ export default function BioLinkPreview({ data }: BioLinkPreviewProps) {
         {/* Footer ebiolink */}
         <div className="mt-auto pt-8 pb-4">
           <a
-            href="https://ebiolink.com"
+            href="https://ebiolink.app"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center justify-center opacity-40 hover:opacity-60 transition-opacity"
