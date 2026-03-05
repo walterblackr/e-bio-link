@@ -144,7 +144,7 @@ function SuccessContent() {
                 Hubo un problema con tu pago. Por favor intenta nuevamente.
               </p>
               <a
-                href="/propuesta"
+                href="/#precios"
                 className="inline-block bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-6 rounded-lg transition"
               >
                 Volver a Intentar

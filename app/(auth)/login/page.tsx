@@ -139,8 +139,8 @@ export default function LoginPage() {
 
       {/* Volver */}
       <div style={{ marginTop: '20px' }}>
-        <Link href="/propuesta" style={{ fontSize: '13px', color: '#6366f1', textDecoration: 'none' }}>
-          ← Volver a la propuesta
+        <Link href="/" style={{ fontSize: '13px', color: '#6366f1', textDecoration: 'none' }}>
+          ← Volver al inicio
         </Link>
       </div>
     </div>

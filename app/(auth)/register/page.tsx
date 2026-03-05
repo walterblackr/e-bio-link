@@ -305,7 +305,7 @@ function RegisterForm() {
       {/* Volver */}
       <div style={{ marginTop: '20px' }}>
         <Link
-          href="/propuesta"
+          href="/#precios"
           style={{ fontSize: '13px', color: '#6366f1', textDecoration: 'none' }}
         >
           ← Volver a elegir plan

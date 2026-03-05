@@ -3,7 +3,7 @@ import { Inter, Space_Mono, Shadows_Into_Light } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 const spaceMono = Space_Mono({
   weight: ['400', '700'],
@@ -49,7 +49,8 @@ export default function RootLayout({
             fbq('track', 'PageView');
           `}
         </Script>
-
+      </head>
+      <body className={`${inter.className} ${inter.variable} ${spaceMono.variable} ${shadowsFont.variable}`}>
         <noscript>
           <img
             height="1"
@@ -59,9 +60,6 @@ export default function RootLayout({
             alt=""
           />
         </noscript>
-      </head>
-      {/* Agregamos la variable de la fuente al body */}
-      <body className={`${inter.className} ${spaceMono.variable} ${shadowsFont.variable}`}>
         {children}
       </body>
     </html>
