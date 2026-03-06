@@ -527,7 +527,9 @@ export default function PanelClient({ client }: { client: Client }) {
                               <td style={{ padding: '12px 14px' }}>
                                 {b.comprobante_url ? (
                                   <a
-                                    href={b.comprobante_url}
+                                    href={b.comprobante_url.toLowerCase().includes('.pdf')
+                                      ? `https://docs.google.com/viewer?url=${encodeURIComponent(b.comprobante_url)}`
+                                      : b.comprobante_url}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     style={{

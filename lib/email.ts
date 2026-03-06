@@ -290,6 +290,9 @@ export async function sendComprobanteNotification(data: ComprobanteNotifData): P
   }
 
   const fecha = formatFecha(data.fecha_hora);
+  const comprobanteViewUrl = data.comprobante_url.toLowerCase().includes('.pdf')
+    ? `https://docs.google.com/viewer?url=${encodeURIComponent(data.comprobante_url)}`
+    : data.comprobante_url;
 
   const html = `
     <!DOCTYPE html><html><head><style>${baseStyle()}
@@ -340,7 +343,7 @@ export async function sendComprobanteNotification(data: ComprobanteNotifData): P
           <hr class="divider" />
 
           <p style="margin:0 0 10px;font-size:14px;font-weight:600;color:#374151;">Comprobante de transferencia:</p>
-          <a href="${data.comprobante_url}" class="comprobante-link" target="_blank">
+          <a href="${comprobanteViewUrl}" class="comprobante-link" target="_blank">
             Ver comprobante →
           </a>
 
