@@ -504,8 +504,10 @@ export default function Home() {
           </div>
           <div style={{ display: "flex", gap: "24px", flexWrap: "wrap", justifyContent: "center" }}>
             {[
-              { label: "Demo",           href: DEMO_URL,  ext: true  },
-              { label: "Iniciar sesión", href: "/login",  ext: false },
+                { label: "Demo",              href: DEMO_URL,       ext: true  },
+              { label: "Iniciar sesión",   href: "/login",       ext: false },
+              { label: "Privacidad",        href: "/privacidad",  ext: false },
+              { label: "Términos de Uso",   href: "/terminos",    ext: false },
             ].map(l => l.ext
               ? <a key={l.href} href={l.href} target="_blank" rel="noopener noreferrer" style={{ fontSize: "13px", color: C.textMuted, textDecoration: "none" }}>{l.label}</a>
               : <Link key={l.href} href={l.href} style={{ fontSize: "13px", color: C.textMuted, textDecoration: "none" }}>{l.label}</Link>
