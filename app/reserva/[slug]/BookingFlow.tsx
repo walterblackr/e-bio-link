@@ -109,6 +109,14 @@ export default function BookingFlow({ medico, eventos }: BookingFlowProps) {
   const [comprobanteUploading, setComprobanteUploading] = useState(false);
   const [comprobanteDone, setComprobanteDone] = useState(false);
   const [comprobanteError, setComprobanteError] = useState("");
+  const [aliasCopied, setAliasCopied] = useState(false);
+
+  function handleCopyAlias(text: string) {
+    navigator.clipboard.writeText(text).then(() => {
+      setAliasCopied(true);
+      setTimeout(() => setAliasCopied(false), 2000);
+    });
+  }
 
   // ── Load slots when date changes ──────────────────────────────────────────
 
@@ -661,23 +669,137 @@ export default function BookingFlow({ medico, eventos }: BookingFlowProps) {
 
         {/* ─── STEP 4: Confirmación ───────────────────────────────────────── */}
         {step === 4 && bookingResult && selectedEvento && selectedSlot && (
-          <div className="text-center">
-            {/* Ícono según método de pago */}
+          <div>
             {bookingResult.payment_method === 'transfer' ? (
-              <>
-                <div className="w-20 h-20 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-5">
-                  <svg className="w-10 h-10 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
+              /* ── Transfer flow: diseño mobile-first minimalista ── */
+              <div>
+                {/* Header compacto */}
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0">
+                    <svg className="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-bold text-gray-900 leading-tight">Reserva recibida</h2>
+                    <p className="text-xs text-gray-500">
+                      #{bookingResult.booking_id} · {selectedDate && formatFechaLarga(selectedDate)} · {selectedSlot.label} hs · {formatPrecio(selectedEvento.precio)}
+                    </p>
+                  </div>
                 </div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-1">Reserva recibida</h2>
-                <p className="text-amber-700 font-medium text-sm mb-1">Pendiente de confirmación</p>
-                <p className="text-gray-500 text-sm mb-6">
-                  Número de reserva: <span className="font-mono font-semibold text-gray-700">#{bookingResult.booking_id}</span>
-                </p>
-              </>
+
+                <hr className="border-gray-100 mb-5" />
+
+                {comprobanteDone ? (
+                  /* ── Estado: comprobante enviado ── */
+                  <div className="bg-green-50 border border-green-200 rounded-xl p-5 mb-5 flex items-start gap-3">
+                    <Check className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-semibold text-green-900 text-sm">Comprobante enviado</p>
+                      <p className="text-xs text-green-700 mt-1">
+                        El profesional va a confirmar tu turno y te avisamos en{' '}
+                        <span className="font-semibold">{form.email}</span>.
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  /* ── Pasos para confirmar ── */
+                  <div className="space-y-4 mb-5">
+                    <p className="text-sm font-semibold text-gray-700">Para confirmar tu turno:</p>
+
+                    {/* Paso 1: Transferir */}
+                    {bookingResult.transfer_data && (
+                      <div>
+                        <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">1 · Transferí</p>
+                        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-2 text-sm">
+                          {bookingResult.transfer_data.titular_cuenta && (
+                            <div className="flex justify-between gap-2">
+                              <span className="text-blue-600">Titular</span>
+                              <span className="font-semibold text-blue-900 text-right">{bookingResult.transfer_data.titular_cuenta}</span>
+                            </div>
+                          )}
+                          {bookingResult.transfer_data.banco_nombre && (
+                            <div className="flex justify-between gap-2">
+                              <span className="text-blue-600">Banco</span>
+                              <span className="font-semibold text-blue-900 text-right">{bookingResult.transfer_data.banco_nombre}</span>
+                            </div>
+                          )}
+                          {bookingResult.transfer_data.cbu_alias && (
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-blue-600 flex-shrink-0">Alias / CBU</span>
+                              <div className="flex items-center gap-2 min-w-0">
+                                <span className="font-mono font-semibold text-blue-900 break-all text-right">{bookingResult.transfer_data.cbu_alias}</span>
+                                <button
+                                  onClick={() => handleCopyAlias(bookingResult.transfer_data.cbu_alias)}
+                                  className="flex-shrink-0 text-xs font-semibold px-2 py-1 rounded-md bg-blue-100 hover:bg-blue-200 text-blue-700 transition-colors"
+                                >
+                                  {aliasCopied ? '¡Copiado!' : 'Copiar'}
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                          <div className="flex justify-between gap-2 pt-2 border-t border-blue-200">
+                            <span className="text-blue-600 font-semibold">Monto</span>
+                            <span className="font-bold text-blue-900">{formatPrecio(bookingResult.transfer_data.monto)}</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Paso 2: Comprobante */}
+                    <div>
+                      <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">2 · Subí el comprobante</p>
+                      <div className="space-y-3">
+                        <label className="block">
+                          <div className={`border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-colors ${
+                            comprobanteFile ? "border-indigo-400 bg-indigo-50" : "border-gray-300 hover:border-indigo-400"
+                          }`}>
+                            <input
+                              type="file"
+                              accept="image/*,.pdf"
+                              className="hidden"
+                              onChange={e => setComprobanteFile(e.target.files?.[0] || null)}
+                            />
+                            {comprobanteFile ? (
+                              <p className="text-sm text-indigo-700 font-medium truncate">{comprobanteFile.name}</p>
+                            ) : (
+                              <p className="text-sm text-gray-500">Tocá para seleccionar foto o PDF</p>
+                            )}
+                          </div>
+                        </label>
+                        {comprobanteError && (
+                          <p className="text-xs text-red-500">{comprobanteError}</p>
+                        )}
+                        <button
+                          onClick={handleUploadComprobante}
+                          disabled={!comprobanteFile || comprobanteUploading}
+                          className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 disabled:cursor-not-allowed text-white font-semibold py-3 px-4 rounded-xl transition-colors text-sm flex items-center justify-center gap-2"
+                        >
+                          {comprobanteUploading ? (
+                            <>
+                              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                              Subiendo...
+                            </>
+                          ) : (
+                            "Enviar comprobante →"
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <button
+                  onClick={() => router.push(`/biolink/${medico.slug}`)}
+                  className="w-full bg-gray-100 hover:bg-gray-200 text-gray-600 font-medium py-2.5 px-6 rounded-xl transition-colors text-sm"
+                >
+                  Volver al perfil
+                </button>
+              </div>
+
             ) : (
-              <>
+              /* ── MP / other flow: sin cambios ── */
+              <div className="text-center">
                 <div className="w-20 h-20 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-5">
                   <svg className="w-10 h-10 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
@@ -687,186 +809,47 @@ export default function BookingFlow({ medico, eventos }: BookingFlowProps) {
                 <p className="text-gray-500 text-sm mb-6">
                   Número de reserva: <span className="font-mono font-semibold text-gray-700">#{bookingResult.booking_id}</span>
                 </p>
-              </>
-            )}
 
-            {/* Detalles del turno */}
-            <div className="bg-white border border-gray-200 rounded-xl p-5 mb-5 text-left space-y-3">
-              <div className="flex items-start justify-between gap-3 pb-3 border-b border-gray-100">
-                <div>
-                  <p className="text-xs text-gray-500 uppercase tracking-wider">Profesional</p>
-                  <p className="font-semibold text-gray-900">{medico.nombre_completo}</p>
-                  {medico.especialidad && <p className="text-xs text-gray-500">{medico.especialidad}</p>}
-                </div>
-                {medico.foto_url && (
-                  <img src={medico.foto_url} alt="" className="w-12 h-12 rounded-full object-cover border border-gray-200 flex-shrink-0" />
-                )}
-              </div>
-
-              <div>
-                <p className="text-xs text-gray-500 uppercase tracking-wider">Turno</p>
-                <p className="font-semibold text-gray-900">{selectedEvento.nombre}</p>
-              </div>
-
-              <div>
-                <p className="text-xs text-gray-500 uppercase tracking-wider">Fecha y hora</p>
-                <p className="font-semibold text-gray-900">
-                  {selectedDate && formatFechaLarga(selectedDate)}
-                </p>
-                <p className="text-gray-700">{selectedSlot.label} hs · {selectedEvento.duracion_minutos} min</p>
-              </div>
-
-              <div>
-                <p className="text-xs text-gray-500 uppercase tracking-wider">Modalidad</p>
-                <p className="font-semibold text-gray-900 capitalize">{selectedEvento.modalidad}</p>
-              </div>
-
-              <div className="pt-3 border-t border-gray-100">
-                <p className="text-xs text-gray-500 uppercase tracking-wider">Monto a abonar</p>
-                <p className="text-2xl font-bold text-indigo-700">{formatPrecio(selectedEvento.precio)}</p>
-              </div>
-            </div>
-
-            {/* Instrucciones de pago */}
-            {bookingResult.payment_method === 'transfer' && bookingResult.transfer_data ? (
-              <div className="mb-5 text-left space-y-4">
-                {/* Aviso con flecha hacia el comprobante */}
-                {!comprobanteDone && (
-                  <div className="bg-amber-50 border border-amber-300 rounded-xl p-4 text-center">
-                    <p className="text-amber-900 font-semibold text-sm mb-1">
-                      Tu turno aún no está confirmado
+                {bookingResult.payment_method === 'mp' && (
+                  <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-5 mb-5 text-left">
+                    <h3 className="font-semibold text-indigo-900 mb-2">Pagá con Mercado Pago</h3>
+                    <p className="text-sm text-indigo-700 mb-4">
+                      Completá el pago de {selectedEvento && formatPrecio(selectedEvento.precio)} de forma segura a través de Mercado Pago.
                     </p>
-                    <p className="text-amber-700 text-sm">
-                      Realizá la transferencia y subí el comprobante abajo para que el profesional confirme tu turno.
-                    </p>
-                    <div className="mt-3 flex justify-center">
-                      <svg
-                        className="w-7 h-7 text-amber-500 animate-bounce"
-                        fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </div>
-                  </div>
-                )}
-                <div className="bg-blue-50 border border-blue-200 rounded-xl p-5">
-                  <h3 className="font-semibold text-blue-900 mb-3">Datos para transferencia</h3>
-                  <div className="space-y-2 text-sm">
-                    {bookingResult.transfer_data.titular_cuenta && (
-                      <div className="flex items-start justify-between gap-2">
-                        <span className="text-blue-700">Titular:</span>
-                        <span className="font-semibold text-blue-900 text-right">{bookingResult.transfer_data.titular_cuenta}</span>
-                      </div>
-                    )}
-                    {bookingResult.transfer_data.banco_nombre && (
-                      <div className="flex items-start justify-between gap-2">
-                        <span className="text-blue-700">Banco:</span>
-                        <span className="font-semibold text-blue-900 text-right">{bookingResult.transfer_data.banco_nombre}</span>
-                      </div>
-                    )}
-                    {bookingResult.transfer_data.cbu_alias && (
-                      <div className="flex items-start justify-between gap-2">
-                        <span className="text-blue-700">CBU/Alias:</span>
-                        <span className="font-mono font-semibold text-blue-900 text-right break-all">{bookingResult.transfer_data.cbu_alias}</span>
-                      </div>
-                    )}
-                    <div className="flex items-start justify-between gap-2 pt-2 border-t border-blue-200">
-                      <span className="text-blue-700 font-semibold">Monto:</span>
-                      <span className="font-bold text-blue-900">{formatPrecio(bookingResult.transfer_data.monto)}</span>
-                    </div>
-                  </div>
-                  <p className="text-xs text-blue-600 mt-3">
-                    Una vez realizada la transferencia, subí el comprobante para agilizar la confirmación.
-                  </p>
-                </div>
-
-                {/* Upload comprobante */}
-                {comprobanteDone ? (
-                  <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex items-center gap-3">
-                    <Check className="w-5 h-5 text-green-600 flex-shrink-0" />
-                    <div>
-                      <p className="text-sm font-semibold text-green-900">Comprobante enviado</p>
-                      <p className="text-xs text-green-600">El profesional recibirá la notificación y confirmará tu turno.</p>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="bg-white border border-gray-200 rounded-xl p-4">
-                    <p className="text-sm font-semibold text-gray-900 mb-3">Subir comprobante de pago</p>
-                    <label className="block mb-3">
-                      <div className={`border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors ${
-                        comprobanteFile ? "border-indigo-400 bg-indigo-50" : "border-gray-300 hover:border-indigo-400"
-                      }`}>
-                        <input
-                          type="file"
-                          accept="image/*,.pdf"
-                          className="hidden"
-                          onChange={e => setComprobanteFile(e.target.files?.[0] || null)}
-                        />
-                        {comprobanteFile ? (
-                          <p className="text-sm text-indigo-700 font-medium truncate">{comprobanteFile.name}</p>
-                        ) : (
-                          <p className="text-sm text-gray-500">Tocá para seleccionar imagen o PDF</p>
-                        )}
-                      </div>
-                    </label>
-                    {comprobanteError && (
-                      <p className="text-xs text-red-500 mb-2">{comprobanteError}</p>
+                    {mpError && (
+                      <p className="text-xs text-red-500 mb-3">{mpError}</p>
                     )}
                     <button
-                      onClick={handleUploadComprobante}
-                      disabled={!comprobanteFile || comprobanteUploading}
-                      className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed text-white font-semibold py-2.5 px-4 rounded-lg transition-colors text-sm flex items-center justify-center gap-2"
+                      onClick={handlePagarMP}
+                      disabled={mpLoading}
+                      className="w-full bg-[#009ee3] hover:bg-[#007eb5] disabled:bg-[#009ee3]/50 disabled:cursor-not-allowed text-white font-bold py-3 px-6 rounded-xl transition-colors flex items-center justify-center gap-2"
                     >
-                      {comprobanteUploading ? (
+                      {mpLoading ? (
                         <>
                           <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                          Subiendo...
+                          Generando link...
                         </>
                       ) : (
-                        "Enviar comprobante"
+                        "Pagar con Mercado Pago →"
                       )}
                     </button>
                   </div>
                 )}
-              </div>
-            ) : bookingResult.payment_method === 'mp' ? (
-              <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-5 mb-5 text-left">
-                <h3 className="font-semibold text-indigo-900 mb-2">Pagá con Mercado Pago</h3>
-                <p className="text-sm text-indigo-700 mb-4">
-                  Completá el pago de {selectedEvento && formatPrecio(selectedEvento.precio)} de forma segura a través de Mercado Pago.
-                </p>
-                {mpError && (
-                  <p className="text-xs text-red-500 mb-3">{mpError}</p>
-                )}
+
+                <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 mb-5 text-left">
+                  <p className="text-xs text-gray-500">
+                    Recibirás la confirmación en <span className="font-semibold text-gray-700">{form.email}</span> una vez que el profesional confirme tu turno.
+                  </p>
+                </div>
+
                 <button
-                  onClick={handlePagarMP}
-                  disabled={mpLoading}
-                  className="w-full bg-[#009ee3] hover:bg-[#007eb5] disabled:bg-[#009ee3]/50 disabled:cursor-not-allowed text-white font-bold py-3 px-6 rounded-xl transition-colors flex items-center justify-center gap-2"
+                  onClick={() => router.push(`/biolink/${medico.slug}`)}
+                  className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 px-6 rounded-xl transition-colors"
                 >
-                  {mpLoading ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      Generando link...
-                    </>
-                  ) : (
-                    "Pagar con Mercado Pago →"
-                  )}
+                  Volver al perfil
                 </button>
               </div>
-            ) : null}
-
-            <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 mb-5 text-left">
-              <p className="text-xs text-gray-500">
-                Recibirás la confirmación en <span className="font-semibold text-gray-700">{form.email}</span> una vez que el profesional confirme tu turno.
-              </p>
-            </div>
-
-            <button
-              onClick={() => router.push(`/biolink/${medico.slug}`)}
-              className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 px-6 rounded-xl transition-colors"
-            >
-              Volver al perfil
-            </button>
+            )}
           </div>
         )}
       </div>
