@@ -106,12 +106,12 @@ export default async function handler(
 
     console.log(`[upload-comprobante] Booking ${booking_id} → pending_confirmation. Comprobante: ${uploadResult.secure_url}`);
 
-    // Generar magic links firmados
-    const confirmToken = generateActionToken(booking_id, 'confirm');
-    const rejectToken = generateActionToken(booking_id, 'reject');
+    // Generar magic links firmados (con timestamp para expiración de 7 días)
+    const { token: confirmToken, ts: confirmTs } = generateActionToken(booking_id, 'confirm');
+    const { token: rejectToken, ts: rejectTs } = generateActionToken(booking_id, 'reject');
 
-    const confirmUrl = `${BASE_URL}/api/accion-turno?booking_id=${booking_id}&action=confirm&token=${confirmToken}`;
-    const rejectUrl = `${BASE_URL}/api/accion-turno?booking_id=${booking_id}&action=reject&token=${rejectToken}`;
+    const confirmUrl = `${BASE_URL}/api/accion-turno?booking_id=${booking_id}&action=confirm&ts=${confirmTs}&token=${confirmToken}`;
+    const rejectUrl = `${BASE_URL}/api/accion-turno?booking_id=${booking_id}&action=reject&ts=${rejectTs}&token=${rejectToken}`;
 
     // Enviar email al médico con los botones confirmar/rechazar
     if (clientInfo?.email) {

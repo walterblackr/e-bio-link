@@ -43,9 +43,9 @@ export default async function handler(
     return res.status(405).end('Method not allowed');
   }
 
-  const { booking_id, action, token } = req.query;
+  const { booking_id, action, token, ts: tsRaw } = req.query;
 
-  if (!booking_id || !action || !token || typeof booking_id !== 'string' || typeof action !== 'string' || typeof token !== 'string') {
+  if (!booking_id || !action || !token || !tsRaw || typeof booking_id !== 'string' || typeof action !== 'string' || typeof token !== 'string' || typeof tsRaw !== 'string') {
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     return res.status(400).send(htmlPage(
       'Link inválido',
@@ -55,8 +55,19 @@ export default async function handler(
     ));
   }
 
-  // Verificar token HMAC
-  const valid = verifyActionToken(booking_id, action, token);
+  const ts = parseInt(tsRaw, 10);
+  if (isNaN(ts)) {
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    return res.status(400).send(htmlPage(
+      'Link inválido',
+      '🔒',
+      '<p>El link es inválido o está incompleto.</p>',
+      '#dc2626'
+    ));
+  }
+
+  // Verificar token HMAC con expiración de 7 días
+  const valid = verifyActionToken(booking_id, action, token, ts);
   if (!valid) {
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     return res.status(403).send(htmlPage(

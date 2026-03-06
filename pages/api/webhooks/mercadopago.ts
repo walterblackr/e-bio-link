@@ -55,9 +55,8 @@ export default async function handler(
         process.env.MERCADOPAGO_WEBHOOK_SECRET
       );
       if (!isValid) {
-        console.error('[MP Webhook] Firma inválida - procesando de todas formas (debugging)');
-        // TODO: Descomentar en producción:
-        // return res.status(401).json({ error: 'Invalid signature' });
+        console.error('[MP Webhook] Firma inválida - rechazando solicitud');
+        return res.status(401).json({ error: 'Invalid signature' });
       }
     }
 
