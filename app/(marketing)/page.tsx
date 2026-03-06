@@ -17,8 +17,9 @@ const C = {
   textPrimary:   "#ffffff",
   textSecondary: "rgba(255,255,255,0.55)",
   textMuted:     "rgba(255,255,255,0.3)",
-  blue:  "#3b82f6",
-  green: "#47cc88",
+  blue:   "#3b82f6",
+  orange: "#f97316",
+  green:  "#47cc88",
 };
 
 const DEMO_URL      = "https://e-bio-link-cr-v-bruce.vercel.app/";
@@ -194,7 +195,7 @@ export default function Home() {
               Iniciar sesión
             </Link>
             <Link href="/register?plan=monthly" onClick={() => setMobileMenuOpen(false)}
-              style={{ display: "block", marginTop: "16px", textAlign: "center", background: C.blue, color: "white", fontWeight: 700, padding: "13px", borderRadius: "10px", textDecoration: "none" }}>
+              style={{ display: "block", marginTop: "16px", textAlign: "center", background: C.orange, color: "white", fontWeight: 700, padding: "13px", borderRadius: "10px", textDecoration: "none" }}>
               Empezar ahora
             </Link>
           </div>
@@ -223,7 +224,7 @@ export default function Home() {
         </p>
 
         <div style={{ display: "flex", gap: "14px", flexWrap: "wrap", justifyContent: "center", marginBottom: "14px" }}>
-          <Link href="/register?plan=monthly" style={{ display: "inline-flex", alignItems: "center", gap: "8px", background: C.blue, color: "white", fontWeight: 700, padding: "14px 28px", borderRadius: "10px", textDecoration: "none", fontSize: "15px", boxShadow: "0 4px 24px rgba(59,130,246,0.35)" }}>
+          <Link href="/register?plan=monthly" style={{ display: "inline-flex", alignItems: "center", gap: "8px", background: C.orange, color: "white", fontWeight: 700, padding: "14px 28px", borderRadius: "10px", textDecoration: "none", fontSize: "15px", boxShadow: "0 4px 24px rgba(249,115,22,0.4)" }}>
             Empezar ahora <ArrowRight size={17} />
           </Link>
           <a href={CONTACT_EMAIL} style={{ display: "inline-flex", alignItems: "center", gap: "8px", border: `1.5px solid rgba(255,255,255,0.18)`, color: "white", fontWeight: 600, padding: "14px 28px", borderRadius: "10px", textDecoration: "none", fontSize: "15px", background: "rgba(255,255,255,0.04)" }}>
@@ -295,15 +296,22 @@ export default function Home() {
               </p>
               <div style={{ borderRadius: "10px", overflow: "hidden", border: "1px solid rgba(248,113,113,0.15)" }}>
                 {[
-                  { label: "Proyección (20 pacientes × $40.000)", val: "$800.000",     striked: true  },
-                  { label: "Dinero perdido al mes",               val: "−$240.000",    red: true      },
-                  { label: "PÉRDIDA ANUAL",                       val: "−$2.880.000",  big: true      },
+                  { label: "Proyección (20 pacientes × $40.000)", val: "$800.000",  striked: true },
+                  { label: "Dinero perdido al mes",               val: "−$240.000", red: true     },
                 ].map((row, i) => (
-                  <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", background: i === 2 ? "rgba(248,113,113,0.08)" : "rgba(255,255,255,0.02)", borderBottom: i < 2 ? "1px solid rgba(248,113,113,0.1)" : "none" }}>
-                    <span style={{ fontSize: "12px", color: C.textSecondary, fontWeight: i === 2 ? 700 : 400 }}>{row.label}</span>
-                    <span style={{ fontSize: i === 2 ? "14px" : "13px", fontWeight: 700, textDecoration: row.striked ? "line-through" : "none", color: row.red || row.big ? "#f87171" : "rgba(255,255,255,0.6)" }}>{row.val}</span>
+                  <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", background: "rgba(255,255,255,0.02)", borderBottom: "1px solid rgba(248,113,113,0.1)" }}>
+                    <span style={{ fontSize: "12px", color: C.textSecondary }}>{row.label}</span>
+                    <span style={{ fontSize: "13px", fontWeight: 700, textDecoration: row.striked ? "line-through" : "none", color: row.red ? "#f87171" : "rgba(255,255,255,0.6)" }}>{row.val}</span>
                   </div>
                 ))}
+              </div>
+              <div style={{ background: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.25)", borderRadius: "12px", padding: "16px", marginTop: "12px", textAlign: "center" }}>
+                <div style={{ fontSize: "11px", letterSpacing: "0.12em", color: "#f87171", textTransform: "uppercase", marginBottom: "6px" }}>
+                  Pérdida anual estimada
+                </div>
+                <div style={{ fontSize: "38px", fontWeight: 800, color: "#f87171", textShadow: "0 0 32px rgba(248,113,113,0.5)", lineHeight: 1 }}>
+                  −$2.880.000
+                </div>
               </div>
               <div style={{ marginTop: "14px", padding: "12px 14px", background: "rgba(71,204,136,0.08)", borderRadius: "10px", border: "1px solid rgba(71,204,136,0.2)", fontSize: "13px", color: "rgba(255,255,255,0.7)" }}>
                 Invertís <strong style={{ color: "white" }}>$120.000</strong> para dejar de perder casi <strong style={{ color: "white" }}>3 Millones</strong>. Con evitar 4 ausencias en el año, el sistema se paga solo.
@@ -350,20 +358,19 @@ export default function Home() {
               </div>
               <ul style={{ listStyle: "none", padding: 0, margin: "0 0 20px", display: "flex", flexDirection: "column", gap: "9px" }}>
                 {PLAN_FEATURES.map((f, i) => <PlanFeature key={i} text={f} hl />)}
-                <li style={{ display: "flex", alignItems: "flex-start", gap: "8px", fontSize: "13px", background: "rgba(59,130,246,0.1)", border: "1px solid rgba(59,130,246,0.2)", borderRadius: "8px", padding: "8px 10px", marginTop: "4px", color: "rgba(255,255,255,0.85)", fontWeight: 600 }}>
-                  <div style={{ display: "flex", gap: "3px", flexShrink: 0, marginTop: "1px" }}><CreditCard size={13} color="#a78bfa" /><Banknote size={13} color="#34d399" /></div>
-                  Mercado Pago o Transferencia — <span style={{ color: C.blue }}>vos elegís</span>
+                <li style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", background: "rgba(71,204,136,0.08)", border: "1px solid rgba(71,204,136,0.15)", borderRadius: "8px", padding: "8px 10px", marginTop: "4px", color: "rgba(255,255,255,0.7)" }}>
+                  <div style={{ display: "flex", gap: "3px", flexShrink: 0 }}><CreditCard size={13} color="#a78bfa" /><Banknote size={13} color="#34d399" /></div>
+                  Mercado Pago o Transferencia
                 </li>
               </ul>
-              <Link href="/register?plan=monthly" style={{ display: "block", textAlign: "center", background: C.blue, color: "white", fontWeight: 700, padding: "12px", borderRadius: "10px", textDecoration: "none", fontSize: "14px", boxShadow: "0 4px 16px rgba(59,130,246,0.3)", marginTop: "auto" }}>
+              <Link href="/register?plan=monthly" style={{ display: "block", textAlign: "center", background: C.orange, color: "white", fontWeight: 700, padding: "12px", borderRadius: "10px", textDecoration: "none", fontSize: "14px", boxShadow: "0 4px 16px rgba(249,115,22,0.35)", marginTop: "auto" }}>
                 Elegir Mensual
               </Link>
             </div>
 
             {/* Anual */}
             <div className="plan-ghost" style={{ background: C.card, borderRadius: "16px", padding: "28px", border: `1px solid ${C.border}`, transition: "border-color 0.2s", display: "flex", flexDirection: "column" }}>
-              <div style={{ display: "inline-block", background: "rgba(255,255,255,0.07)", color: C.textSecondary, fontSize: "10px", fontWeight: 700, padding: "3px 12px", borderRadius: "100px", marginBottom: "14px", letterSpacing: "0.06em" }}>AHORRO MÁXIMO</div>
-              <h3 style={{ fontSize: "1.1rem", fontWeight: 700, color: "white", marginBottom: "4px" }}>Plan Anual</h3>
+              <h3 style={{ fontSize: "1.1rem", fontWeight: 700, color: "white", marginBottom: "4px", marginTop: "8px" }}>Plan Anual</h3>
               <p style={{ fontSize: "13px", color: C.textSecondary, marginBottom: "16px" }}>Congelá el precio hoy por 12 meses.</p>
               <div style={{ marginBottom: "4px" }}>
                 <span style={{ fontSize: "2rem", fontWeight: 800, color: "white" }}>$120.000</span>
@@ -374,8 +381,8 @@ export default function Home() {
               </p>
               <ul style={{ listStyle: "none", padding: 0, margin: "0 0 20px", display: "flex", flexDirection: "column", gap: "9px" }}>
                 {PLAN_FEATURES.map((f, i) => <PlanFeature key={i} text={f} />)}
-                <li style={{ display: "flex", alignItems: "flex-start", gap: "8px", fontSize: "13px", background: "rgba(71,204,136,0.08)", border: "1px solid rgba(71,204,136,0.15)", borderRadius: "8px", padding: "8px 10px", marginTop: "4px", color: "rgba(255,255,255,0.7)" }}>
-                  <div style={{ display: "flex", gap: "3px", flexShrink: 0, marginTop: "1px" }}><CreditCard size={13} color="#a78bfa" /><Banknote size={13} color="#34d399" /></div>
+                <li style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", background: "rgba(71,204,136,0.08)", border: "1px solid rgba(71,204,136,0.15)", borderRadius: "8px", padding: "8px 10px", marginTop: "4px", color: "rgba(255,255,255,0.7)" }}>
+                  <div style={{ display: "flex", gap: "3px", flexShrink: 0 }}><CreditCard size={13} color="#a78bfa" /><Banknote size={13} color="#34d399" /></div>
                   Mercado Pago o Transferencia
                 </li>
               </ul>
@@ -397,8 +404,8 @@ export default function Home() {
               </p>
               <ul style={{ listStyle: "none", padding: 0, margin: "0 0 20px", display: "flex", flexDirection: "column", gap: "9px" }}>
                 {PLAN_FEATURES.map((f, i) => <PlanFeature key={i} text={f} />)}
-                <li style={{ display: "flex", alignItems: "flex-start", gap: "8px", fontSize: "13px", background: "rgba(71,204,136,0.08)", border: "1px solid rgba(71,204,136,0.15)", borderRadius: "8px", padding: "8px 10px", marginTop: "4px", color: "rgba(255,255,255,0.7)" }}>
-                  <div style={{ display: "flex", gap: "3px", flexShrink: 0, marginTop: "1px" }}><CreditCard size={13} color="#a78bfa" /><Banknote size={13} color="#34d399" /></div>
+                <li style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", background: "rgba(71,204,136,0.08)", border: "1px solid rgba(71,204,136,0.15)", borderRadius: "8px", padding: "8px 10px", marginTop: "4px", color: "rgba(255,255,255,0.7)" }}>
+                  <div style={{ display: "flex", gap: "3px", flexShrink: 0 }}><CreditCard size={13} color="#a78bfa" /><Banknote size={13} color="#34d399" /></div>
                   Mercado Pago o Transferencia
                 </li>
               </ul>
@@ -407,6 +414,9 @@ export default function Home() {
               </Link>
             </div>
           </div>
+          <p style={{ textAlign: "center", fontSize: "12px", color: C.textMuted, marginTop: "20px" }}>
+            Todos los planes incluyen Mercado Pago o transferencia bancaria — vos elegís cómo cobrar.
+          </p>
         </div>
       </section>
 
@@ -474,7 +484,7 @@ export default function Home() {
           </p>
           <div style={{ display: "flex", gap: "14px", justifyContent: "center", flexWrap: "wrap" }}>
             <Link href="/register?plan=monthly"
-              style={{ display: "inline-flex", alignItems: "center", gap: "8px", background: C.blue, color: "white", fontWeight: 700, padding: "14px 28px", borderRadius: "10px", textDecoration: "none", fontSize: "15px", boxShadow: "0 4px 24px rgba(59,130,246,0.35)" }}>
+              style={{ display: "inline-flex", alignItems: "center", gap: "8px", background: C.orange, color: "white", fontWeight: 700, padding: "14px 28px", borderRadius: "10px", textDecoration: "none", fontSize: "15px", boxShadow: "0 4px 24px rgba(249,115,22,0.4)" }}>
               Empezar ahora <ArrowRight size={17} />
             </Link>
             <a href={CONTACT_EMAIL}
