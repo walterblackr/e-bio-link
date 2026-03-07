@@ -4,7 +4,7 @@ import Link from "next/link";
 import {
   Link2, Calendar, Video, Mail, CreditCard, ArrowRight, Clock,
   TrendingDown, CheckCircle, ChevronDown, ChevronUp, Menu, X,
-  Banknote, Star, CalendarDays,
+  Banknote, Star, CalendarDays, ClipboardList,
 } from "lucide-react";
 
 // ─── Paleta global (estilo CloudPeak) ───────────────────────────────────────
@@ -49,7 +49,7 @@ const FAQS = [
   { q: "¿Puedo usar mi Google Calendar actual?",     a: "Sí. Conectás tu cuenta de Google existente y los turnos confirmados aparecen automáticamente en tu calendario, con Google Meet incluido si la consulta es virtual." },
   { q: "¿Cómo recibo los pagos?",                   a: "Directamente a tu cuenta de Mercado Pago o mediante transferencia bancaria — vos elegís cuál preferís. Los fondos van a vos sin intermediarios." },
   { q: "¿Puedo cancelar el plan mensual cuando quiero?", a: "Sí. El plan mensual no tiene permanencia mínima. Los planes anuales y semestrales son pago único sin renovación automática — no hay sorpresas." },
-  { q: "¿Tengo soporte si tengo un problema?",       a: "Soporte directo vía WhatsApp con los fundadores — no hay bots ni call centers. Respondemos en el día." },
+  { q: "¿Tengo soporte si tengo un problema?",       a: "La plataforma está pensada para que puedas autogestionarte sin depender de nadie. Si hay algun inconveniente o algo del sistema falla, lo atendemos. Pero no es un servicio de consultoría: la idea es que tengas el control, sin esperar que alguien te diga qué hacer." },
 ];
 
 function Badge({ label, accent = C.blue }: { label: string; accent?: string }) {
@@ -126,6 +126,15 @@ export default function Home() {
         .plan-ghost:hover { border-color: rgba(255,255,255,0.18) !important; }
         .faq-item:hover   { border-color: rgba(255,255,255,0.14) !important; }
         .nav-link:hover   { color: #fff !important; }
+        @media (max-width: 768px) {
+          .hero-split      { flex-direction: column !important; }
+          .hero-phone-wrap { display: none !important; }
+          .hero-split-text { text-align: center !important; }
+          .como-funciona   { flex-direction: column !important; }
+          .como-funciona > div:first-child { width: 100% !important; max-width: 100% !important; }
+          .panel-split     { flex-direction: column !important; }
+          .panel-img-wrap  { max-width: 100% !important; }
+        }
       `}</style>
 
       {/* ══════════ NAVBAR ══════════ */}
@@ -207,36 +216,59 @@ export default function Home() {
       <section style={{
         minHeight: "100vh", display: "flex", flexDirection: "column",
         alignItems: "center", justifyContent: "center",
-        padding: "120px 24px 80px", textAlign: "center", position: "relative", overflow: "hidden",
+        padding: "72px 24px 36px", textAlign: "center", position: "relative", overflow: "hidden",
       }}>
         {/* Blob principal — glow azul centrado-bajo */}
         <div style={{ position: "absolute", bottom: "-10%", left: "50%", transform: "translateX(-50%)", width: "900px", height: "600px", background: "radial-gradient(ellipse, rgba(37,99,235,0.45) 0%, rgba(59,130,246,0.15) 45%, transparent 70%)", filter: "blur(40px)", pointerEvents: "none" }} />
         {/* Blob secundario — acento más saturado al centro */}
         <div style={{ position: "absolute", top: "55%", left: "50%", transform: "translate(-50%,-50%)", width: "500px", height: "400px", background: "radial-gradient(ellipse, rgba(99,102,241,0.25) 0%, transparent 65%)", filter: "blur(24px)", pointerEvents: "none" }} />
 
-        <h1 style={{ fontSize: "clamp(2.4rem, 6vw, 4.5rem)", fontWeight: 800, color: "white", lineHeight: 1.1, marginBottom: "24px", maxWidth: "820px", letterSpacing: "-0.02em" }}>
+        {/* Headline */}
+        <h1 style={{ fontSize: "clamp(2.4rem, 6vw, 4.5rem)", fontWeight: 800, color: "white", lineHeight: 1.1, marginBottom: "10px", maxWidth: "860px", letterSpacing: "-0.02em", position: "relative", zIndex: 1 }}>
           Automatizá{" "}
           <span style={{ color: C.blue }}>tu agenda</span>
         </h1>
 
-        <p style={{ fontSize: "clamp(1rem, 2vw, 1.15rem)", color: C.textSecondary, maxWidth: "560px", lineHeight: 1.75, marginBottom: "40px" }}>
-          Dejá de perder 16 horas al mes coordinando turnos. e-bio-link digitaliza tu consultorio en 15 minutos, sin depender de nadie.
-        </p>
+        {/* Split row: texto izq + phone der */}
+        <div className="hero-split" style={{ display: "flex", alignItems: "center", gap: "48px", maxWidth: "720px", width: "100%", margin: "0 0 24px", position: "relative", zIndex: 1 }}>
 
-        <div style={{ display: "flex", gap: "14px", flexWrap: "wrap", justifyContent: "center", marginBottom: "14px" }}>
-          <Link href="/register?plan=monthly" style={{ display: "inline-flex", alignItems: "center", gap: "8px", background: C.orange, color: "white", fontWeight: 700, padding: "14px 28px", borderRadius: "10px", textDecoration: "none", fontSize: "15px", boxShadow: "0 4px 24px rgba(249,115,22,0.4)" }}>
-            Empezar ahora <ArrowRight size={17} />
-          </Link>
-          <a href={CONTACT_EMAIL} style={{ display: "inline-flex", alignItems: "center", gap: "8px", border: `1.5px solid rgba(255,255,255,0.18)`, color: "white", fontWeight: 600, padding: "14px 28px", borderRadius: "10px", textDecoration: "none", fontSize: "15px", background: "rgba(255,255,255,0.04)" }}>
-            <Mail size={17} /> Contacto
-          </a>
+          {/* Texto izquierda */}
+          <div className="hero-split-text" style={{ flex: 1, textAlign: "center", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" }}>
+            <p style={{ fontSize: "clamp(1rem, 1.8vw, 1.1rem)", color: C.textSecondary, lineHeight: 1.8, marginBottom: "28px" }}>
+              Dejá de perder 16 horas al mes coordinando turnos. <span style={{ fontFamily: "var(--font-shadows)", fontSize: "1.1em", color: "white" }}>ebiolink</span> digitaliza tu consultorio en 15 minutos, sin depender de nadie.
+            </p>
+            <div style={{ display: "flex", gap: "14px", flexWrap: "wrap" }}>
+              <Link href="/register?plan=monthly" style={{ display: "inline-flex", alignItems: "center", gap: "8px", background: C.orange, color: "white", fontWeight: 700, padding: "14px 28px", borderRadius: "10px", textDecoration: "none", fontSize: "15px", boxShadow: "0 4px 24px rgba(249,115,22,0.4)" }}>
+                Empezar ahora <ArrowRight size={17} />
+              </Link>
+              <a href={CONTACT_EMAIL} style={{ display: "inline-flex", alignItems: "center", gap: "8px", border: `1.5px solid rgba(255,255,255,0.18)`, color: "white", fontWeight: 600, padding: "14px 28px", borderRadius: "10px", textDecoration: "none", fontSize: "15px", background: "rgba(255,255,255,0.04)" }}>
+                <Mail size={17} /> Contacto
+              </a>
+            </div>
+            <p style={{ fontSize: "12px", color: C.textMuted, marginTop: "10px" }}>
+              Garantía de 14 días · Si no es para vos, reintegro total
+            </p>
+          </div>
+
+          {/* Phone derecha con glow */}
+          <div className="hero-phone-wrap" style={{ flexShrink: 0, position: "relative", marginTop: "-60px", marginBottom: "-60px" }}>
+            <div style={{
+              position: "absolute", bottom: "-14px", left: "50%", transform: "translateX(-50%)",
+              width: "240px", height: "90px",
+              background: "radial-gradient(ellipse, rgba(59,130,246,0.55) 0%, transparent 70%)",
+              filter: "blur(16px)", zIndex: 0,
+            }} />
+            <img
+              src="/bio.png"
+              alt="Biolink de ejemplo en móvil"
+              style={{ width: "310px", display: "block", position: "relative", zIndex: 1 }}
+            />
+          </div>
+
         </div>
-        <p style={{ fontSize: "12px", color: C.textMuted, marginBottom: "64px" }}>
-          Sin contrato · Sin tarjeta de crédito
-        </p>
 
         {/* Stats */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", borderTop: `1px solid ${C.border}`, paddingTop: "40px", width: "100%", maxWidth: "580px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", borderTop: `1px solid ${C.border}`, paddingTop: "32px", width: "100%", maxWidth: "580px", position: "relative", zIndex: 1 }}>
           {[
             { num: "16 hs/mes", label: "recuperadas en gestión" },
             { num: "+30%",      label: "de ingresos recuperados" },
@@ -309,7 +341,7 @@ export default function Home() {
                 <div style={{ fontSize: "11px", letterSpacing: "0.12em", color: "#f87171", textTransform: "uppercase", marginBottom: "6px" }}>
                   Pérdida anual estimada
                 </div>
-                <div style={{ fontSize: "38px", fontWeight: 800, color: "#f87171", textShadow: "0 0 32px rgba(248,113,113,0.5)", lineHeight: 1 }}>
+                <div style={{ fontSize: "clamp(22px, 7vw, 38px)", fontWeight: 800, color: "#f87171", textShadow: "0 0 32px rgba(248,113,113,0.5)", lineHeight: 1, whiteSpace: "nowrap" }}>
                   −$2.880.000
                 </div>
               </div>
@@ -336,6 +368,46 @@ export default function Home() {
                 <p style={{ fontSize: "13px", color: C.textSecondary, lineHeight: 1.65 }}>{f.desc}</p>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════ PANEL ══════════ */}
+      <section style={{ padding: "80px 24px", borderTop: `1px solid ${C.border}` }}>
+        <div style={{ maxWidth: "1060px", margin: "0 auto" }}>
+          <SectionHeading
+            badge="Tu panel"
+            title="Todo desde un solo lugar"
+            subtitle="Sin llamadas, sin secretaria. Configurá tu consultorio y gestioná tus turnos desde cualquier dispositivo."
+            badgeAccent="#a78bfa"
+          />
+          <div className="panel-split" style={{ display: "flex", alignItems: "center", gap: "64px", marginTop: "48px" }}>
+
+            {/* Laptop izquierda */}
+            <div className="panel-img-wrap" style={{ flex: "0 0 auto", width: "100%", maxWidth: "520px", position: "relative" }}>
+              <div style={{ position: "absolute", bottom: "-20px", left: "50%", transform: "translateX(-50%)", width: "340px", height: "80px", background: "radial-gradient(ellipse, rgba(167,139,250,0.4) 0%, transparent 70%)", filter: "blur(20px)", zIndex: 0 }} />
+              <img src="/bioback.png" alt="Panel de control de e-bio-link" style={{ width: "100%", display: "block", position: "relative", zIndex: 1 }} />
+            </div>
+
+            {/* Items derecha */}
+            <div style={{ flex: 1 }}>
+              {[
+                { icon: <CreditCard size={20} />, color: "#a78bfa", title: "Cobrá como quieras", desc: "Configurá Mercado Pago o transferencia bancaria. El dinero va directo a vos, sin intermediarios." },
+                { icon: <CalendarDays size={20} />, color: "#34d399", title: "Armá tus horarios a tu medida", desc: "Definí días, franjas y tipos de consulta (presencial o videollamada). Podés tener múltiples esquemas." },
+                { icon: <ClipboardList size={20} />, color: "#60a5fa", title: "Todos tus turnos en un lugar", desc: "Confirmá o rechazá solicitudes y consultá el historial de tus pacientes desde cualquier dispositivo." },
+              ].map((item, i, arr) => (
+                <div key={i} style={{ display: "flex", gap: "16px", alignItems: "flex-start", paddingBottom: i < arr.length - 1 ? "24px" : 0, marginBottom: i < arr.length - 1 ? "24px" : 0, borderBottom: i < arr.length - 1 ? `1px solid ${C.border}` : "none" }}>
+                  <div style={{ width: "42px", height: "42px", flexShrink: 0, background: `${item.color}18`, borderRadius: "11px", display: "flex", alignItems: "center", justifyContent: "center", color: item.color }}>
+                    {item.icon}
+                  </div>
+                  <div>
+                    <div style={{ fontSize: "15px", fontWeight: 700, color: C.textPrimary, marginBottom: "4px" }}>{item.title}</div>
+                    <div style={{ fontSize: "13px", color: C.textSecondary, lineHeight: 1.65 }}>{item.desc}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
           </div>
         </div>
       </section>
@@ -414,8 +486,18 @@ export default function Home() {
               </Link>
             </div>
           </div>
-          <p style={{ textAlign: "center", fontSize: "12px", color: C.textMuted, marginTop: "20px" }}>
-            Todos los planes incluyen Mercado Pago o transferencia bancaria — vos elegís cómo cobrar.
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", marginTop: "24px" }}>
+            <CreditCard size={15} color="#a78bfa" />
+            <Banknote size={15} color="#34d399" />
+            <span style={{ fontSize: "13px", color: C.textSecondary }}>
+              Todos los planes incluyen <strong style={{ color: "white" }}>Mercado Pago</strong> o <strong style={{ color: "white" }}>transferencia bancaria</strong> — vos elegís cómo cobrar.
+            </span>
+          </div>
+          <p style={{ textAlign: "center", fontSize: "12px", color: C.textMuted, marginTop: "10px" }}>
+            Pensado para profesionales independientes.{" "}
+            <a href={CONTACT_EMAIL} style={{ color: C.blue, textDecoration: "none", fontWeight: 600 }}>
+              ¿Trabajás en una clínica? Escribinos →
+            </a>
           </p>
         </div>
       </section>
@@ -427,24 +509,39 @@ export default function Home() {
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 300px), 1fr))", gap: "16px" }}>
             {[
-              { quote: "Antes tardaba 2 horas diarias coordinando por WhatsApp. Ahora mi agenda se llena sola.",                            name: "Dra. M.G.", role: "Médica Clínica",  city: "Buenos Aires" },
-              { quote: "El sistema de seña eliminó el 90% de los ausentes. No puedo creer que antes trabajaba sin esto.",                   name: "Lic. R.P.", role: "Psicólogo",      city: "Rosario" },
-              { quote: "En 15 minutos tuve mi biolink, mis tipos de consulta configurados y mi Google Calendar conectado.",                  name: "Dr. F.A.",  role: "Dermatólogo",   city: "Córdoba" },
+              { quote: "Antes perdía como 2 horas por día mandando mensajes por WhatsApp para confirmar turnos. Ahora mi agenda se llena sola y yo me entero cuando ya está confirmado.",  name: "Valeria Gomez",    photo: "/profesional 1.webp", color: "#a78bfa", role: "Psicóloga",    city: "Buenos Aires", stars: 4 },
+              { quote: "Lo de la seña fue un cambio enorme. Antes tenía 3 o 4 ausentes por semana. Desde que lo uso casi no me pasa. Ya se pagó solo varias veces.",                       name: "Rodrigo Pereyra",  photo: "/profesional 2.avif", color: "#34d399", role: "Psicólogo",    city: "Rosario",      stars: 5 },
+              { quote: "En 15 minutos tuve todo configurado: mis horarios, los tipos de consulta y el calendario de Google conectado. Esperaba que fuera mucho más complicado.",             name: "Federico Alvarez", photo: "/profesional 3.avif", color: "#60a5fa", role: "Dermatólogo",  city: "Córdoba",      stars: 4 },
             ].map((t, i) => (
               <div key={i} style={{ background: C.card, borderRadius: "14px", padding: "28px", border: `1px solid ${C.border}`, display: "flex", flexDirection: "column", gap: "18px" }}>
                 <div style={{ display: "flex", gap: "3px" }}>
-                  {[1,2,3,4,5].map(s => <Star key={s} size={14} fill="#facc15" color="#facc15" />)}
+                  {[1,2,3,4,5].map(s => <Star key={s} size={14} fill={s <= t.stars ? "#facc15" : "transparent"} color={s <= t.stars ? "#facc15" : "rgba(255,255,255,0.15)"} />)}
                 </div>
                 <p style={{ fontSize: "14px", color: C.textSecondary, lineHeight: 1.75, fontStyle: "italic", flex: 1 }}>
                   "{t.quote}"
                 </p>
-                <div>
-                  <p style={{ fontSize: "14px", fontWeight: 700, color: "white" }}>{t.name}</p>
-                  <p style={{ fontSize: "12px", color: C.textMuted }}>{t.role} · {t.city}</p>
+                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                  {t.photo ? (
+                    <img src={t.photo} alt={t.name} style={{ width: "52px", height: "52px", borderRadius: "50%", objectFit: "cover", border: `2px solid ${t.color}66`, flexShrink: 0 }} />
+                  ) : (
+                    <div style={{ width: "52px", height: "52px", borderRadius: "50%", background: `${t.color}22`, border: `2px solid ${t.color}66`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "15px", fontWeight: 700, color: t.color, flexShrink: 0 }}>
+                      {t.initials}
+                    </div>
+                  )}
+                  <div>
+                    <p style={{ fontSize: "14px", fontWeight: 700, color: "white" }}>{t.name}</p>
+                    <p style={{ fontSize: "12px", color: C.textMuted }}>{t.role} · {t.city}</p>
+                  </div>
                 </div>
               </div>
             ))}
           </div>
+          <p style={{ textAlign: "center", marginTop: "32px", fontSize: "13px", color: C.textMuted }}>
+            ¿Usás <span style={{ fontFamily: "var(--font-shadows)", fontSize: "15px", color: "rgba(255,255,255,0.6)" }}>ebiolink</span>?{" "}
+            <a href="mailto:ebiolinkarg@gmail.com?subject=Mi%20experiencia%20con%20e-bio-link" style={{ color: C.blue, textDecoration: "none", fontWeight: 600 }}>
+              Dejanos tu comentario →
+            </a>
+          </p>
         </div>
       </section>
 
@@ -506,8 +603,9 @@ export default function Home() {
             {[
                 { label: "Demo",              href: DEMO_URL,       ext: true  },
               { label: "Iniciar sesión",   href: "/login",       ext: false },
-              { label: "Privacidad",        href: "/privacidad",  ext: false },
-              { label: "Términos de Uso",   href: "/terminos",    ext: false },
+              { label: "Privacidad",              href: "/privacidad",      ext: false },
+              { label: "Términos de Uso",         href: "/terminos",        ext: false },
+              { label: "Botón de arrepentimiento", href: "/arrepentimiento", ext: false },
             ].map(l => l.ext
               ? <a key={l.href} href={l.href} target="_blank" rel="noopener noreferrer" style={{ fontSize: "13px", color: C.textMuted, textDecoration: "none" }}>{l.label}</a>
               : <Link key={l.href} href={l.href} style={{ fontSize: "13px", color: C.textMuted, textDecoration: "none" }}>{l.label}</Link>
