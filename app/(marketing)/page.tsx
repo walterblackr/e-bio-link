@@ -129,7 +129,8 @@ export default function Home() {
         @media (max-width: 768px) {
           .hero-split      { flex-direction: column !important; }
           .hero-phone-wrap { display: none !important; }
-          .hero-split-text { text-align: center !important; }
+          .hero-split-text { text-align: center !important; align-items: center !important; }
+          .hero-split-text > div { justify-content: center !important; }
           .como-funciona   { flex-direction: column !important; }
           .como-funciona > div:first-child { width: 100% !important; max-width: 100% !important; }
           .panel-split     { flex-direction: column !important; }
@@ -378,7 +379,7 @@ export default function Home() {
           <SectionHeading
             badge="Tu panel"
             title="Todo desde un solo lugar"
-            subtitle="Sin llamadas, sin secretaria. Configurá tu consultorio y gestioná tus turnos desde cualquier dispositivo."
+            subtitle="Sin llamadas, sin asistente. Configurá tu consultorio y gestioná tus turnos desde cualquier dispositivo."
             badgeAccent="#a78bfa"
           />
           <div className="panel-split" style={{ display: "flex", alignItems: "center", gap: "64px", marginTop: "48px" }}>
@@ -486,13 +487,19 @@ export default function Home() {
               </Link>
             </div>
           </div>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", marginTop: "24px" }}>
-            <CreditCard size={15} color="#a78bfa" />
-            <Banknote size={15} color="#34d399" />
-            <span style={{ fontSize: "13px", color: C.textSecondary }}>
-              Todos los planes incluyen <strong style={{ color: "white" }}>Mercado Pago</strong> o <strong style={{ color: "white" }}>transferencia bancaria</strong> — vos elegís cómo cobrar.
-            </span>
-          </div>
+          <p style={{ textAlign: "center", fontSize: "13px", color: C.textSecondary, marginTop: "24px", lineHeight: 1.6 }}>
+            Todos los planes incluyen{" "}
+            <strong style={{ color: "white", whiteSpace: "nowrap" }}>
+              <CreditCard size={13} color="#a78bfa" style={{ display: "inline", verticalAlign: "middle", marginRight: "3px" }} />
+              Mercado Pago
+            </strong>
+            {" "}o{" "}
+            <strong style={{ color: "white", whiteSpace: "nowrap" }}>
+              <Banknote size={13} color="#34d399" style={{ display: "inline", verticalAlign: "middle", marginRight: "3px" }} />
+              transferencia bancaria
+            </strong>
+            {" "}— vos elegís cómo cobrar.
+          </p>
           <p style={{ textAlign: "center", fontSize: "12px", color: C.textMuted, marginTop: "10px" }}>
             Pensado para profesionales independientes.{" "}
             <a href={CONTACT_EMAIL} style={{ color: C.blue, textDecoration: "none", fontWeight: 600 }}>
