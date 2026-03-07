@@ -67,7 +67,7 @@ function Badge({ label, accent = C.blue }: { label: string; accent?: string }) {
 
 function SectionHeading({ badge, title, subtitle, badgeAccent }: { badge: string; title: string; subtitle?: string; badgeAccent?: string }) {
   return (
-    <div style={{ textAlign: "center", marginBottom: "52px" }}>
+    <div style={{ textAlign: "center", marginBottom: "36px" }}>
       <Badge label={badge} accent={badgeAccent} />
       <h2 style={{ fontSize: "clamp(1.7rem, 3vw, 2.4rem)", fontWeight: 800, color: C.textPrimary, marginBottom: subtitle ? "12px" : 0, lineHeight: 1.2 }}>
         {title}
@@ -284,7 +284,7 @@ export default function Home() {
       </section>
 
       {/* ══════════ PROBLEMA ══════════ */}
-      <section style={{ padding: "80px 24px", borderTop: `1px solid ${C.border}` }}>
+      <section style={{ padding: "52px 24px", borderTop: `1px solid ${C.border}` }}>
         <div style={{ maxWidth: "1060px", margin: "0 auto" }}>
           <SectionHeading badge="El Problema" title="La gestión por WhatsApp te roba tiempo y dinero" badgeAccent="#f87171" />
 
@@ -351,11 +351,19 @@ export default function Home() {
               </div>
             </div>
           </div>
+
+          {/* CTA dentro del problema */}
+          <div style={{ textAlign: "center", marginTop: "40px" }}>
+            <Link href="/register?plan=monthly" style={{ display: "inline-flex", alignItems: "center", gap: "8px", background: C.orange, color: "white", fontWeight: 700, padding: "14px 32px", borderRadius: "10px", textDecoration: "none", fontSize: "15px", boxShadow: "0 4px 24px rgba(249,115,22,0.4)" }}>
+              Empezar ahora — 14 días de garantía <ArrowRight size={17} />
+            </Link>
+          </div>
+
         </div>
       </section>
 
       {/* ══════════ FEATURES ══════════ */}
-      <section id="caracteristicas" style={{ padding: "80px 24px", borderTop: `1px solid ${C.border}` }}>
+      <section id="caracteristicas" style={{ padding: "52px 24px", borderTop: `1px solid ${C.border}` }}>
         <div style={{ maxWidth: "1060px", margin: "0 auto" }}>
           <SectionHeading badge="Características" title="Todo lo que necesitás, nada de lo que no" subtitle="Una plataforma completa pensada exclusivamente para profesionales de la salud independientes." />
 
@@ -374,7 +382,7 @@ export default function Home() {
       </section>
 
       {/* ══════════ PANEL ══════════ */}
-      <section style={{ padding: "80px 24px", borderTop: `1px solid ${C.border}` }}>
+      <section style={{ padding: "52px 24px", borderTop: `1px solid ${C.border}` }}>
         <div style={{ maxWidth: "1060px", margin: "0 auto" }}>
           <SectionHeading
             badge="Tu panel"
@@ -382,12 +390,12 @@ export default function Home() {
             subtitle="Sin llamadas, sin asistente. Configurá tu consultorio y gestioná tus turnos desde cualquier dispositivo."
             badgeAccent="#a78bfa"
           />
-          <div className="panel-split" style={{ display: "flex", alignItems: "center", gap: "64px", marginTop: "48px" }}>
+          <div className="panel-split" style={{ display: "flex", alignItems: "center", gap: "64px" }}>
 
             {/* Laptop izquierda */}
-            <div className="panel-img-wrap" style={{ flex: "0 0 auto", width: "100%", maxWidth: "520px", position: "relative" }}>
-              <div style={{ position: "absolute", bottom: "-20px", left: "50%", transform: "translateX(-50%)", width: "340px", height: "80px", background: "radial-gradient(ellipse, rgba(167,139,250,0.4) 0%, transparent 70%)", filter: "blur(20px)", zIndex: 0 }} />
-              <img src="/bioback.png" alt="Panel de control de e-bio-link" style={{ width: "100%", display: "block", position: "relative", zIndex: 1 }} />
+            <div className="panel-img-wrap" style={{ flex: "0 0 auto", width: "100%", maxWidth: "520px", position: "relative", borderRadius: "16px", overflow: "hidden", alignSelf: "center" }}>
+              <div style={{ position: "absolute", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "340px", height: "80px", background: "radial-gradient(ellipse, rgba(167,139,250,0.4) 0%, transparent 70%)", filter: "blur(20px)", zIndex: 2 }} />
+              <img src="/bioback.png" alt="Panel de control de e-bio-link" style={{ width: "100%", display: "block", position: "relative", zIndex: 1, marginBottom: "-18%" }} />
             </div>
 
             {/* Items derecha */}
@@ -414,7 +422,7 @@ export default function Home() {
       </section>
 
       {/* ══════════ PRECIOS ══════════ */}
-      <section id="precios" style={{ padding: "80px 24px", borderTop: `1px solid ${C.border}` }}>
+      <section id="precios" style={{ padding: "52px 24px", borderTop: `1px solid ${C.border}` }}>
         <div style={{ maxWidth: "1060px", margin: "0 auto" }}>
           <SectionHeading badge="Planes" title="Planes de inversión" subtitle="Con evitar 4 ausencias en todo el año el sistema ya se paga solo." badgeAccent={C.green} />
 
@@ -510,15 +518,15 @@ export default function Home() {
       </section>
 
       {/* ══════════ TESTIMONIOS ══════════ */}
-      <section style={{ padding: "80px 24px", borderTop: `1px solid ${C.border}` }}>
+      <section style={{ padding: "52px 24px", borderTop: `1px solid ${C.border}` }}>
         <div style={{ maxWidth: "1060px", margin: "0 auto" }}>
           <SectionHeading badge="Resultados" title="Lo que dicen los profesionales" badgeAccent="#fbbf24" />
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 300px), 1fr))", gap: "16px" }}>
             {[
-              { quote: "Antes perdía como 2 horas por día mandando mensajes por WhatsApp para confirmar turnos. Ahora mi agenda se llena sola y yo me entero cuando ya está confirmado.",  name: "Valeria Gomez",    photo: "/profesional 1.webp", color: "#a78bfa", role: "Psicóloga",    city: "Buenos Aires", stars: 4 },
+              { quote: "Antes perdía como 2 horas por día mandando mensajes por WhatsApp para confirmar turnos. Ahora mi agenda se llena sola y yo me entero cuando ya está confirmado.",  name: "Valeria Gomez",    photo: "/profesional 1.webp", color: "#a78bfa", role: "Psicóloga",    city: "Buenos Aires", stars: 5 },
               { quote: "Lo de la seña fue un cambio enorme. Antes tenía 3 o 4 ausentes por semana. Desde que lo uso casi no me pasa. Ya se pagó solo varias veces.",                       name: "Rodrigo Pereyra",  photo: "/profesional 2.avif", color: "#34d399", role: "Psicólogo",    city: "Rosario",      stars: 5 },
-              { quote: "En 15 minutos tuve todo configurado: mis horarios, los tipos de consulta y el calendario de Google conectado. Esperaba que fuera mucho más complicado.",             name: "Federico Alvarez", photo: "/profesional 3.avif", color: "#60a5fa", role: "Dermatólogo",  city: "Córdoba",      stars: 4 },
+              { quote: "En 15 minutos tuve todo configurado: mis horarios, los tipos de consulta y el calendario de Google conectado. Esperaba que fuera mucho más complicado.",             name: "Federico Alvarez", photo: "/profesional 3.avif", color: "#60a5fa", role: "Dermatólogo",  city: "Córdoba",      stars: 5 },
             ].map((t, i) => (
               <div key={i} style={{ background: C.card, borderRadius: "14px", padding: "28px", border: `1px solid ${C.border}`, display: "flex", flexDirection: "column", gap: "18px" }}>
                 <div style={{ display: "flex", gap: "3px" }}>
@@ -553,7 +561,7 @@ export default function Home() {
       </section>
 
       {/* ══════════ FAQ ══════════ */}
-      <section id="faq" style={{ padding: "80px 24px", borderTop: `1px solid ${C.border}` }}>
+      <section id="faq" style={{ padding: "52px 24px", borderTop: `1px solid ${C.border}` }}>
         <div style={{ maxWidth: "700px", margin: "0 auto" }}>
           <SectionHeading badge="Preguntas Frecuentes" title="Todo lo que querés saber" badgeAccent={C.green} />
 
@@ -577,14 +585,14 @@ export default function Home() {
       </section>
 
       {/* ══════════ CTA FINAL ══════════ */}
-      <section style={{ padding: "96px 24px", textAlign: "center", borderTop: `1px solid ${C.border}`, position: "relative", overflow: "hidden" }}>
+      <section style={{ padding: "64px 24px", textAlign: "center", borderTop: `1px solid ${C.border}`, position: "relative", overflow: "hidden" }}>
         <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: "600px", height: "400px", background: "radial-gradient(ellipse, rgba(59,130,246,0.1) 0%, transparent 70%)", pointerEvents: "none" }} />
         <div style={{ maxWidth: "540px", margin: "0 auto", position: "relative" }}>
           <h2 style={{ fontSize: "clamp(1.8rem, 3vw, 2.5rem)", fontWeight: 800, color: "white", marginBottom: "14px" }}>
-            ¿Listo para recuperar tu tiempo?
+            Tu consultorio, funcionando en 15 minutos
           </h2>
           <p style={{ fontSize: "15px", color: C.textSecondary, marginBottom: "36px" }}>
-            Sin contrato, sin permanencia. Configuralo en 15 minutos.
+            Sin contrato, sin permanencia. Si no es para vos, reintegro total en 14 días.
           </p>
           <div style={{ display: "flex", gap: "14px", justifyContent: "center", flexWrap: "wrap" }}>
             <Link href="/register?plan=monthly"
