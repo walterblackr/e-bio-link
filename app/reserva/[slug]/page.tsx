@@ -39,7 +39,7 @@ export default async function ReservaPage({ params }: PageProps) {
 
   // Obtener eventos activos del profesional
   const eventosResult = await sql`
-    SELECT id, nombre, descripcion, duracion_minutos, precio, modalidad
+    SELECT id, nombre, descripcion, duracion_minutos, precio, modalidad, direccion
     FROM eventos
     WHERE client_id = ${medico.id}
       AND activo = true

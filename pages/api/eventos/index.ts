@@ -27,6 +27,7 @@ export default async function handler(
           buffer_despues,
           antelacion_minima,
           max_por_dia,
+          direccion,
           created_at
         FROM eventos
         WHERE client_id = ${client.id}
@@ -47,6 +48,7 @@ export default async function handler(
         buffer_despues,
         antelacion_minima,
         max_por_dia,
+        direccion,
       } = req.body;
 
       // Validaciones
@@ -74,7 +76,8 @@ export default async function handler(
           activo,
           buffer_despues,
           antelacion_minima,
-          max_por_dia
+          max_por_dia,
+          direccion
         ) VALUES (
           ${client.id},
           ${nombre},
@@ -85,7 +88,8 @@ export default async function handler(
           true,
           ${buffer_despues ?? 0},
           ${antelacion_minima ?? 0},
-          ${max_por_dia ?? null}
+          ${max_por_dia ?? null},
+          ${direccion || null}
         )
         RETURNING *
       `;

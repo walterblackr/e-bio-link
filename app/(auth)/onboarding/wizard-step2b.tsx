@@ -28,6 +28,7 @@ interface Evento {
   buffer_despues: number;
   antelacion_minima: number;
   max_por_dia: number | null;
+  direccion?: string | null;
 }
 
 interface WizardStep2BProps {
@@ -89,6 +90,7 @@ export default function WizardStep2B({ onNext, onBack }: WizardStep2BProps) {
     buffer_despues: 0,
     antelacion_minima: 0,   // stored in minutes
     max_por_dia: "" as string, // "" = sin límite
+    direccion: "",
   });
 
   const [dias, setDias] = useState<DiaDisponibilidad[]>(defaultDias());
@@ -294,6 +296,7 @@ export default function WizardStep2B({ onNext, onBack }: WizardStep2BProps) {
       max_por_dia: evento.max_por_dia !== null && evento.max_por_dia !== undefined
         ? String(evento.max_por_dia)
         : "",
+      direccion: evento.direccion || "",
     });
     setShowAvanzado(
       (evento.buffer_despues ?? 0) > 0 ||
@@ -362,6 +365,7 @@ export default function WizardStep2B({ onNext, onBack }: WizardStep2BProps) {
       buffer_despues: 0,
       antelacion_minima: 0,
       max_por_dia: "",
+      direccion: "",
     });
     setDias(defaultDias());
     setError("");
@@ -584,6 +588,22 @@ export default function WizardStep2B({ onNext, onBack }: WizardStep2BProps) {
                           ))}
                         </div>
                       </div>
+
+                      {/* Dirección (solo presencial) */}
+                      {formData.modalidad === "presencial" && (
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                            Dirección del consultorio
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.direccion}
+                            onChange={(e) => setFormData({ ...formData, direccion: e.target.value })}
+                            placeholder="Ej: Av. Corrientes 1234, CABA"
+                            className="w-full px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                          />
+                        </div>
+                      )}
                     </div>
 
                     {/* ── Disponibilidad ──────────────────────── */}

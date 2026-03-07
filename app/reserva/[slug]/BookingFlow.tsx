@@ -14,6 +14,7 @@ interface Evento {
   precio: number;
   modalidad: "virtual" | "presencial";
   diasActivos: number[]; // 0=Dom, 1=Lun, ..., 6=Sab
+  direccion?: string | null;
 }
 
 interface Medico {
@@ -416,6 +417,12 @@ export default function BookingFlow({ medico, eventos }: BookingFlowProps) {
                           {evento.modalidad === "virtual" ? "Virtual" : "Presencial"}
                         </span>
                       </div>
+                      {evento.modalidad === "presencial" && evento.direccion && (
+                        <p className="flex items-center gap-1 text-xs text-gray-500 mt-1.5">
+                          <MapPin className="w-3 h-3 text-orange-500 flex-shrink-0" />
+                          {evento.direccion}
+                        </p>
+                      )}
                     </div>
                     <div className="text-right flex-shrink-0">
                       <p className="font-bold text-gray-900 text-lg">{formatPrecio(evento.precio)}</p>

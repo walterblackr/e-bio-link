@@ -44,6 +44,7 @@ export default async function handler(
         buffer_despues,
         antelacion_minima,
         max_por_dia,
+        direccion,
       } = req.body;
 
       if (modalidad && !['virtual', 'presencial'].includes(modalidad)) {
@@ -64,6 +65,7 @@ export default async function handler(
           buffer_despues = ${buffer_despues !== undefined ? buffer_despues : (evento.buffer_despues ?? 0)},
           antelacion_minima = ${antelacion_minima !== undefined ? antelacion_minima : (evento.antelacion_minima ?? 0)},
           max_por_dia = ${max_por_dia !== undefined ? max_por_dia : evento.max_por_dia},
+          direccion = ${direccion !== undefined ? (direccion || null) : evento.direccion},
           updated_at = NOW()
         WHERE id = ${id} AND client_id = ${client.id}
         RETURNING *

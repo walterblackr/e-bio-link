@@ -131,10 +131,11 @@ export default async function handler(
     let duracion = 30;
     let modalidad: 'virtual' | 'presencial' = 'virtual';
     let eventoNombre = 'Consulta';
+    let eventoDireccion: string | null = null;
 
     if (booking.evento_id) {
       const eventoResult = await sql`
-        SELECT nombre, duracion_minutos, modalidad
+        SELECT nombre, duracion_minutos, modalidad, direccion
         FROM eventos
         WHERE id = ${booking.evento_id}
         LIMIT 1
@@ -143,6 +144,7 @@ export default async function handler(
         duracion = eventoResult[0].duracion_minutos || 30;
         modalidad = eventoResult[0].modalidad || 'virtual';
         eventoNombre = eventoResult[0].nombre || 'Consulta';
+        eventoDireccion = eventoResult[0].direccion || null;
       }
     }
 
@@ -191,6 +193,7 @@ export default async function handler(
       modalidad,
       meet_link: gcEvent?.meet_link || null,
       monto: booking.monto,
+      direccion: eventoDireccion,
     };
     await Promise.all([
       sendBookingConfirmation(emailData).catch((e) =>

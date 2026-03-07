@@ -17,6 +17,7 @@ interface BookingEmailData {
   meet_link?: string | null;
   monto?: number | string;
   booking_id?: number | string;
+  direccion?: string | null;
 }
 
 interface ProfesionalNotifData extends BookingEmailData {
@@ -105,6 +106,12 @@ export async function sendBookingConfirmation(data: BookingEmailData): Promise<v
             <div class="label">Fecha y hora</div>
             <div class="value">${fecha}</div>
           </div>
+
+          ${data.direccion ? `
+          <div class="field">
+            <div class="label">Dirección</div>
+            <div class="value">📍 ${data.direccion}</div>
+          </div>` : ''}
 
           ${data.monto ? `<div class="amount">$${parseFloat(String(data.monto)).toLocaleString('es-AR')}</div>` : ''}
 
