@@ -37,10 +37,19 @@ export default async function handler(
       return res.redirect('/onboarding?google=error&reason=config');
     }
 
-    // Desencriptar el state para obtener el client_id
+    // Desencriptar el state para obtener client_id (y opcionalmente from)
     let clientId: string;
+    let fromParam = '';
     try {
-      clientId = decrypt(state as string);
+      const decoded = decrypt(state as string);
+      try {
+        const parsed = JSON.parse(decoded);
+        clientId = parsed.id;
+        fromParam = parsed.from || '';
+      } catch {
+        // Compatibilidad hacia atrás: state era solo el id
+        clientId = decoded;
+      }
     } catch {
       console.error('[Google Callback] Invalid state parameter');
       return res.redirect('/onboarding?google=error&reason=invalid_state');
@@ -95,7 +104,8 @@ export default async function handler(
     console.log(`[Google Callback] Client ${clientId} connected Google Calendar (${googleEmail})`);
 
     // Redirigir de vuelta al onboarding con éxito
-    return res.redirect('/onboarding?google=connected');
+    const redirectUrl = `/onboarding?google=connected${fromParam === 'panel' ? '&from=panel' : ''}`;
+    return res.redirect(redirectUrl);
 
   } catch (error: any) {
     console.error('[Google Callback] Error:', error.response?.data || error.message);

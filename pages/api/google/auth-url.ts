@@ -31,8 +31,9 @@ export default async function handler(
       });
     }
 
-    // Encriptar el client_id como state para seguridad
-    const state = encrypt(client.id);
+    // Encriptar client_id + from como state para seguridad
+    const from = (req.query.from as string) || '';
+    const state = encrypt(JSON.stringify({ id: client.id, from }));
 
     const params = new URLSearchParams({
       client_id: GOOGLE_CLIENT_ID,

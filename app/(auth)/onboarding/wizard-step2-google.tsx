@@ -59,7 +59,9 @@ export default function WizardStep2Google({ onNext, onBack }: WizardStep2GoogleP
     setError("");
 
     try {
-      const res = await fetch("/api/google/auth-url");
+      const params = new URLSearchParams(window.location.search);
+      const from = params.get("from") || "";
+      const res = await fetch(`/api/google/auth-url${from ? `?from=${from}` : ''}`);
       const data = await res.json();
 
       if (!res.ok) {

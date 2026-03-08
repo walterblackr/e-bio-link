@@ -29,7 +29,11 @@ export default function OnboardingWizard({ clientData }: OnboardingWizardProps) 
 
   useEffect(() => {
     if (searchParams?.get("google") === "connected") {
-      window.history.replaceState({}, "", "/onboarding");
+      if (fromPanel) {
+        router.push("/panel");
+      } else {
+        window.history.replaceState({}, "", "/onboarding");
+      }
     }
   }, []);
 
