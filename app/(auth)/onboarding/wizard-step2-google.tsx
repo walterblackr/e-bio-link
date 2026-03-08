@@ -137,6 +137,19 @@ export default function WizardStep2Google({ onNext, onBack }: WizardStep2GoogleP
                 </div>
               </div>
 
+              {/* Botón cambiar cuenta (cuando ya está conectado) */}
+              {isConnected && (
+                <div className="text-center">
+                  <button
+                    onClick={handleConnect}
+                    disabled={loading}
+                    className="text-xs text-gray-400 hover:text-purple-600 underline disabled:opacity-50 transition-colors"
+                  >
+                    {loading ? "Conectando..." : "Cambiar cuenta de Google"}
+                  </button>
+                </div>
+              )}
+
               {/* Botón de Conexión */}
               {!isConnected && (
                 <div className="text-center py-6">
