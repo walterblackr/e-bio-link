@@ -69,68 +69,166 @@ Both systems expose App Router helpers (`requireClient()`, `requireAdmin()`) and
 | `eventos` | Consultation types per professional |
 | `disponibilidad` | Availability blocks per event type |
 | `bookings` | Appointment reservations |
+| `oauth_sessions` | Temporary OAuth session tracking |
+
+**`admins` Table:**
+```sql
+id                   UUID PRIMARY KEY DEFAULT gen_random_uuid()
+email                VARCHAR(255) UNIQUE NOT NULL
+password_hash        TEXT NOT NULL
+nombre               VARCHAR(255) NOT NULL
+activo               BOOLEAN DEFAULT true
+created_at           TIMESTAMP DEFAULT now()
+updated_at           TIMESTAMP DEFAULT now()
+```
+| `bookings` | Appointment reservations |
 
 **`clients` Table Key Fields:**
 ```sql
--- Identity
-slug                 -- Unique biolink URL identifier (e.g., 'dr-juan-perez')
-nombre_completo, especialidad, matricula, descripcion, foto_url
-status               -- 'pending' | 'active'
-tema_config          -- JSONB: {background, text, buttonBorder, separator}
-botones_config       -- JSONB: array of social links
+-- Primary key
+id                   UUID PRIMARY KEY DEFAULT gen_random_uuid()
+
+-- Auth
+email                VARCHAR(255) UNIQUE
+password_hash        TEXT
+status               VARCHAR(50) DEFAULT 'pending_payment'  -- 'pending_payment' | 'active'
+
+-- Identity (filled during onboarding step 1)
+slug                 VARCHAR(255) UNIQUE NOT NULL
+nombre_completo      VARCHAR(255) DEFAULT ''
+especialidad         VARCHAR(255) DEFAULT ''
+matricula            VARCHAR(100) DEFAULT ''
+descripcion          TEXT DEFAULT ''
+foto_url             TEXT DEFAULT ''
+
+-- Biolink customization
+tema_config          JSONB DEFAULT '{}'   -- {background, text, buttonBorder, separator}
+botones_config       JSONB DEFAULT '[]'   -- array of social links
 
 -- Google Calendar (active integration)
-google_access_token  -- Encrypted OAuth access token
-google_refresh_token -- Encrypted OAuth refresh token
-google_email         -- Associated Google account email
-google_calendar_id   -- Target calendar ('primary' or custom)
-google_token_expiry  -- Token expiration timestamp
+google_access_token  TEXT   -- Encrypted OAuth access token
+google_refresh_token TEXT   -- Encrypted OAuth refresh token
+google_email         VARCHAR(255)
+google_calendar_id   VARCHAR(255) DEFAULT 'primary'
+google_token_expiry  TIMESTAMP
 
--- Mercado Pago OAuth (for collecting payments)
-mp_access_token, mp_refresh_token, mp_user_id
+-- Mercado Pago OAuth (for collecting payments from patients)
+mp_access_token      TEXT NOT NULL DEFAULT ''
+mp_refresh_token     TEXT
+mp_user_id           VARCHAR(255) NOT NULL DEFAULT ''
 
 -- Payment method configuration
-payment_method       -- 'transfer' | 'mercadopago'
-cbu_alias, banco_nombre, titular_cuenta  -- For transfer payments
+payment_method       VARCHAR(20) DEFAULT 'mp'  -- 'transfer' | 'mercadopago'
+cbu_alias            VARCHAR(100)
+banco_nombre         VARCHAR(100)
+titular_cuenta       VARCHAR(255)
+
+-- Platform subscription
+subscription_type    VARCHAR(50)   -- 'monthly' | 'semestral' | 'annual'
+subscription_price   NUMERIC(10,2)
+paid_at              TIMESTAMP
+onboarding_mp_preference_id VARCHAR(255)
+onboarding_mp_payment_id    VARCHAR(255)
+
+-- Timestamps
+created_at           TIMESTAMP DEFAULT now()
+updated_at           TIMESTAMP DEFAULT now()
 
 -- Legacy Cal.com (deprecated, do not use)
-cal_managed_user_id, cal_access_token, cal_schedule_id
+cal_api_key, cal_username, cal_event_type_id, monto_consulta
 ```
+
+**IMPORTANT — NOT NULL columns in `clients`:**
+- `slug` — always required
+- `mp_access_token` — required (use `''` when creating via admin)
+- `mp_user_id` — required (use `''` when creating via admin)
 
 **`eventos` Table (Consultation Types):**
 ```sql
-id (UUID), client_id (UUID FK)
-nombre, descripcion
-duracion_minutos     -- 15 | 20 | 30 | 45 | 60 | 90
-precio               -- ARS cents
-modalidad            -- 'virtual' (Google Meet) | 'presencial'
-activo
-buffer_despues       -- Break minutes after appointment
-antelacion_minima    -- Min lead time in minutes
-max_por_dia          -- Max bookings per day (NULL = unlimited)
+id                   UUID PRIMARY KEY DEFAULT gen_random_uuid()
+client_id            UUID NOT NULL FK → clients(id) ON DELETE CASCADE
+nombre               VARCHAR(100) NOT NULL
+descripcion          TEXT
+duracion_minutos     INTEGER NOT NULL DEFAULT 30
+precio               NUMERIC(10,2) NOT NULL
+activo               BOOLEAN NOT NULL DEFAULT true
+modalidad            VARCHAR(20) DEFAULT 'virtual'  -- 'virtual' | 'presencial'
+buffer_despues       INTEGER DEFAULT 0   -- break minutes after appointment
+antelacion_minima    INTEGER DEFAULT 0   -- min lead time in minutes
+max_por_dia          INTEGER             -- NULL = unlimited
+direccion            VARCHAR(500)        -- for presencial appointments
+created_at           TIMESTAMP DEFAULT now()
+updated_at           TIMESTAMP DEFAULT now()
+-- Legacy Cal.com (deprecated)
+cal_event_type_id    INTEGER
+cal_slug             VARCHAR(100)
 ```
 
 **`disponibilidad` Table (Availability Blocks):**
 ```sql
-id, client_id (UUID FK), evento_id (UUID FK)
-dia_semana           -- 0=Sun ... 6=Sat
-hora_inicio, hora_fin -- TIME (HH:MM)
-activo
+id                   SERIAL PRIMARY KEY
+client_id            UUID NOT NULL FK → clients(id) ON DELETE CASCADE
+evento_id            UUID FK → eventos(id) ON DELETE CASCADE
+dia_semana           INTEGER NOT NULL  -- 0=Sun ... 6=Sat (CHECK 0-6)
+hora_inicio          TIME NOT NULL
+hora_fin             TIME NOT NULL
+activo               BOOLEAN DEFAULT true
+created_at           TIMESTAMP DEFAULT now()
+updated_at           TIMESTAMP DEFAULT now()
 -- Multiple blocks per day per event are allowed
 ```
 
 **`bookings` Table:**
 ```sql
-id, client_id (UUID FK), evento_id (UUID FK)
-paciente_nombre, paciente_email, paciente_telefono
-fecha_hora           -- ISO timestamp of appointment
-monto                -- Price in ARS
-estado               -- 'pending_payment' | 'pending_confirmation' | 'confirmed' | 'cancelled'
-payment_method       -- 'transfer' | 'mercadopago'
-comprobante_url      -- Cloudinary URL for transfer proof
-google_event_id      -- Created GCal event ID (after confirmation)
-meet_link            -- Google Meet URL (if virtual)
-notas                -- Optional patient notes
+-- Primary key
+id                   SERIAL PRIMARY KEY
+
+-- Relations
+client_id            UUID NOT NULL FK → clients(id) ON DELETE CASCADE
+evento_id            UUID FK → eventos(id) ON DELETE SET NULL
+
+-- Patient info (NOT NULL)
+paciente_nombre      VARCHAR(255) NOT NULL
+paciente_email       VARCHAR(255) NOT NULL
+paciente_telefono    VARCHAR(50)
+fecha_hora           TIMESTAMP WITH TIME ZONE NOT NULL
+
+-- Appointment details
+duracion_minutos     INTEGER DEFAULT 30
+monto                NUMERIC(10,2)
+notas                TEXT
+estado               VARCHAR(50) DEFAULT 'pending'
+                     -- 'pending_payment' | 'pending_confirmation' | 'confirmed' | 'cancelled'
+payment_method       VARCHAR(20) DEFAULT 'mp'  -- 'transfer' | 'mercadopago'
+
+-- Payment tracking
+mp_preference_id     VARCHAR(255)
+mp_payment_id        VARCHAR(255)
+mp_payment_status    VARCHAR(50) DEFAULT 'pending'
+comprobante_url      VARCHAR(500)  -- Cloudinary URL for transfer proof
+paid_at              TIMESTAMP
+confirmed_at         TIMESTAMP
+
+-- Google Calendar
+google_event_id      VARCHAR(255)
+meet_link            VARCHAR(500)
+
+-- Timestamps
+created_at           TIMESTAMP DEFAULT now()
+updated_at           TIMESTAMP DEFAULT now()
+
+-- Legacy Cal.com (deprecated)
+cal_booking_id       VARCHAR(255) UNIQUE
+cal_event_type_id    VARCHAR(255)
+```
+
+**`oauth_sessions` Table:**
+```sql
+session_id           UUID PRIMARY KEY
+client_id            UUID (no FK constraint)
+status               VARCHAR(50) DEFAULT 'pending'
+created_at           TIMESTAMP DEFAULT now()
+completed_at         TIMESTAMP
 ```
 
 **Migrations:** Located in `lib/migrations/` — run manually via Neon console.

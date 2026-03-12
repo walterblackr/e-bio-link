@@ -2,24 +2,17 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import PhotoUploader from '@/app/components/PhotoUploader';
 
 interface Client {
   id: string;
   slug: string;
+  email: string;
   nombre_completo: string;
   especialidad: string;
-  matricula: string;
-  descripcion: string;
-  foto_url: string;
-  cal_api_key: string;
-  cal_username: string;
-  mp_user_id: string;
+  status: string;
   created_at: string;
-  botones_config: any;
-  tema_config: any;
-  monto_consulta: number;
+  mp_user_id: string;
+  google_email: string;
 }
 
 export default function ClientesPage() {
@@ -27,23 +20,13 @@ export default function ClientesPage() {
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  // Form state
   const [formData, setFormData] = useState({
+    email: '',
+    password: '',
     slug: '',
-    nombre_completo: '',
-    especialidad: '',
-    matricula: '',
-    descripcion: '',
-    foto_url: '',
-    cal_api_key: '',
-    cal_username: '',
-    botones_config: '[]',
-    tema_config: '{}',
-    monto_consulta: '10000',
   });
 
   useEffect(() => {
@@ -71,13 +54,9 @@ export default function ClientesPage() {
   };
 
   const handleLogout = async () => {
-    try {
-      await fetch('/api/admin/logout', { method: 'POST' });
-      router.push('/admin/login');
-      router.refresh();
-    } catch (error) {
-      console.error('Error al cerrar sesión:', error);
-    }
+    await fetch('/api/admin/logout', { method: 'POST' });
+    router.push('/admin/login');
+    router.refresh();
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -86,387 +65,144 @@ export default function ClientesPage() {
     setSuccess('');
 
     try {
-      const url = editingClient
-        ? `/api/admin/clients/${editingClient.slug}`
-        : '/api/admin/clients';
-
-      const method = editingClient ? 'PUT' : 'POST';
-
-      const response = await fetch(url, {
-        method,
+      const response = await fetch('/api/admin/clients', {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
       });
 
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Error al guardar cliente');
-      }
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Error al crear cliente');
 
-      setSuccess(editingClient ? 'Cliente actualizado exitosamente' : 'Cliente creado exitosamente');
+      setSuccess(`Cliente creado. Puede iniciar sesión en ebiolink.app/login`);
       setShowForm(false);
-      setEditingClient(null);
-      resetForm();
+      setFormData({ email: '', password: '', slug: '' });
       loadClients();
     } catch (err: any) {
       setError(err.message);
     }
   };
 
-  const handleEdit = (client: Client) => {
-    setEditingClient(client);
-    setFormData({
-      slug: client.slug,
-      nombre_completo: client.nombre_completo,
-      especialidad: client.especialidad,
-      matricula: client.matricula,
-      descripcion: client.descripcion,
-      foto_url: client.foto_url,
-      cal_api_key: client.cal_api_key,
-      cal_username: client.cal_username,
-      botones_config: typeof client.botones_config === 'string'
-        ? client.botones_config
-        : JSON.stringify(client.botones_config, null, 2),
-      tema_config: typeof client.tema_config === 'string'
-        ? client.tema_config
-        : JSON.stringify(client.tema_config, null, 2),
-      monto_consulta: client.monto_consulta?.toString() || '10000',
-    });
-    setShowForm(true);
-  };
-
   const handleDelete = async (slug: string) => {
-    if (!confirm('¿Estás seguro de eliminar este cliente? Esta acción no se puede deshacer.')) {
-      return;
-    }
+    if (!confirm(`¿Eliminar el cliente /${slug}? Esta acción no se puede deshacer.`)) return;
 
     try {
-      const response = await fetch(`/api/admin/clients/${slug}`, {
-        method: 'DELETE',
-      });
-
+      const response = await fetch(`/api/admin/clients/${slug}`, { method: 'DELETE' });
       if (!response.ok) {
         const data = await response.json();
         throw new Error(data.error || 'Error al eliminar cliente');
       }
-
-      setSuccess('Cliente eliminado exitosamente');
+      setSuccess('Cliente eliminado');
       loadClients();
     } catch (err: any) {
       setError(err.message);
     }
   };
 
-  const resetForm = () => {
-    setFormData({
-      slug: '',
-      nombre_completo: '',
-      especialidad: '',
-      matricula: '',
-      descripcion: '',
-      foto_url: '',
-      cal_api_key: '',
-      cal_username: '',
-      botones_config: '[]',
-      tema_config: '{}',
-      monto_consulta: '10000',
-    });
-    setEditingClient(null);
-  };
-
   return (
     <div className="min-h-screen bg-gray-100 py-12 px-4">
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-5xl mx-auto">
+
         {/* Header */}
-        <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                👥 Gestión de Clientes
-              </h1>
-              <p className="text-gray-600">
-                Administrá todos los clientes y sus biolinks
-              </p>
-            </div>
-            <div className="flex gap-3">
-              <Link
-                href="/admin/generate-links"
-                className="px-4 py-2 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg font-medium transition-colors"
-              >
-                🔗 Generar Links OAuth
-              </Link>
-              <button
-                onClick={handleLogout}
-                className="px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg font-medium transition-colors"
-              >
-                Cerrar Sesión
-              </button>
-            </div>
+        <div className="bg-white rounded-lg shadow p-6 mb-6 flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Panel de Administración</h1>
+            <p className="text-gray-500 text-sm mt-1">Gestión de clientes · e-bio-link</p>
           </div>
+          <button
+            onClick={handleLogout}
+            className="px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg text-sm font-medium transition-colors"
+          >
+            Cerrar sesión
+          </button>
         </div>
 
         {/* Messages */}
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-            <p className="text-red-800 text-sm">❌ {error}</p>
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4 text-red-800 text-sm">
+            {error}
           </div>
         )}
         {success && (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
-            <p className="text-green-800 text-sm">✅ {success}</p>
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4 text-green-800 text-sm">
+            {success}
           </div>
         )}
 
-        {/* Actions */}
+        {/* New client button */}
         <div className="mb-6">
           <button
-            onClick={() => {
-              setShowForm(!showForm);
-              if (showForm) {
-                resetForm();
-              }
-            }}
-            className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-colors"
+            onClick={() => { setShowForm(!showForm); setError(''); setSuccess(''); }}
+            className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors"
           >
-            {showForm ? '❌ Cancelar' : '➕ Nuevo Cliente'}
+            {showForm ? 'Cancelar' : '+ Nuevo cliente'}
           </button>
         </div>
 
         {/* Form */}
         {showForm && (
-          <div className="bg-white rounded-lg shadow-lg p-8 mb-6">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">
-              {editingClient ? '✏️ Editar Cliente' : '➕ Nuevo Cliente'}
-            </h2>
-            <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Slug (solo para nuevo) */}
-              {!editingClient && (
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Slug (URL) *
-                  </label>
+          <div className="bg-white rounded-lg shadow p-8 mb-6">
+            <h2 className="text-xl font-bold text-gray-900 mb-6">Crear nuevo cliente</h2>
+            <form onSubmit={handleSubmit} className="space-y-5 max-w-md">
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                <input
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  placeholder="medico@gmail.com"
+                  required
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Contraseña *</label>
+                <input
+                  type="text"
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  placeholder="Mínimo 6 caracteres"
+                  required
+                  minLength={6}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                />
+                <p className="text-xs text-gray-500 mt-1">El cliente puede cambiarla después desde su panel.</p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Slug (URL del biolink) *</label>
+                <div className="flex items-center">
+                  <span className="px-3 py-3 bg-gray-100 border border-r-0 border-gray-300 rounded-l-lg text-gray-500 text-sm">
+                    ebiolink.app/
+                  </span>
                   <input
                     type="text"
                     value={formData.slug}
                     onChange={(e) => setFormData({ ...formData, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-') })}
-                    placeholder="dr-juan-perez"
+                    placeholder="dra-maria-garcia"
                     required
                     pattern="^[a-z0-9]+(?:-[a-z0-9]+)*$"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder-gray-400"
+                    minLength={3}
+                    maxLength={50}
+                    className="flex-1 px-4 py-3 border border-gray-300 rounded-r-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
                   />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Solo letras minúsculas, números y guiones. Ej: dr-juan-perez
-                  </p>
                 </div>
-              )}
-
-              {/* Nombre Completo */}
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Nombre Completo *
-                </label>
-                <input
-                  type="text"
-                  value={formData.nombre_completo}
-                  onChange={(e) => setFormData({ ...formData, nombre_completo: e.target.value })}
-                  placeholder="Dr. Juan Pérez"
-                  required
-                  maxLength={255}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder-gray-400"
-                />
+                <p className="text-xs text-gray-500 mt-1">Solo letras minúsculas, números y guiones.</p>
               </div>
 
-              {/* Especialidad */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Especialidad *
-                </label>
-                <input
-                  type="text"
-                  value={formData.especialidad}
-                  onChange={(e) => setFormData({ ...formData, especialidad: e.target.value })}
-                  placeholder="Cardiología"
-                  required
-                  maxLength={255}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder-gray-400"
-                />
-              </div>
-
-              {/* Matrícula */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Matrícula *
-                </label>
-                <input
-                  type="text"
-                  value={formData.matricula}
-                  onChange={(e) => setFormData({ ...formData, matricula: e.target.value })}
-                  placeholder="MN 12345 / MP 67890"
-                  required
-                  maxLength={100}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder-gray-400"
-                />
-              </div>
-
-              {/* Descripción */}
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Descripción / Bio
-                </label>
-                <textarea
-                  value={formData.descripcion}
-                  onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })}
-                  placeholder="Médico especialista en cardiología con 15 años de experiencia..."
-                  rows={4}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder-gray-400"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Descripción opcional que aparecerá en el biolink
-                </p>
-              </div>
-
-              {/* Foto de Perfil */}
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Foto de Perfil
-                </label>
-                <PhotoUploader
-                  currentPhotoUrl={formData.foto_url}
-                  onPhotoUploaded={(url) => setFormData({ ...formData, foto_url: url })}
-                />
-              </div>
-
-              {/* Cal.com API Key */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Cal.com API Key
-                </label>
-                <input
-                  type="text"
-                  value={formData.cal_api_key}
-                  onChange={(e) => setFormData({ ...formData, cal_api_key: e.target.value })}
-                  placeholder="cal_live_xxxxxxxxxxxxx"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder-gray-400"
-                />
-              </div>
-
-              {/* Cal.com Username */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Cal.com Username
-                </label>
-                <input
-                  type="text"
-                  value={formData.cal_username}
-                  onChange={(e) => setFormData({ ...formData, cal_username: e.target.value })}
-                  placeholder="dr-juan-perez"
-                  maxLength={255}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder-gray-400"
-                />
-              </div>
-
-              {/* Monto de Consulta */}
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Monto de Consulta (ARS)
-                </label>
-                <input
-                  type="number"
-                  value={formData.monto_consulta}
-                  onChange={(e) => setFormData({ ...formData, monto_consulta: e.target.value })}
-                  placeholder="10000"
-                  min="0"
-                  step="100"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder-gray-400"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Precio que se cobrará por cada consulta. Ejemplo: $10,000 ARS
-                </p>
-              </div>
-
-              {/* Configuración de Botones (JSON) */}
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Configuración de Botones (JSON)
-                </label>
-                <textarea
-                  value={formData.botones_config}
-                  onChange={(e) => setFormData({ ...formData, botones_config: e.target.value })}
-                  placeholder='[{"id":"btn_1","texto":"Agendar Consulta","accion":"cal_modal","activo":true}]'
-                  rows={6}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder-gray-400 font-mono text-sm"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  JSON válido. Ejemplo: {`[{"id":"btn_1","texto":"Agendar Consulta","accion":"cal_modal","activo":true}]`}
-                </p>
-                <details className="mt-2">
-                  <summary className="text-xs text-blue-600 cursor-pointer hover:text-blue-800">
-                    📖 Ver estructura completa
-                  </summary>
-                  <pre className="mt-2 p-3 bg-gray-50 rounded text-xs overflow-x-auto">
-{`[
-  {
-    "id": "btn_1",
-    "texto": "Agendar Consulta",
-    "accion": "cal_modal",
-    "activo": true
-  },
-  {
-    "id": "btn_2",
-    "url": "https://instagram.com",
-    "texto": "Ver Instagram",
-    "accion": "link",
-    "activo": true
-  }
-]`}
-                  </pre>
-                </details>
-              </div>
-
-              {/* Configuración de Tema (JSON) */}
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Configuración de Tema (JSON)
-                </label>
-                <textarea
-                  value={formData.tema_config}
-                  onChange={(e) => setFormData({ ...formData, tema_config: e.target.value })}
-                  placeholder='{"borde":"rounded-lg","modoOscuro":false,"colorPrimario":"#3b82f6"}'
-                  rows={4}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder-gray-400 font-mono text-sm"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  JSON válido. Ejemplo: {`{"borde":"rounded-lg","modoOscuro":false,"colorPrimario":"#3b82f6"}`}
-                </p>
-                <details className="mt-2">
-                  <summary className="text-xs text-blue-600 cursor-pointer hover:text-blue-800">
-                    📖 Ver opciones disponibles
-                  </summary>
-                  <pre className="mt-2 p-3 bg-gray-50 rounded text-xs overflow-x-auto">
-{`{
-  "borde": "rounded-lg",        // rounded-none, rounded-md, rounded-lg, rounded-xl
-  "modoOscuro": false,          // true o false
-  "colorPrimario": "#3b82f6"    // Color hexadecimal
-}`}
-                  </pre>
-                </details>
-              </div>
-
-              {/* Buttons */}
-              <div className="md:col-span-2 flex gap-3">
+              <div className="flex gap-3 pt-2">
                 <button
                   type="submit"
                   className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition-colors"
                 >
-                  {editingClient ? '💾 Actualizar Cliente' : '➕ Crear Cliente'}
+                  Crear cliente
                 </button>
                 <button
                   type="button"
-                  onClick={() => {
-                    setShowForm(false);
-                    resetForm();
-                  }}
-                  className="px-6 py-3 bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold rounded-lg transition-colors"
+                  onClick={() => { setShowForm(false); setFormData({ email: '', password: '', slug: '' }); }}
+                  className="px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold rounded-lg transition-colors"
                 >
                   Cancelar
                 </button>
@@ -475,102 +211,76 @@ export default function ClientesPage() {
           </div>
         )}
 
-        {/* Clients List */}
-        <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+        {/* Clients list */}
+        <div className="bg-white rounded-lg shadow overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-200">
-            <h2 className="text-xl font-bold text-gray-900">
-              Clientes Registrados ({clients.length})
-            </h2>
+            <h2 className="text-lg font-bold text-gray-900">Clientes ({clients.length})</h2>
           </div>
 
           {loading ? (
-            <div className="p-8 text-center text-gray-500">
-              Cargando clientes...
-            </div>
+            <div className="p-8 text-center text-gray-500">Cargando...</div>
           ) : clients.length === 0 ? (
-            <div className="p-8 text-center text-gray-500">
-              No hay clientes registrados. Creá el primero usando el botón "Nuevo Cliente".
-            </div>
+            <div className="p-8 text-center text-gray-500">No hay clientes aún.</div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Nombre / Slug
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      ID (UUID)
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Especialidad
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Matrícula
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Mercado Pago
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Acciones
-                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email / Slug</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nombre</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estado</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Google</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">MP</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Creado</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Acciones</th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="divide-y divide-gray-200">
                   {clients.map((client) => (
-                    <tr key={client.slug} className="hover:bg-gray-50">
+                    <tr key={client.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4">
-                        <div className="flex flex-col">
-                          <div className="text-sm font-medium text-gray-900">
-                            {client.nombre_completo}
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            /{client.slug}
-                          </div>
-                          <a
-                            href={`/biolink/${client.slug}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-xs text-blue-600 hover:text-blue-800"
-                          >
-                            Ver biolink →
-                          </a>
-                        </div>
+                        <div className="text-sm font-medium text-gray-900">{client.email}</div>
+                        <a
+                          href={`/${client.slug}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-blue-600 hover:text-blue-800"
+                        >
+                          /{client.slug} →
+                        </a>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-700">
+                        {client.nombre_completo || <span className="text-gray-400 italic">Sin completar</span>}
+                        {client.especialidad && <div className="text-xs text-gray-400">{client.especialidad}</div>}
                       </td>
                       <td className="px-6 py-4">
-                        <div className="text-xs font-mono text-gray-500">
-                          {client.id}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-900">
-                        {client.especialidad || '-'}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-900">
-                        {client.matricula || '-'}
+                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                          client.status === 'active'
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-yellow-100 text-yellow-800'
+                        }`}>
+                          {client.status === 'active' ? 'Activo' : client.status}
+                        </span>
                       </td>
                       <td className="px-6 py-4 text-sm">
-                        {client.mp_user_id ? (
-                          <span className="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
-                            ✓ Conectado
-                          </span>
-                        ) : (
-                          <span className="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
-                            ⚠ Sin conectar
-                          </span>
-                        )}
+                        {client.google_email
+                          ? <span className="text-green-600 text-xs">{client.google_email}</span>
+                          : <span className="text-gray-400 text-xs">—</span>}
                       </td>
-                      <td className="px-6 py-4 text-sm font-medium space-x-2">
-                        <button
-                          onClick={() => handleEdit(client)}
-                          className="text-blue-600 hover:text-blue-900"
-                        >
-                          ✏️ Editar
-                        </button>
+                      <td className="px-6 py-4 text-sm">
+                        {client.mp_user_id
+                          ? <span className="text-green-600 text-xs">Conectado</span>
+                          : <span className="text-gray-400 text-xs">—</span>}
+                      </td>
+                      <td className="px-6 py-4 text-xs text-gray-500">
+                        {new Date(client.created_at).toLocaleDateString('es-AR')}
+                      </td>
+                      <td className="px-6 py-4">
                         <button
                           onClick={() => handleDelete(client.slug)}
-                          className="text-red-600 hover:text-red-900"
+                          className="text-red-600 hover:text-red-900 text-sm"
                         >
-                          🗑️ Eliminar
+                          Eliminar
                         </button>
                       </td>
                     </tr>
@@ -579,18 +289,6 @@ export default function ClientesPage() {
               </table>
             </div>
           )}
-        </div>
-
-        {/* Info */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mt-6">
-          <h3 className="text-lg font-semibold text-blue-900 mb-3">💡 Información</h3>
-          <ul className="text-sm text-blue-800 space-y-2 list-disc list-inside">
-            <li>Los campos marcados con * son obligatorios</li>
-            <li>El <strong>slug</strong> es la URL del biolink (ej: /biolink/dr-juan-perez)</li>
-            <li>Los tokens de Mercado Pago se conectan mediante el botón "Generar Links OAuth"</li>
-            <li>Para que un cliente pueda recibir pagos, debe tener Mercado Pago conectado</li>
-            <li>Los campos de Cal.com son opcionales y se usan para integrar agendas</li>
-          </ul>
         </div>
       </div>
     </div>
