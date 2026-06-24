@@ -75,6 +75,7 @@ export default function PanelClient({ client }: { client: Client }) {
   const [tab, setTab] = useState<TabFilter>('todos');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [actionMsg, setActionMsg] = useState<{ id: string; msg: string; ok: boolean } | null>(null);
+  const [confirmingCancel, setConfirmingCancel] = useState<string | null>(null);
 
   const fetchBookings = useCallback(async () => {
     setLoadingBookings(true);
@@ -109,6 +110,7 @@ export default function PanelClient({ client }: { client: Client }) {
   }, []);
 
   const handleAction = async (bookingId: string, action: 'confirm' | 'reject') => {
+    setConfirmingCancel(null);
     setActionLoading(bookingId + action);
     setActionMsg(null);
     try {
@@ -548,15 +550,23 @@ export default function PanelClient({ client }: { client: Client }) {
                               </td>
 
                               <td style={{ padding: '12px 14px' }}>
-                                {b.estado === 'pending_confirmation' ? (
-                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                    {actionMsg?.id === b.id ? (
+                                {(() => {
+                                  const cancelables = ['confirmed', 'pending_payment', 'pending', 'paid'];
+                                  const esLiberacion = b.estado === 'pending_payment' || b.estado === 'pending';
+                                  const cancelLabel = esLiberacion ? 'Liberar turno' : 'Cancelar turno';
+
+                                  if (actionMsg?.id === b.id) {
+                                    return (
                                       <div style={{ fontSize: '12px', fontWeight: 600, color: actionMsg.ok ? '#065f46' : '#991b1b', display: 'flex', alignItems: 'center', gap: '4px' }}>
                                         {actionMsg.ok ? <CheckCircle size={13} /> : <AlertCircle size={13} />}
                                         {actionMsg.msg}
                                       </div>
-                                    ) : (
-                                      <>
+                                    );
+                                  }
+
+                                  if (b.estado === 'pending_confirmation') {
+                                    return (
+                                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                         <button
                                           onClick={() => handleAction(b.id, 'confirm')}
                                           disabled={actionLoading !== null}
@@ -573,12 +583,48 @@ export default function PanelClient({ client }: { client: Client }) {
                                           {actionLoading === b.id + 'reject' ? <Loader2 size={12} className="animate-spin" /> : <XCircle size={12} />}
                                           Rechazar
                                         </button>
-                                      </>
-                                    )}
-                                  </div>
-                                ) : (
-                                  <span style={{ fontSize: '12px', color: '#d1d5db' }}>—</span>
-                                )}
+                                      </div>
+                                    );
+                                  }
+
+                                  if (cancelables.includes(b.estado)) {
+                                    if (confirmingCancel === b.id) {
+                                      return (
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                          <span style={{ fontSize: '12px', fontWeight: 600, color: '#991b1b' }}>¿Cancelar este turno?</span>
+                                          <div style={{ display: 'flex', gap: '6px' }}>
+                                            <button
+                                              onClick={() => handleAction(b.id, 'reject')}
+                                              disabled={actionLoading !== null}
+                                              style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '5px 10px', fontSize: '12px', fontWeight: 700, background: '#dc2626', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                                            >
+                                              {actionLoading === b.id + 'reject' ? <Loader2 size={12} className="animate-spin" /> : <XCircle size={12} />}
+                                              Sí, cancelar
+                                            </button>
+                                            <button
+                                              onClick={() => setConfirmingCancel(null)}
+                                              disabled={actionLoading !== null}
+                                              style={{ padding: '5px 10px', fontSize: '12px', fontWeight: 600, background: '#f3f4f6', color: '#374151', border: 'none', borderRadius: '6px', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                                            >
+                                              No
+                                            </button>
+                                          </div>
+                                        </div>
+                                      );
+                                    }
+                                    return (
+                                      <button
+                                        onClick={() => setConfirmingCancel(b.id)}
+                                        disabled={actionLoading !== null}
+                                        style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '5px 10px', fontSize: '12px', fontWeight: 700, background: '#fee2e2', color: '#991b1b', border: 'none', borderRadius: '6px', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                                      >
+                                        <XCircle size={12} /> {cancelLabel}
+                                      </button>
+                                    );
+                                  }
+
+                                  return <span style={{ fontSize: '12px', color: '#d1d5db' }}>—</span>;
+                                })()}
                               </td>
 
                             </tr>

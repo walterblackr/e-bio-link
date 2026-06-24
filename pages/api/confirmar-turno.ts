@@ -2,7 +2,7 @@
 // Crea el evento en Google Calendar y confirma el booking
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { neon } from '@neondatabase/serverless';
-import { createEventForClient } from '../../lib/google-calendar';
+import { createEventForClient, deleteEventForClient } from '../../lib/google-calendar';
 import { requireActiveClientFromRequest } from '../../lib/auth/client-auth';
 import { sendBookingConfirmation, sendNewBookingNotification, sendBookingCancellation } from '../../lib/email';
 
@@ -63,17 +63,34 @@ export default async function handler(
 
     const booking = bookingResult[0];
 
-    const estadosAccionables = ['pending_confirmation', 'paid', 'pending_payment', 'pending'];
+    // 'confirmed' se incluye para permitir cancelar un turno ya confirmado
+    const estadosAccionables = ['pending_confirmation', 'paid', 'pending_payment', 'pending', 'confirmed'];
     if (!estadosAccionables.includes(booking.estado)) {
       return res.status(400).json({
         error: `No se puede modificar un booking en estado '${booking.estado}'`,
       });
     }
 
-    // ── RECHAZO ───────────────────────────────────────────────────────────────
+    // No permitir re-confirmar un turno ya confirmado (solo se puede cancelar)
+    if (action === 'confirm' && booking.estado === 'confirmed') {
+      return res.status(400).json({ error: 'El turno ya está confirmado' });
+    }
+
+    // ── RECHAZO / CANCELACIÓN ─────────────────────────────────────────────────
     if (action === 'reject') {
+      // Si el turno tenía evento en Google Calendar, eliminarlo para liberar la agenda
+      if (booking.google_event_id) {
+        try {
+          await deleteEventForClient(booking.client_id, booking.google_event_id);
+        } catch (gcError: any) {
+          console.error('[confirmar-turno] No se pudo eliminar evento de Google Calendar:', gcError.message);
+        }
+      }
+
       await sql`
-        UPDATE bookings SET estado = 'cancelled' WHERE id = ${booking_id}
+        UPDATE bookings
+        SET estado = 'cancelled', google_event_id = NULL, meet_link = NULL
+        WHERE id = ${booking_id}
       `;
 
       await sendBookingCancellation({
