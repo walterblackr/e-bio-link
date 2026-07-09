@@ -30,7 +30,7 @@ export default function PrivacidadPage() {
           Política de Privacidad
         </h1>
         <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.35)', marginBottom: '48px' }}>
-          Última actualización: marzo de 2026
+          Última actualización: julio de 2026
         </p>
 
         <Section title="1. Quiénes somos">
@@ -62,18 +62,33 @@ export default function PrivacidadPage() {
 
         <Section title="3. Integración con Google Calendar">
           <p>
-            Al conectar tu cuenta de Google, ebiolink.app solicita acceso a los siguientes scopes:
+            <strong style={{ color: '#fff' }}>Datos a los que accedemos.</strong> Al conectar tu cuenta de Google de forma voluntaria, ebiolink.app solicita acceso a los siguientes scopes:
           </p>
           <ul>
-            <li><code style={{ background: 'rgba(255,255,255,0.08)', padding: '2px 6px', borderRadius: '4px', fontSize: '13px' }}>calendar.events</code> — para crear y eliminar eventos de turnos confirmados</li>
-            <li><code style={{ background: 'rgba(255,255,255,0.08)', padding: '2px 6px', borderRadius: '4px', fontSize: '13px' }}>calendar.readonly</code> — para consultar disponibilidad y evitar superposiciones</li>
-            <li><code style={{ background: 'rgba(255,255,255,0.08)', padding: '2px 6px', borderRadius: '4px', fontSize: '13px' }}>userinfo.email</code> — para identificar la cuenta conectada</li>
+            <li><code style={{ background: 'rgba(255,255,255,0.08)', padding: '2px 6px', borderRadius: '4px', fontSize: '13px' }}>calendar.events</code> — para crear y eliminar eventos correspondientes a turnos confirmados en la plataforma</li>
+            <li><code style={{ background: 'rgba(255,255,255,0.08)', padding: '2px 6px', borderRadius: '4px', fontSize: '13px' }}>calendar.readonly</code> — para consultar los bloques de tiempo ocupados (freebusy) y evitar superposiciones de turnos</li>
+            <li><code style={{ background: 'rgba(255,255,255,0.08)', padding: '2px 6px', borderRadius: '4px', fontSize: '13px' }}>userinfo.email</code> — para identificar y mostrar la cuenta de Google conectada</li>
           </ul>
+
           <p style={{ marginTop: '16px' }}>
-            <strong style={{ color: '#fff' }}>Importante:</strong> Solo accedemos a eventos creados por ebiolink.app y a los bloques de tiempo ocupados (freebusy) para determinar disponibilidad. No leemos, almacenamos ni procesamos el contenido de otros eventos en tu calendario. Los tokens de acceso se almacenan cifrados en nuestra base de datos y nunca se exponen al cliente.
+            <strong style={{ color: '#fff' }}>Para qué usamos estos datos.</strong> Utilizamos el acceso a tu calendario con un único propósito: gestionar la agenda de turnos dentro de ebiolink.app. Concretamente, para (a) crear un evento cuando confirmás un turno —incluyendo el enlace de Google Meet en las consultas virtuales—, (b) eliminar ese evento si el turno se cancela, y (c) leer los horarios ocupados para no ofrecer slots que se superpongan con tu agenda. No usamos estos datos para ningún otro fin.
           </p>
-          <p style={{ marginTop: '12px' }}>
-            Podés revocar el acceso en cualquier momento desde <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener noreferrer" style={{ color: '#60a5fa' }}>myaccount.google.com/permissions</a>.
+
+          <p style={{ marginTop: '16px' }}>
+            <strong style={{ color: '#fff' }}>Qué NO hacemos con tus datos de Google.</strong> No leemos, almacenamos ni procesamos el contenido, título, asistentes ni descripción de eventos que no hayan sido creados por ebiolink.app. No compartimos, vendemos ni transferimos datos de Google Calendar a ningún tercero. No utilizamos estos datos para publicidad ni con fines de marketing. No usamos datos de Google para desarrollar, entrenar ni mejorar modelos de inteligencia artificial o aprendizaje automático.
+          </p>
+
+          <p style={{ marginTop: '16px' }}>
+            <strong style={{ color: '#fff' }}>Almacenamiento y protección.</strong> Únicamente almacenamos los tokens de acceso y actualización (OAuth), tu dirección de correo de Google, y los identificadores de los eventos que la plataforma crea. Los tokens se cifran con AES-256-GCM antes de guardarse en la base de datos y nunca se exponen al navegador ni al cliente. Toda la comunicación se realiza mediante HTTPS.
+          </p>
+
+          <p style={{ marginTop: '16px' }}>
+            <strong style={{ color: '#fff' }}>Retención y eliminación.</strong> Conservamos los tokens y datos de Google únicamente mientras tu integración esté activa. Podés revocar el acceso en cualquier momento desde <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener noreferrer" style={{ color: '#60a5fa' }}>myaccount.google.com/permissions</a>; a partir de esa revocación ebiolink.app deja de tener acceso a tu calendario. Si eliminás tu cuenta de ebiolink.app, o si nos escribís a <a href="mailto:ebiolinkarg@gmail.com" style={{ color: '#60a5fa' }}>ebiolinkarg@gmail.com</a> solicitándolo, borramos de forma permanente los tokens y todos los datos de Google asociados dentro de los 10 días hábiles.
+          </p>
+
+          <p style={{ marginTop: '16px' }}>
+            <strong style={{ color: '#fff' }}>Cumplimiento con las políticas de Google.</strong> El uso que ebiolink.app hace de la información recibida de las APIs de Google se ajusta a la{' '}
+            <a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noopener noreferrer" style={{ color: '#60a5fa' }}>Google API Services User Data Policy</a>, incluidos sus requisitos de Uso Limitado (Limited Use).
           </p>
         </Section>
 
