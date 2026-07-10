@@ -120,6 +120,7 @@ interface CreateEventData {
   paciente_telefono: string;
   modalidad: 'virtual' | 'presencial';
   notas?: string;
+  direccion?: string | null;
 }
 
 interface CreatedEvent {
@@ -164,6 +165,11 @@ export async function createEvent(
       ],
     },
   };
+
+  // Agregar dirección si es presencial
+  if (data.modalidad === 'presencial' && data.direccion) {
+    eventBody.location = data.direccion;
+  }
 
   // Agregar Google Meet si es virtual
   if (data.modalidad === 'virtual') {

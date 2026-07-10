@@ -182,6 +182,7 @@ export default async function handler(
         paciente_telefono: booking.paciente_telefono || '',
         modalidad,
         notas: booking.notas,
+        direccion: eventoDireccion,
       });
     } catch (gcError: any) {
       console.error('[confirmar-turno] Google Calendar no disponible:', gcError.message);
