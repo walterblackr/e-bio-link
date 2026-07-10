@@ -29,6 +29,8 @@ interface Evento {
   antelacion_minima: number;
   max_por_dia: number | null;
   direccion?: string | null;
+  cobro_tipo?: "total" | "sena";
+  sena_monto?: number | null;
 }
 
 interface WizardStep2BProps {
@@ -91,6 +93,8 @@ export default function WizardStep2B({ onNext, onBack }: WizardStep2BProps) {
     antelacion_minima: 0,   // stored in minutes
     max_por_dia: "" as string, // "" = sin límite
     direccion: "",
+    cobro_tipo: "total" as "total" | "sena",
+    sena_monto: "" as string, // "" = vacío
   });
 
   const [dias, setDias] = useState<DiaDisponibilidad[]>(defaultDias());
@@ -231,10 +235,29 @@ export default function WizardStep2B({ onNext, onBack }: WizardStep2BProps) {
     setFormLoading(true);
 
     try {
+      const sena_monto_num = formData.cobro_tipo === "sena" && formData.sena_monto !== ""
+        ? Number(formData.sena_monto)
+        : null;
+
+      if (formData.cobro_tipo === "sena") {
+        if (!sena_monto_num || sena_monto_num <= 0) {
+          setError("El monto de la seña debe ser mayor a 0");
+          setFormLoading(false);
+          return;
+        }
+        if (sena_monto_num >= Number(formData.precio)) {
+          setError("El monto de la seña debe ser menor al precio total");
+          setFormLoading(false);
+          return;
+        }
+      }
+
       const payload = {
         ...formData,
         antelacion_minima: Number(formData.antelacion_minima) || 0,
         max_por_dia: formData.max_por_dia !== "" ? Number(formData.max_por_dia) : null,
+        cobro_tipo: formData.cobro_tipo,
+        sena_monto: sena_monto_num,
       };
 
       const url = editingEvento ? `/api/eventos/${editingEvento.id}` : "/api/eventos";
@@ -297,6 +320,8 @@ export default function WizardStep2B({ onNext, onBack }: WizardStep2BProps) {
         ? String(evento.max_por_dia)
         : "",
       direccion: evento.direccion || "",
+      cobro_tipo: evento.cobro_tipo || "total",
+      sena_monto: evento.sena_monto != null ? String(evento.sena_monto) : "",
     });
     setShowAvanzado(
       (evento.buffer_despues ?? 0) > 0 ||
@@ -366,6 +391,8 @@ export default function WizardStep2B({ onNext, onBack }: WizardStep2BProps) {
       antelacion_minima: 0,
       max_por_dia: "",
       direccion: "",
+      cobro_tipo: "total",
+      sena_monto: "",
     });
     setDias(defaultDias());
     setError("");
@@ -554,6 +581,64 @@ export default function WizardStep2B({ onNext, onBack }: WizardStep2BProps) {
                             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">ARS</span>
                           </div>
                         </div>
+                      </div>
+
+                      {/* Cobro al reservar */}
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                          ¿Qué cobrás al reservar?
+                        </label>
+                        <div className="flex gap-3">
+                          {(["total", "sena"] as const).map((tipo) => (
+                            <label key={tipo} className={`flex-1 flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition-all ${
+                              formData.cobro_tipo === tipo
+                                ? "bg-purple-50 border-purple-400"
+                                : "bg-white border-gray-300 hover:border-gray-400"
+                            }`}>
+                              <input
+                                type="radio"
+                                name="cobro_tipo"
+                                value={tipo}
+                                checked={formData.cobro_tipo === tipo}
+                                onChange={(e) => setFormData({ ...formData, cobro_tipo: e.target.value as "total" | "sena", sena_monto: "" })}
+                                className="text-purple-600 focus:ring-purple-500"
+                              />
+                              <div>
+                                <p className="text-sm font-medium text-gray-900">
+                                  {tipo === "total" ? "Total" : "Seña"}
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                  {tipo === "total" ? "Cobra el precio completo" : "Cobra un adelanto fijo"}
+                                </p>
+                              </div>
+                            </label>
+                          ))}
+                        </div>
+                        {formData.cobro_tipo === "sena" && (
+                          <div className="mt-3">
+                            <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                              Monto de la seña *
+                            </label>
+                            <div className="relative">
+                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
+                              <input
+                                type="text"
+                                inputMode="numeric"
+                                value={formData.sena_monto ? Number(formData.sena_monto).toLocaleString("es-AR") : ""}
+                                onChange={(e) => {
+                                  const value = e.target.value.replace(/[^0-9]/g, "");
+                                  setFormData({ ...formData, sena_monto: value });
+                                }}
+                                placeholder="2.000"
+                                className="w-full pl-7 pr-12 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                              />
+                              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">ARS</span>
+                            </div>
+                            <p className="text-xs text-gray-400 mt-1">
+                              Debe ser mayor a 0 y menor al precio total. El saldo se abona en la consulta.
+                            </p>
+                          </div>
+                        )}
                       </div>
 
                       {/* Modalidad */}

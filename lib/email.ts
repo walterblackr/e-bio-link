@@ -18,6 +18,8 @@ interface BookingEmailData {
   monto?: number | string;
   booking_id?: number | string;
   direccion?: string | null;
+  cobro_tipo?: 'total' | 'sena';
+  precio_total?: number | string;
 }
 
 interface ProfesionalNotifData extends BookingEmailData {
@@ -113,7 +115,11 @@ export async function sendBookingConfirmation(data: BookingEmailData): Promise<v
             <div class="value">📍 ${data.direccion}</div>
           </div>` : ''}
 
-          ${data.monto ? `<div class="amount">$${parseFloat(String(data.monto)).toLocaleString('es-AR')}</div>` : ''}
+          ${data.monto ? `<div class="amount">${data.cobro_tipo === 'sena' ? 'Seña ' : ''}$${parseFloat(String(data.monto)).toLocaleString('es-AR')}</div>` : ''}
+          ${data.cobro_tipo === 'sena' && data.precio_total ? `
+          <p style="margin:-12px 0 16px;font-size:13px;color:#6b7280;text-align:center;">
+            Resto a abonar en la consulta: $${parseFloat(String(data.precio_total)).toLocaleString('es-AR')}
+          </p>` : ''}
 
           <hr class="divider" />
 
@@ -186,6 +192,12 @@ export async function sendNewBookingNotification(data: ProfesionalNotifData): Pr
             <div class="label">Fecha y hora</div>
             <div class="value">${fecha}</div>
           </div>
+
+          ${data.direccion ? `
+          <div class="field">
+            <div class="label">Dirección</div>
+            <div class="value">📍 ${data.direccion}</div>
+          </div>` : ''}
 
           ${data.monto ? `
           <div class="field">
@@ -288,6 +300,9 @@ interface ComprobanteNotifData {
   comprobante_url: string;
   confirm_url: string;
   reject_url: string;
+  cobro_tipo?: 'total' | 'sena';
+  precio_total?: number | string;
+  direccion?: string | null;
 }
 
 export async function sendComprobanteNotification(data: ComprobanteNotifData): Promise<void> {
@@ -345,7 +360,17 @@ export async function sendComprobanteNotification(data: ComprobanteNotifData): P
             <div class="value">${fecha}</div>
           </div>
 
-          ${data.monto ? `<div class="amount">$${parseFloat(String(data.monto)).toLocaleString('es-AR')}</div>` : ''}
+          ${data.direccion ? `
+          <div class="field">
+            <div class="label">Dirección</div>
+            <div class="value">📍 ${data.direccion}</div>
+          </div>` : ''}
+
+          ${data.monto ? `<div class="amount">${data.cobro_tipo === 'sena' ? 'Seña ' : ''}$${parseFloat(String(data.monto)).toLocaleString('es-AR')}</div>` : ''}
+          ${data.cobro_tipo === 'sena' && data.precio_total ? `
+          <p style="margin:-12px 0 16px;font-size:13px;color:#6b7280;text-align:center;">
+            Seña — saldo de $${parseFloat(String(data.precio_total)).toLocaleString('es-AR')} se abona en la consulta
+          </p>` : ''}
 
           <hr class="divider" />
 

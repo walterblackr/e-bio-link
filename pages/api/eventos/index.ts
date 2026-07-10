@@ -28,6 +28,8 @@ export default async function handler(
           antelacion_minima,
           max_por_dia,
           direccion,
+          cobro_tipo,
+          sena_monto,
           created_at
         FROM eventos
         WHERE client_id = ${client.id}
@@ -49,6 +51,8 @@ export default async function handler(
         antelacion_minima,
         max_por_dia,
         direccion,
+        cobro_tipo,
+        sena_monto,
       } = req.body;
 
       // Validaciones
@@ -64,6 +68,22 @@ export default async function handler(
         });
       }
 
+      const cobro_tipo_val = cobro_tipo || 'total';
+      if (!['total', 'sena'].includes(cobro_tipo_val)) {
+        return res.status(400).json({ error: 'cobro_tipo debe ser "total" o "sena"' });
+      }
+
+      let sena_monto_val: number | null = null;
+      if (cobro_tipo_val === 'sena') {
+        sena_monto_val = Number(sena_monto);
+        if (!sena_monto_val || sena_monto_val <= 0) {
+          return res.status(400).json({ error: 'El monto de la seña debe ser mayor a 0' });
+        }
+        if (sena_monto_val >= Number(precio)) {
+          return res.status(400).json({ error: 'El monto de la seña debe ser menor al precio total' });
+        }
+      }
+
       // Guardar en nuestra base de datos
       const result = await sql`
         INSERT INTO eventos (
@@ -77,7 +97,9 @@ export default async function handler(
           buffer_despues,
           antelacion_minima,
           max_por_dia,
-          direccion
+          direccion,
+          cobro_tipo,
+          sena_monto
         ) VALUES (
           ${client.id},
           ${nombre},
@@ -89,7 +111,9 @@ export default async function handler(
           ${buffer_despues ?? 0},
           ${antelacion_minima ?? 0},
           ${max_por_dia ?? null},
-          ${direccion || null}
+          ${direccion || null},
+          ${cobro_tipo_val},
+          ${sena_monto_val}
         )
         RETURNING *
       `;

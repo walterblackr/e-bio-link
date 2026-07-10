@@ -15,6 +15,8 @@ interface Evento {
   modalidad: "virtual" | "presencial";
   diasActivos: number[]; // 0=Dom, 1=Lun, ..., 6=Sab
   direccion?: string | null;
+  cobro_tipo?: "total" | "sena";
+  sena_monto?: number | null;
 }
 
 interface Medico {
@@ -64,6 +66,34 @@ function formatFechaLarga(dateStr: string): string {
 
 function toYMD(year: number, month: number, day: number): string {
   return `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
+// Badge de modalidad + dirección (se reutiliza en pasos 2, 3 y 4)
+function EventoMeta({ evento }: { evento: Evento }) {
+  return (
+    <div className="flex flex-col gap-1 mt-1">
+      <span
+        className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full w-fit ${
+          evento.modalidad === "virtual"
+            ? "bg-blue-100 text-blue-700"
+            : "bg-orange-100 text-orange-700"
+        }`}
+      >
+        {evento.modalidad === "virtual" ? (
+          <Video className="w-3 h-3" />
+        ) : (
+          <MapPin className="w-3 h-3" />
+        )}
+        {evento.modalidad === "virtual" ? "Virtual · Google Meet" : "Presencial"}
+      </span>
+      {evento.modalidad === "presencial" && evento.direccion && (
+        <p className="flex items-center gap-1 text-xs text-gray-500">
+          <MapPin className="w-3 h-3 text-orange-500 flex-shrink-0" />
+          {evento.direccion}
+        </p>
+      )}
+    </div>
+  );
 }
 
 // ─── Main Component ──────────────────────────────────────────────────────────
@@ -425,7 +455,14 @@ export default function BookingFlow({ medico, eventos }: BookingFlowProps) {
                       )}
                     </div>
                     <div className="text-right flex-shrink-0">
-                      <p className="font-bold text-gray-900 text-lg">{formatPrecio(evento.precio)}</p>
+                      {evento.cobro_tipo === "sena" && evento.sena_monto ? (
+                        <>
+                          <p className="font-bold text-gray-900 text-lg">{formatPrecio(evento.sena_monto)}</p>
+                          <p className="text-xs text-gray-400">seña · total {formatPrecio(evento.precio)}</p>
+                        </>
+                      ) : (
+                        <p className="font-bold text-gray-900 text-lg">{formatPrecio(evento.precio)}</p>
+                      )}
                     </div>
                   </div>
                 </button>
@@ -438,17 +475,25 @@ export default function BookingFlow({ medico, eventos }: BookingFlowProps) {
         {step === 2 && selectedEvento && (
           <div>
             {/* Evento seleccionado (resumen) */}
-            <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-3 mb-5 flex items-center gap-3">
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-indigo-900">{selectedEvento.nombre}</p>
-                <p className="text-xs text-indigo-600">{selectedEvento.duracion_minutos} min · {formatPrecio(selectedEvento.precio)}</p>
+            <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-3 mb-5">
+              <div className="flex items-start gap-3">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-indigo-900">{selectedEvento.nombre}</p>
+                  <p className="text-xs text-indigo-600">
+                    {selectedEvento.duracion_minutos} min ·{" "}
+                    {selectedEvento.cobro_tipo === "sena" && selectedEvento.sena_monto
+                      ? `Seña ${formatPrecio(selectedEvento.sena_monto)} · total ${formatPrecio(selectedEvento.precio)}`
+                      : formatPrecio(selectedEvento.precio)}
+                  </p>
+                  <EventoMeta evento={selectedEvento} />
+                </div>
+                <button
+                  onClick={() => setStep(1)}
+                  className="text-xs text-indigo-600 hover:text-indigo-800 font-medium underline flex-shrink-0"
+                >
+                  Cambiar
+                </button>
               </div>
-              <button
-                onClick={() => setStep(1)}
-                className="text-xs text-indigo-600 hover:text-indigo-800 font-medium underline"
-              >
-                Cambiar
-              </button>
             </div>
 
             <h2 className="text-lg font-bold text-gray-900 mb-1">Elegí el día</h2>
@@ -583,7 +628,15 @@ export default function BookingFlow({ medico, eventos }: BookingFlowProps) {
               <p className="text-sm text-gray-600 mt-0.5">
                 {selectedDate && formatFechaLarga(selectedDate)} · {selectedSlot.label} hs
               </p>
-              <p className="text-sm font-bold text-indigo-700 mt-1">{formatPrecio(selectedEvento.precio)}</p>
+              {selectedEvento.cobro_tipo === "sena" && selectedEvento.sena_monto ? (
+                <>
+                  <p className="text-sm font-bold text-indigo-700 mt-1">Seña {formatPrecio(selectedEvento.sena_monto)}</p>
+                  <p className="text-xs text-gray-500">Total consulta {formatPrecio(selectedEvento.precio)} · resto se abona en la consulta</p>
+                </>
+              ) : (
+                <p className="text-sm font-bold text-indigo-700 mt-1">{formatPrecio(selectedEvento.precio)}</p>
+              )}
+              <EventoMeta evento={selectedEvento} />
             </div>
 
             <h2 className="text-lg font-bold text-gray-900 mb-4">Tus datos</h2>
@@ -690,8 +743,9 @@ export default function BookingFlow({ medico, eventos }: BookingFlowProps) {
                   <div>
                     <h2 className="text-lg font-bold text-gray-900 leading-tight">Reserva recibida</h2>
                     <p className="text-xs text-gray-500">
-                      #{bookingResult.booking_id} · {selectedDate && formatFechaLarga(selectedDate)} · {selectedSlot.label} hs · {formatPrecio(selectedEvento.precio)}
+                      #{bookingResult.booking_id} · {selectedDate && formatFechaLarga(selectedDate)} · {selectedSlot.label} hs
                     </p>
+                    <EventoMeta evento={selectedEvento} />
                   </div>
                 </div>
 
@@ -746,9 +800,16 @@ export default function BookingFlow({ medico, eventos }: BookingFlowProps) {
                             </div>
                           )}
                           <div className="flex justify-between gap-2 pt-2 border-t border-blue-200">
-                            <span className="text-blue-600 font-semibold">Monto</span>
+                            <span className="text-blue-600 font-semibold">
+                              {selectedEvento.cobro_tipo === "sena" ? "Seña" : "Monto"}
+                            </span>
                             <span className="font-bold text-blue-900">{formatPrecio(bookingResult.transfer_data.monto)}</span>
                           </div>
+                          {selectedEvento.cobro_tipo === "sena" && selectedEvento.sena_monto && (
+                            <p className="text-xs text-blue-600 mt-1">
+                              Resto a abonar en la consulta: {formatPrecio(Number(selectedEvento.precio) - Number(selectedEvento.sena_monto))}
+                            </p>
+                          )}
                         </div>
                       </div>
                     )}
@@ -813,16 +874,26 @@ export default function BookingFlow({ medico, eventos }: BookingFlowProps) {
                   </svg>
                 </div>
                 <h2 className="text-2xl font-bold text-gray-900 mb-2">¡Casi listo!</h2>
-                <p className="text-gray-500 text-sm mb-6">
+                <p className="text-gray-500 text-sm mb-2">
                   Número de reserva: <span className="font-mono font-semibold text-gray-700">#{bookingResult.booking_id}</span>
                 </p>
+                <div className="mb-5 flex justify-center">
+                  <EventoMeta evento={selectedEvento} />
+                </div>
 
                 {bookingResult.payment_method === 'mp' && (
                   <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-5 mb-5 text-left">
                     <h3 className="font-semibold text-indigo-900 mb-2">Pagá con Mercado Pago</h3>
-                    <p className="text-sm text-indigo-700 mb-4">
-                      Completá el pago de {selectedEvento && formatPrecio(selectedEvento.precio)} de forma segura a través de Mercado Pago.
+                    <p className="text-sm text-indigo-700 mb-1">
+                      {selectedEvento.cobro_tipo === "sena" && selectedEvento.sena_monto
+                        ? `Pagá la seña de ${formatPrecio(selectedEvento.sena_monto)} de forma segura a través de Mercado Pago.`
+                        : `Completá el pago de ${formatPrecio(selectedEvento.precio)} de forma segura a través de Mercado Pago.`}
                     </p>
+                    {selectedEvento.cobro_tipo === "sena" && selectedEvento.sena_monto && (
+                      <p className="text-xs text-indigo-500 mb-4">
+                        Resto a abonar en la consulta: {formatPrecio(Number(selectedEvento.precio) - Number(selectedEvento.sena_monto))}
+                      </p>
+                    )}
                     {mpError && (
                       <p className="text-xs text-red-500 mb-3">{mpError}</p>
                     )}

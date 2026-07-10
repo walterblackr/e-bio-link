@@ -69,7 +69,7 @@ export default async function handler(
 
     // 2. Obtener el evento
     const eventoResult = await sql`
-      SELECT id, nombre, duracion_minutos, precio, modalidad, max_por_dia
+      SELECT id, nombre, duracion_minutos, precio, modalidad, max_por_dia, cobro_tipo, sena_monto, direccion
       FROM eventos
       WHERE id = ${evento_id}
         AND client_id = ${client.id}
@@ -101,6 +101,10 @@ export default async function handler(
       }
     }
 
+    // Calcular monto a cobrar al reservar (seña o total)
+    const esSeña = evento.cobro_tipo === 'sena' && evento.sena_monto;
+    const montoACobrar = esSeña ? Number(evento.sena_monto) : Number(evento.precio);
+
     // 5. Crear booking en DB con estado 'pending_payment'
     // Nota: la verificación de disponibilidad en Google Calendar se omite aquí
     // El evento se crea en Google Calendar post-confirmación de pago
@@ -124,7 +128,7 @@ export default async function handler(
         ${paciente_email},
         ${paciente_telefono || null},
         ${fecha_hora},
-        ${evento.precio},
+        ${montoACobrar},
         'pending_payment',
         ${client.payment_method || 'transfer'},
         ${notas || null}
@@ -147,6 +151,9 @@ export default async function handler(
         duracion_minutos: evento.duracion_minutos,
         precio: evento.precio,
         modalidad: evento.modalidad,
+        direccion: evento.direccion || null,
+        cobro_tipo: evento.cobro_tipo || 'total',
+        sena_monto: evento.sena_monto ? Number(evento.sena_monto) : null,
       },
     };
 
@@ -156,7 +163,7 @@ export default async function handler(
         cbu_alias: client.cbu_alias || null,
         banco_nombre: client.banco_nombre || null,
         titular_cuenta: client.titular_cuenta || null,
-        monto: evento.precio,
+        monto: montoACobrar,
       };
     }
 

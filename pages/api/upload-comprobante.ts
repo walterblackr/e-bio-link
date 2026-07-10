@@ -86,14 +86,22 @@ export default async function handler(
     `;
     const clientInfo = clientResult[0];
 
-    // Obtener nombre del evento
+    // Obtener datos del evento
     let eventoNombre = 'Consulta';
+    let eventoCobro_tipo: 'total' | 'sena' = 'total';
+    let eventoSena_monto: number | null = null;
+    let eventoPrecio: number | null = null;
+    let eventoDireccion: string | null = null;
     if (booking.evento_id) {
       const eventoResult = await sql`
-        SELECT nombre FROM eventos WHERE id = ${booking.evento_id} LIMIT 1
+        SELECT nombre, cobro_tipo, sena_monto, precio, direccion FROM eventos WHERE id = ${booking.evento_id} LIMIT 1
       `;
       if (eventoResult.length > 0) {
         eventoNombre = eventoResult[0].nombre || 'Consulta';
+        eventoCobro_tipo = eventoResult[0].cobro_tipo || 'total';
+        eventoSena_monto = eventoResult[0].sena_monto ? Number(eventoResult[0].sena_monto) : null;
+        eventoPrecio = Number(eventoResult[0].precio);
+        eventoDireccion = eventoResult[0].direccion || null;
       }
     }
 
@@ -127,6 +135,11 @@ export default async function handler(
         comprobante_url: uploadResult.secure_url,
         confirm_url: confirmUrl,
         reject_url: rejectUrl,
+        cobro_tipo: eventoCobro_tipo,
+        precio_total: eventoCobro_tipo === 'sena' && eventoSena_monto && eventoPrecio
+          ? eventoPrecio - eventoSena_monto
+          : undefined,
+        direccion: eventoDireccion,
       }).catch((e) => console.error('[Email] Error notif comprobante:', e.message));
     } else {
       console.warn(`[upload-comprobante] Profesional sin email para booking ${booking_id}`);

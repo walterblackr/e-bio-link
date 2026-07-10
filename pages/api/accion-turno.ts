@@ -132,15 +132,17 @@ export default async function handler(
   let duracion = 30;
   let modalidad: 'virtual' | 'presencial' = 'virtual';
   let eventoNombre = 'Consulta';
+  let eventoDireccion: string | null = null;
 
   if (booking.evento_id) {
     const eventoResult = await sql`
-      SELECT nombre, duracion_minutos, modalidad FROM eventos WHERE id = ${booking.evento_id} LIMIT 1
+      SELECT nombre, duracion_minutos, modalidad, direccion FROM eventos WHERE id = ${booking.evento_id} LIMIT 1
     `;
     if (eventoResult.length > 0) {
       duracion = eventoResult[0].duracion_minutos || 30;
       modalidad = eventoResult[0].modalidad || 'virtual';
       eventoNombre = eventoResult[0].nombre || 'Consulta';
+      eventoDireccion = eventoResult[0].direccion || null;
     }
   }
 
@@ -192,6 +194,7 @@ export default async function handler(
       modalidad,
       meet_link: gcEvent?.meet_link || null,
       monto: booking.monto,
+      direccion: eventoDireccion,
     }).catch((e) => console.error('[Email] Error confirmación paciente:', e.message));
 
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
