@@ -76,6 +76,39 @@ export default function PanelClient({ client }: { client: Client }) {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [actionMsg, setActionMsg] = useState<{ id: string; msg: string; ok: boolean } | null>(null);
   const [confirmingCancel, setConfirmingCancel] = useState<string | null>(null);
+  const [paymentWindow, setPaymentWindow] = useState<number>(120);
+  const [savingWindow, setSavingWindow] = useState(false);
+  const [windowMsg, setWindowMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch('/api/panel/configuracion')
+      .then(r => r.json())
+      .then(d => { if (d.payment_window_minutes) setPaymentWindow(d.payment_window_minutes); })
+      .catch(() => {});
+  }, []);
+
+  const handleSaveWindow = async (val: number) => {
+    setSavingWindow(true);
+    setWindowMsg(null);
+    try {
+      const r = await fetch('/api/panel/configuracion', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ payment_window_minutes: val }),
+      });
+      if (r.ok) {
+        setPaymentWindow(val);
+        setWindowMsg('Guardado');
+        setTimeout(() => setWindowMsg(null), 2500);
+      } else {
+        setWindowMsg('Error al guardar');
+      }
+    } catch {
+      setWindowMsg('Error al guardar');
+    } finally {
+      setSavingWindow(false);
+    }
+  };
 
   const fetchBookings = useCallback(async () => {
     setLoadingBookings(true);
@@ -402,6 +435,34 @@ export default function PanelClient({ client }: { client: Client }) {
                   </div>
                 </Link>
 
+              </div>
+
+              {/* Control: ventana de pago */}
+              <div style={{ marginTop: '28px', background: '#fff', borderRadius: '12px', border: '1.5px solid #e2e8f0', padding: '20px' }}>
+                <p style={{ fontSize: '14px', fontWeight: 700, color: '#111827', margin: '0 0 4px' }}>
+                  Tiempo para pagar antes de liberar el turno
+                </p>
+                <p style={{ fontSize: '12px', color: '#6b7280', margin: '0 0 14px' }}>
+                  Pasado este tiempo sin comprobante, el turno se cancela solo y el horario queda libre para otros pacientes. Para señas por transferencia, 2 horas suele ser el mejor equilibrio.
+                </p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <select
+                    value={paymentWindow}
+                    disabled={savingWindow}
+                    onChange={e => handleSaveWindow(Number(e.target.value))}
+                    style={{ fontSize: '14px', padding: '8px 12px', borderRadius: '8px', border: '1.5px solid #e2e8f0', background: '#fff', color: '#111827', cursor: 'pointer' }}
+                  >
+                    <option value={30}>30 minutos</option>
+                    <option value={60}>1 hora</option>
+                    <option value={120}>2 horas (recomendado)</option>
+                    <option value={360}>6 horas</option>
+                    <option value={720}>12 horas</option>
+                    <option value={1440}>24 horas</option>
+                    <option value={2880}>48 horas</option>
+                  </select>
+                  {savingWindow && <span style={{ fontSize: '12px', color: '#6b7280' }}>Guardando...</span>}
+                  {windowMsg && <span style={{ fontSize: '12px', color: windowMsg === 'Guardado' ? '#059669' : '#dc2626' }}>{windowMsg}</span>}
+                </div>
               </div>
             </>
           )}

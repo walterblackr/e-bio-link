@@ -104,7 +104,10 @@ export default async function handler(
         FROM bookings
         WHERE evento_id = ${evento.id}
           AND DATE(fecha_hora AT TIME ZONE 'America/Argentina/Buenos_Aires') = ${dateStr}
-          AND estado NOT IN ('cancelled')
+          AND (
+            estado NOT IN ('cancelled', 'pending_payment')
+            OR (estado = 'pending_payment' AND (expires_at IS NULL OR expires_at > now()))
+          )
       `;
       const count = (bookingCount[0]?.count as number) || 0;
       if (count >= maxPorDia) {
@@ -176,11 +179,15 @@ export default async function handler(
 
     // 8. Filtrar slots ya reservados en la BD (pending o confirmados)
     // Previene doble-reserva durante el período de pago pendiente (sin GC event aún)
+    // Un pending_payment vencido (expires_at <= now) no ocupa lugar (liberación lazy)
     const existingBookings = await sql`
       SELECT fecha_hora
       FROM bookings
       WHERE client_id = ${client.id}
-        AND estado NOT IN ('cancelled')
+        AND (
+          estado NOT IN ('cancelled', 'pending_payment')
+          OR (estado = 'pending_payment' AND (expires_at IS NULL OR expires_at > now()))
+        )
         AND fecha_hora >= ${futurePotentialSlots[0].start}
         AND fecha_hora <= ${futurePotentialSlots[futurePotentialSlots.length - 1].start}
     `;

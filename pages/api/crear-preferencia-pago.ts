@@ -36,6 +36,7 @@ export default async function handler(
           b.fecha_hora,
           b.monto,
           b.estado,
+          b.expires_at,
           c.id as client_id,
           c.slug,
           c.nombre_completo,
@@ -57,6 +58,14 @@ export default async function handler(
       if (booking.estado !== 'pending_payment' && booking.estado !== 'pending') {
         return res.status(400).json({
           error: `El booking tiene estado '${booking.estado}', no se puede crear preferencia de pago`,
+        });
+      }
+
+      // Validar que la reserva no haya vencido antes de generar el init_point
+      if (booking.expires_at && new Date(booking.expires_at) <= new Date()) {
+        return res.status(410).json({
+          error: 'Tu reserva venció — podés reservar de nuevo',
+          slug: client_slug,
         });
       }
 

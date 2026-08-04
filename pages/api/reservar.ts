@@ -54,7 +54,8 @@ export default async function handler(
         banco_nombre,
         titular_cuenta,
         mp_access_token,
-        mp_user_id
+        mp_user_id,
+        payment_window_minutes
       FROM clients
       WHERE slug = ${client_slug}
         AND status = 'active'
@@ -91,7 +92,10 @@ export default async function handler(
         FROM bookings
         WHERE evento_id = ${evento.id}
           AND DATE(fecha_hora AT TIME ZONE 'America/Argentina/Buenos_Aires') = ${fechaDate}
-          AND estado NOT IN ('cancelled')
+          AND (
+            estado NOT IN ('cancelled', 'pending_payment')
+            OR (estado = 'pending_payment' AND (expires_at IS NULL OR expires_at > now()))
+          )
       `;
       const count = (bookingCount[0]?.count as number) || 0;
       if (count >= evento.max_por_dia) {
@@ -104,6 +108,13 @@ export default async function handler(
     // Calcular monto a cobrar al reservar (seña o total)
     const esSeña = evento.cobro_tipo === 'sena' && evento.sena_monto;
     const montoACobrar = esSeña ? Number(evento.sena_monto) : Number(evento.precio);
+
+    // Calcular deadline de pago: min(now + ventana, fecha_hora del turno)
+    const windowMin = Number(client.payment_window_minutes) || 120;
+    const expiresAt = new Date(Math.min(
+      Date.now() + windowMin * 60_000,
+      new Date(fecha_hora).getTime()
+    ));
 
     // 5. Crear booking en DB con estado 'pending_payment'
     // Nota: la verificación de disponibilidad en Google Calendar se omite aquí
@@ -119,7 +130,8 @@ export default async function handler(
         monto,
         estado,
         payment_method,
-        notas
+        notas,
+        expires_at
       )
       VALUES (
         ${client.id},
@@ -131,7 +143,8 @@ export default async function handler(
         ${montoACobrar},
         'pending_payment',
         ${client.payment_method || 'transfer'},
-        ${notas || null}
+        ${notas || null},
+        ${expiresAt.toISOString()}
       )
       RETURNING id
     `;

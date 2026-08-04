@@ -65,8 +65,10 @@ export default async function handler(
     const bookingResult = await sql`
       SELECT
         b.id, b.client_id, b.evento_id, b.paciente_nombre, b.paciente_email,
-        b.paciente_telefono, b.fecha_hora, b.monto, b.notas, b.estado
+        b.paciente_telefono, b.fecha_hora, b.monto, b.notas, b.estado, b.expires_at,
+        c.slug as client_slug
       FROM bookings b
+      JOIN clients c ON c.id = b.client_id
       WHERE b.id = ${booking_id}
       LIMIT 1
     `;
@@ -76,6 +78,20 @@ export default async function handler(
     }
 
     const booking = bookingResult[0];
+
+    // Validar que la reserva siga vigente (no vencida ni en otro estado)
+    if (booking.estado !== 'pending_payment') {
+      return res.status(410).json({
+        error: 'Esta reserva ya no está pendiente de pago',
+        slug: booking.client_slug,
+      });
+    }
+    if (booking.expires_at && new Date(booking.expires_at) <= new Date()) {
+      return res.status(410).json({
+        error: 'Tu reserva venció — podés reservar de nuevo',
+        slug: booking.client_slug,
+      });
+    }
 
     // Obtener datos del profesional
     const clientResult = await sql`

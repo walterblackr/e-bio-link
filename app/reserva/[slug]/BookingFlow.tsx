@@ -142,6 +142,9 @@ export default function BookingFlow({ medico, eventos }: BookingFlowProps) {
   const [comprobanteError, setComprobanteError] = useState("");
   const [aliasCopied, setAliasCopied] = useState(false);
 
+  // Reserva vencida (410 de upload-comprobante o crear-preferencia-pago)
+  const [reservaExpirada, setReservaExpirada] = useState(false);
+
   function handleCopyAlias(text: string) {
     navigator.clipboard.writeText(text).then(() => {
       setAliasCopied(true);
@@ -287,6 +290,11 @@ export default function BookingFlow({ medico, eventos }: BookingFlowProps) {
 
       const data = await res.json();
 
+      if (res.status === 410) {
+        setReservaExpirada(true);
+        return;
+      }
+
       if (!res.ok) {
         setMpError(data.error || "Error al generar el link de pago");
         return;
@@ -319,6 +327,11 @@ export default function BookingFlow({ medico, eventos }: BookingFlowProps) {
       });
 
       const data = await res.json();
+
+      if (res.status === 410) {
+        setReservaExpirada(true);
+        return;
+      }
 
       if (!res.ok) {
         setComprobanteError(data.error || "Error al subir el comprobante");
@@ -730,7 +743,26 @@ export default function BookingFlow({ medico, eventos }: BookingFlowProps) {
         {/* ─── STEP 4: Confirmación ───────────────────────────────────────── */}
         {step === 4 && bookingResult && selectedEvento && selectedSlot && (
           <div>
-            {bookingResult.payment_method === 'transfer' ? (
+            {/* Reserva expirada (respuesta 410 de upload-comprobante o crear-preferencia-pago) */}
+            {reservaExpirada ? (
+              <div className="text-center py-6">
+                <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-8 h-8 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <h2 className="text-lg font-bold text-gray-900 mb-2">Tu reserva venció</h2>
+                <p className="text-sm text-gray-500 mb-6">
+                  El plazo para completar el pago expiró y liberamos el horario. No se cobró nada.
+                </p>
+                <a
+                  href={`/biolink/${medico.slug}`}
+                  className="inline-block bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-6 rounded-xl transition-colors text-sm"
+                >
+                  Reservar de nuevo →
+                </a>
+              </div>
+            ) : bookingResult.payment_method === 'transfer' ? (
               /* ── Transfer flow: diseño mobile-first minimalista ── */
               <div>
                 {/* Header compacto */}

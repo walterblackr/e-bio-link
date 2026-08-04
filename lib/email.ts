@@ -410,3 +410,80 @@ export async function sendComprobanteNotification(data: ComprobanteNotifData): P
 
   console.log(`[Email] Notificación de comprobante enviada a ${data.medico_email}`);
 }
+
+// ── 5. Reserva expirada (aviso al paciente) ───────────────────────────────────
+
+interface ReservaExpiradaData {
+  paciente_nombre: string;
+  paciente_email: string;
+  medico_nombre: string;
+  fecha_hora: string; // ISO 8601
+  slug: string;       // para el link al biolink
+}
+
+export async function sendReservaExpirada(data: ReservaExpiradaData): Promise<void> {
+  if (!process.env.RESEND_API_KEY) {
+    console.warn('[Email] RESEND_API_KEY no configurada — email no enviado');
+    return;
+  }
+
+  const cuando = new Intl.DateTimeFormat('es-AR', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: 'America/Argentina/Buenos_Aires',
+  }).format(new Date(data.fecha_hora));
+
+  const biolink = `https://ebiolink.app/${data.slug}`;
+
+  const html = `
+    <!DOCTYPE html><html><head><style>${baseStyle()}
+    .cta { display:inline-block; background:#4f46e5; color:#ffffff !important; padding:14px 28px; border-radius:8px; font-weight:700; font-size:15px; text-decoration:none; margin:20px 0; }
+    .aviso { background:#fefce8; border:1px solid #fde047; border-radius:8px; padding:14px 18px; margin:20px 0; font-size:13px; color:#713f12; }
+    </style></head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h1>Tu reserva venció</h1>
+          <p>e-bio-link — Podés reservar de nuevo</p>
+        </div>
+        <div class="body">
+          <p style="margin:0 0 20px;font-size:15px;color:#374151;">
+            Hola <strong>${data.paciente_nombre}</strong>, venció el plazo para completar el pago de tu turno del
+            <strong>${cuando}</strong> con <strong>${data.medico_nombre}</strong>,
+            así que liberamos ese horario.
+          </p>
+
+          <div class="aviso">
+            <strong>Quedate tranquilo/a: no se cobró nada.</strong> El horario quedó libre para que vos u otro paciente lo pueda tomar.
+          </div>
+
+          <p style="font-size:15px;color:#374151;margin:0 0 8px;">
+            Si todavía querés atenderte, podés reservar de nuevo — ese mismo horario u otro — acá:
+          </p>
+
+          <div style="text-align:center;">
+            <a href="${biolink}" class="cta">Reservar de nuevo →</a>
+          </div>
+
+          <p style="margin:20px 0 0;font-size:13px;color:#6b7280;text-align:center;">
+            Ante cualquier duda, respondé este correo.
+          </p>
+        </div>
+        <div class="footer">e-bio-link · Este es un correo automático.</div>
+      </div>
+    </body></html>
+  `;
+
+  await resend.emails.send({
+    from: FROM,
+    to: data.paciente_email,
+    subject: `Tu reserva con ${data.medico_nombre} venció — podés reservar de nuevo`,
+    html,
+  });
+
+  console.log(`[Email] Aviso de expiración enviado a ${data.paciente_email}`);
+}

@@ -5,7 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Project Overview
 
 **e-bio-link** is a SaaS platform for healthcare professionals to manage appointments and payments. It provides:
-- Professional biolink pages (ebiolink.com/slug) with custom color themes and social links
+- Professional biolink pages (ebiolink.app/slug) with custom color themes and social links
 - Google Calendar integration for appointment scheduling and Google Meet creation
 - Mercado Pago integration for consultation payments (online + manual transfer)
 - Multi-step onboarding wizard for new clients (4 steps)
@@ -330,6 +330,10 @@ MP_REDIRECT_URI=https://your-domain.com/api/callback
 # Mercado Pago (for platform subscription payments)
 MP_ACCESS_TOKEN=
 
+# Token encryption (Google + Mercado Pago OAuth tokens)
+ENCRYPTION_KEY=   # 64 hex chars (32 bytes). Generate with: openssl rand -hex 32
+                 # REQUIRED: lib/encryption.ts throws if missing — tokens cannot be stored without it
+
 # Admin
 ADMIN_SECRET_KEY=   # Generate with: openssl rand -hex 32
 
@@ -339,7 +343,7 @@ CLOUDINARY_API_KEY=
 CLOUDINARY_API_SECRET=
 
 # App URL (used for magic links and redirects)
-NEXT_PUBLIC_APP_URL=https://ebiolink.com
+NEXT_PUBLIC_APP_URL=https://ebiolink.app
 ```
 
 ## Key Patterns
