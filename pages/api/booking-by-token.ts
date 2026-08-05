@@ -16,38 +16,43 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(400).json({ error: 'token requerido' });
   }
 
-  const rows = await sql`
-    SELECT
-      b.id,
-      b.public_token,
-      b.estado,
-      b.fecha_hora,
-      b.monto,
-      b.expires_at,
-      b.payment_method,
-      b.paciente_nombre,
-      e.nombre       AS evento_nombre,
-      e.modalidad,
-      e.direccion,
-      e.cobro_tipo,
-      e.sena_monto,
-      e.precio       AS precio_total,
-      c.slug,
-      c.nombre_completo,
-      c.cbu_alias,
-      c.banco_nombre,
-      c.titular_cuenta,
-      c.payment_window_minutes
-    FROM bookings b
-    JOIN clients c ON c.id = b.client_id
-    LEFT JOIN eventos e ON e.id = b.evento_id
-    WHERE b.public_token = ${token}
-    LIMIT 1
-  `;
+  try {
+    const rows = await sql`
+      SELECT
+        b.id,
+        b.public_token,
+        b.estado,
+        b.fecha_hora,
+        b.monto,
+        b.expires_at,
+        b.payment_method,
+        b.paciente_nombre,
+        e.nombre       AS evento_nombre,
+        e.modalidad,
+        e.direccion,
+        e.cobro_tipo,
+        e.sena_monto,
+        e.precio       AS precio_total,
+        c.slug,
+        c.nombre_completo,
+        c.cbu_alias,
+        c.banco_nombre,
+        c.titular_cuenta,
+        c.payment_window_minutes
+      FROM bookings b
+      JOIN clients c ON c.id = b.client_id
+      LEFT JOIN eventos e ON e.id = b.evento_id
+      WHERE b.public_token = ${token}
+      LIMIT 1
+    `;
 
-  if (rows.length === 0) {
-    return res.status(404).json({ error: 'Reserva no encontrada' });
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Reserva no encontrada' });
+    }
+
+    return res.status(200).json({ booking: rows[0] });
+  } catch (err: any) {
+    console.error('[booking-by-token] DB error:', err.message);
+    return res.status(500).json({ error: 'Error al consultar la reserva' });
   }
-
-  return res.status(200).json({ booking: rows[0] });
 }

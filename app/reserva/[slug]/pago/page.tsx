@@ -54,8 +54,10 @@ export default function PagoPage() {
   useEffect(() => {
     if (!token) { setError('Link inválido'); setLoading(false); return; }
     fetch(`/api/booking-by-token?token=${token}`)
-      .then(r => r.json())
-      .then(d => {
+      .then(async r => {
+        const d = await r.json();
+        if (r.status === 404) { setError('Reserva no encontrada'); return; }
+        if (!r.ok) { setError('Error al cargar la reserva'); return; }
         if (d.booking) setBooking(d.booking);
         else setError('Reserva no encontrada');
       })
