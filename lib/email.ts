@@ -137,6 +137,7 @@ export async function sendBookingConfirmation(data: BookingEmailData): Promise<v
   await resend.emails.send({
     from: FROM,
     to: data.paciente_email,
+    reply_to: process.env.EMAIL_REPLY_TO,
     subject: `Turno confirmado con ${data.medico_nombre} — ${new Date(data.fecha_hora).toLocaleDateString('es-AR')}`,
     html,
   });
@@ -225,6 +226,7 @@ export async function sendNewBookingNotification(data: ProfesionalNotifData): Pr
   await resend.emails.send({
     from: FROM,
     to: data.medico_email,
+    reply_to: process.env.EMAIL_REPLY_TO,
     subject: `Nuevo turno: ${data.paciente_nombre} — ${new Date(data.fecha_hora).toLocaleDateString('es-AR')}`,
     html,
   });
@@ -252,26 +254,22 @@ export async function sendBookingCancellation(data: BookingEmailData): Promise<v
         </div>
         <div class="body">
           <p style="margin:0 0 20px;font-size:15px;color:#374151;">
-            Hola <strong>${data.paciente_nombre}</strong>, tu turno fue cancelado.
+            Hola <strong>${data.paciente_nombre}</strong>, ${data.medico_nombre} no pudo confirmar tu turno del <strong>${fecha}</strong>.
+            Esto puede deberse a que el pago no se acreditó o a un imprevisto de agenda.
           </p>
 
-          <div class="field">
-            <div class="label">Profesional</div>
-            <div class="value">${data.medico_nombre}</div>
-          </div>
-
-          <div class="field">
-            <div class="label">Fecha y hora (cancelado)</div>
-            <div class="value" style="text-decoration:line-through;color:#9ca3af;">${fecha}</div>
+          <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:14px 18px;margin:16px 0;font-size:13px;color:#991b1b;">
+            <strong>¿Hiciste una transferencia?</strong> El pago y cualquier devolución se coordinan directamente con ${data.medico_nombre}.
+            e-bio-link no retiene ni gestiona los fondos — el dinero fue directo a la cuenta del profesional.
           </div>
 
           <hr class="divider" />
 
           <p style="margin:0;font-size:13px;color:#6b7280;">
-            Si tenés alguna consulta, comunicate directamente con tu profesional.
+            Respondé este correo o contactá directamente a ${data.medico_nombre} para reprogramar o coordinar la devolución.
           </p>
         </div>
-        <div class="footer">e-bio-link · Este es un correo automático, no respondas a este mensaje.</div>
+        <div class="footer">e-bio-link · Sistema de turnos online.</div>
       </div>
     </body></html>
   `;
@@ -279,7 +277,8 @@ export async function sendBookingCancellation(data: BookingEmailData): Promise<v
   await resend.emails.send({
     from: FROM,
     to: data.paciente_email,
-    subject: `Turno cancelado — ${data.medico_nombre}`,
+    reply_to: process.env.EMAIL_REPLY_TO,
+    subject: `Sobre tu turno con ${data.medico_nombre} — necesitamos reprogramar`,
     html,
   });
 
@@ -404,6 +403,7 @@ export async function sendComprobanteNotification(data: ComprobanteNotifData): P
   await resend.emails.send({
     from: FROM,
     to: data.medico_email,
+    reply_to: process.env.EMAIL_REPLY_TO,
     subject: `Nuevo comprobante: ${data.paciente_nombre} — ${new Date(data.fecha_hora).toLocaleDateString('es-AR')}`,
     html,
   });
@@ -481,9 +481,190 @@ export async function sendReservaExpirada(data: ReservaExpiradaData): Promise<vo
   await resend.emails.send({
     from: FROM,
     to: data.paciente_email,
+    reply_to: process.env.EMAIL_REPLY_TO,
     subject: `Tu reserva con ${data.medico_nombre} venció — podés reservar de nuevo`,
     html,
   });
 
   console.log(`[Email] Aviso de expiración enviado a ${data.paciente_email}`);
+}
+
+// ── 6. Instrucciones de pago al paciente (al crear la reserva, solo transfer) ──
+
+interface InstruccionesPagoData {
+  paciente_nombre: string;
+  paciente_email: string;
+  medico_nombre: string;
+  fecha_hora: string;
+  evento_nombre: string;
+  monto: number;
+  cobro_tipo: 'total' | 'sena';
+  precio_total?: number;
+  cbu_alias?: string | null;
+  banco_nombre?: string | null;
+  titular_cuenta?: string | null;
+  link_pago: string;          // /reserva/[slug]/pago?token=...
+  ventana_minutos: number;    // payment_window_minutes del profesional
+}
+
+export async function sendInstruccionesPago(data: InstruccionesPagoData): Promise<void> {
+  if (!process.env.RESEND_API_KEY) {
+    console.warn('[Email] RESEND_API_KEY no configurada — email no enviado');
+    return;
+  }
+
+  const fecha = formatFecha(data.fecha_hora);
+  const concepto = data.cobro_tipo === 'sena' ? 'la seña' : 'el pago del turno';
+
+  const ventanaTexto = data.ventana_minutos >= 60
+    ? `${data.ventana_minutos / 60} hora${data.ventana_minutos / 60 !== 1 ? 's' : ''}`
+    : `${data.ventana_minutos} minutos`;
+
+  const montoExtra = data.cobro_tipo === 'sena' && data.precio_total
+    ? `<p style="margin:4px 0 0;font-size:12px;color:#6b7280;">Total de la consulta: $${data.precio_total.toLocaleString('es-AR')} · El saldo se abona el día del turno.</p>`
+    : '';
+
+  const datosBancarios = (data.cbu_alias || data.banco_nombre || data.titular_cuenta) ? `
+    <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:16px 20px;margin:20px 0;">
+      <p style="margin:0 0 10px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#0369a1;">Datos para la transferencia</p>
+      ${data.cbu_alias ? `<p style="margin:0 0 6px;font-size:14px;color:#111827;"><strong>Alias / CBU:</strong> ${data.cbu_alias}</p>` : ''}
+      ${data.titular_cuenta ? `<p style="margin:0 0 6px;font-size:14px;color:#111827;"><strong>Titular:</strong> ${data.titular_cuenta}</p>` : ''}
+      ${data.banco_nombre ? `<p style="margin:0;font-size:14px;color:#111827;"><strong>Banco:</strong> ${data.banco_nombre}</p>` : ''}
+    </div>
+  ` : '';
+
+  const html = `
+    <!DOCTYPE html><html><head><style>${baseStyle()}
+    .cta { display:inline-block; background:#4f46e5; color:#ffffff !important; padding:14px 28px; border-radius:8px; font-weight:700; font-size:15px; text-decoration:none; margin:20px 0; }
+    .aviso { background:#fefce8; border:1px solid #fde047; border-radius:8px; padding:14px 18px; margin:20px 0; font-size:13px; color:#713f12; }
+    </style></head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h1>Turno reservado — completá el pago</h1>
+          <p>e-bio-link · ${data.medico_nombre}</p>
+        </div>
+        <div class="body">
+          <p style="margin:0 0 20px;font-size:15px;color:#374151;">
+            Hola <strong>${data.paciente_nombre}</strong>, tu turno quedó reservado. Para confirmarlo, transferí ${concepto} y subí el comprobante.
+          </p>
+
+          <div class="field">
+            <div class="label">Profesional</div>
+            <div class="value">${data.medico_nombre}</div>
+          </div>
+          <div class="field">
+            <div class="label">Consulta</div>
+            <div class="value">${data.evento_nombre}</div>
+          </div>
+          <div class="field">
+            <div class="label">Fecha y hora</div>
+            <div class="value">${fecha}</div>
+          </div>
+
+          <div class="amount">
+            $${data.monto.toLocaleString('es-AR')}
+            <div style="font-size:13px;font-weight:400;color:#15803d;margin-top:4px;">${data.cobro_tipo === 'sena' ? 'Seña' : 'Total'}</div>
+          </div>
+          ${montoExtra}
+
+          ${datosBancarios}
+
+          <div class="aviso">
+            <strong>Tenés ${ventanaTexto} para completar el pago.</strong> Pasado ese tiempo, el horario se libera para otros pacientes y tendrías que reservar de nuevo.
+          </div>
+
+          <p style="font-size:15px;color:#374151;margin:0 0 8px;">¿Ya transferiste? Subí tu comprobante acá:</p>
+          <div style="text-align:center;">
+            <a href="${data.link_pago}" class="cta">Subir comprobante →</a>
+          </div>
+
+          <p style="margin:20px 0 0;font-size:13px;color:#6b7280;text-align:center;">
+            Ante cualquier duda, respondé este correo.
+          </p>
+        </div>
+        <div class="footer">e-bio-link · Sistema de turnos online.</div>
+      </div>
+    </body></html>
+  `;
+
+  await resend.emails.send({
+    from: FROM,
+    to: data.paciente_email,
+    reply_to: process.env.EMAIL_REPLY_TO,
+    subject: `Turno reservado con ${data.medico_nombre} — completá el pago`,
+    html,
+  });
+
+  console.log(`[Email] Instrucciones de pago enviadas a ${data.paciente_email}`);
+}
+
+// ── 7. Acuse de comprobante al paciente ───────────────────────────────────────
+
+interface ComprobanteAcuseData {
+  paciente_nombre: string;
+  paciente_email: string;
+  medico_nombre: string;
+  fecha_hora: string;
+  modalidad?: 'virtual' | 'presencial';
+}
+
+export async function sendComprobanteAcuse(data: ComprobanteAcuseData): Promise<void> {
+  if (!process.env.RESEND_API_KEY) {
+    console.warn('[Email] RESEND_API_KEY no configurada — email no enviado');
+    return;
+  }
+
+  const fecha = formatFecha(data.fecha_hora);
+  const modalidadTexto = data.modalidad === 'presencial'
+    ? 'la dirección del consultorio'
+    : 'el link de videollamada';
+
+  const html = `
+    <!DOCTYPE html><html><head><style>${baseStyle()}
+    .check { display:inline-block; background:#dcfce7; color:#16a34a; border-radius:50%; width:40px; height:40px; line-height:40px; text-align:center; font-size:20px; font-weight:700; margin-bottom:16px; }
+    </style></head>
+    <body>
+      <div class="container">
+        <div class="header" style="background:#16a34a;">
+          <h1>Comprobante recibido ✓</h1>
+          <p>e-bio-link · ${data.medico_nombre}</p>
+        </div>
+        <div class="body">
+          <p style="margin:0 0 20px;font-size:15px;color:#374151;">
+            Hola <strong>${data.paciente_nombre}</strong>, recibimos tu comprobante de pago.
+          </p>
+
+          <div class="field">
+            <div class="label">Profesional</div>
+            <div class="value">${data.medico_nombre}</div>
+          </div>
+          <div class="field">
+            <div class="label">Turno</div>
+            <div class="value">${fecha}</div>
+          </div>
+
+          <hr class="divider" />
+
+          <p style="font-size:14px;color:#374151;margin:0 0 8px;">
+            <strong>${data.medico_nombre}</strong> valida el pago y confirma tu turno. Cuando esté confirmado, te llega un mail con ${modalidadTexto}.
+          </p>
+          <p style="font-size:13px;color:#6b7280;margin:0;">
+            Si surgiera algún inconveniente, ${data.medico_nombre} se comunica con vos para reprogramar.
+          </p>
+        </div>
+        <div class="footer">e-bio-link · Sistema de turnos online.</div>
+      </div>
+    </body></html>
+  `;
+
+  await resend.emails.send({
+    from: FROM,
+    to: data.paciente_email,
+    reply_to: process.env.EMAIL_REPLY_TO,
+    subject: `Comprobante recibido ✓ — Turno con ${data.medico_nombre}`,
+    html,
+  });
+
+  console.log(`[Email] Acuse de comprobante enviado a ${data.paciente_email}`);
 }

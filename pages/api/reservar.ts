@@ -4,6 +4,7 @@
 
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { neon } from '@neondatabase/serverless';
+import { sendInstruccionesPago } from '../../lib/email';
 
 export default async function handler(
   req: NextApiRequest,
@@ -146,10 +147,11 @@ export default async function handler(
         ${notas || null},
         ${expiresAt.toISOString()}
       )
-      RETURNING id
+      RETURNING id, public_token
     `;
 
     const bookingId = bookingResult[0].id;
+    const publicToken = bookingResult[0].public_token;
 
     // 6. Responder con booking_id y método de pago
 
@@ -158,6 +160,7 @@ export default async function handler(
     const response: any = {
       success: true,
       booking_id: bookingId,
+      public_token: publicToken,
       payment_method: paymentMethod,
       evento: {
         nombre: evento.nombre,
@@ -178,6 +181,27 @@ export default async function handler(
         titular_cuenta: client.titular_cuenta || null,
         monto: montoACobrar,
       };
+    }
+
+    // Enviar email con instrucciones de pago (solo transfer; MP tiene su propio flujo)
+    if (paymentMethod === 'transfer') {
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://ebiolink.app';
+      const linkPago = `${baseUrl}/reserva/${client_slug}/pago?token=${publicToken}`;
+      sendInstruccionesPago({
+        paciente_nombre,
+        paciente_email,
+        medico_nombre: client.nombre_completo,
+        fecha_hora,
+        evento_nombre: evento.nombre,
+        monto: montoACobrar,
+        cobro_tipo: evento.cobro_tipo || 'total',
+        precio_total: esSeña ? Number(evento.precio) : undefined,
+        cbu_alias: client.cbu_alias,
+        banco_nombre: client.banco_nombre,
+        titular_cuenta: client.titular_cuenta,
+        link_pago: linkPago,
+        ventana_minutos: windowMin,
+      }).catch((e) => console.error('[Email] Error instrucciones pago:', e.message));
     }
 
     return res.status(201).json(response);
