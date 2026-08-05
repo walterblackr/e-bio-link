@@ -10,6 +10,7 @@ interface BookingEmailData {
   paciente_nombre: string;
   paciente_email: string;
   medico_nombre: string;
+  medico_email?: string;          // reply-to cuando el mail va al paciente
   medico_especialidad?: string;
   fecha_hora: string; // ISO 8601
   evento_nombre?: string;
@@ -137,7 +138,7 @@ export async function sendBookingConfirmation(data: BookingEmailData): Promise<v
   await resend.emails.send({
     from: FROM,
     to: data.paciente_email,
-    reply_to: process.env.EMAIL_REPLY_TO,
+    reply_to: data.medico_email,
     subject: `Turno confirmado con ${data.medico_nombre} — ${new Date(data.fecha_hora).toLocaleDateString('es-AR')}`,
     html,
   });
@@ -226,7 +227,7 @@ export async function sendNewBookingNotification(data: ProfesionalNotifData): Pr
   await resend.emails.send({
     from: FROM,
     to: data.medico_email,
-    reply_to: process.env.EMAIL_REPLY_TO,
+    reply_to: data.paciente_email,
     subject: `Nuevo turno: ${data.paciente_nombre} — ${new Date(data.fecha_hora).toLocaleDateString('es-AR')}`,
     html,
   });
@@ -277,7 +278,7 @@ export async function sendBookingCancellation(data: BookingEmailData): Promise<v
   await resend.emails.send({
     from: FROM,
     to: data.paciente_email,
-    reply_to: process.env.EMAIL_REPLY_TO,
+    reply_to: data.medico_email,
     subject: `Sobre tu turno con ${data.medico_nombre} — necesitamos reprogramar`,
     html,
   });
@@ -403,7 +404,7 @@ export async function sendComprobanteNotification(data: ComprobanteNotifData): P
   await resend.emails.send({
     from: FROM,
     to: data.medico_email,
-    reply_to: process.env.EMAIL_REPLY_TO,
+    reply_to: data.paciente_email,
     subject: `Nuevo comprobante: ${data.paciente_nombre} — ${new Date(data.fecha_hora).toLocaleDateString('es-AR')}`,
     html,
   });
@@ -417,6 +418,7 @@ interface ReservaExpiradaData {
   paciente_nombre: string;
   paciente_email: string;
   medico_nombre: string;
+  medico_email?: string;
   fecha_hora: string; // ISO 8601
   slug: string;       // para el link al biolink
 }
@@ -481,7 +483,7 @@ export async function sendReservaExpirada(data: ReservaExpiradaData): Promise<vo
   await resend.emails.send({
     from: FROM,
     to: data.paciente_email,
-    reply_to: process.env.EMAIL_REPLY_TO,
+    reply_to: data.medico_email,
     subject: `Tu reserva con ${data.medico_nombre} venció — podés reservar de nuevo`,
     html,
   });
@@ -495,6 +497,7 @@ interface InstruccionesPagoData {
   paciente_nombre: string;
   paciente_email: string;
   medico_nombre: string;
+  medico_email?: string;
   fecha_hora: string;
   evento_nombre: string;
   monto: number;
@@ -591,7 +594,7 @@ export async function sendInstruccionesPago(data: InstruccionesPagoData): Promis
   await resend.emails.send({
     from: FROM,
     to: data.paciente_email,
-    reply_to: process.env.EMAIL_REPLY_TO,
+    reply_to: data.medico_email,
     subject: `Turno reservado con ${data.medico_nombre} — completá el pago`,
     html,
   });
@@ -605,6 +608,7 @@ interface ComprobanteAcuseData {
   paciente_nombre: string;
   paciente_email: string;
   medico_nombre: string;
+  medico_email?: string;
   fecha_hora: string;
   modalidad?: 'virtual' | 'presencial';
 }
@@ -661,7 +665,7 @@ export async function sendComprobanteAcuse(data: ComprobanteAcuseData): Promise<
   await resend.emails.send({
     from: FROM,
     to: data.paciente_email,
-    reply_to: process.env.EMAIL_REPLY_TO,
+    reply_to: data.medico_email,
     subject: `Comprobante recibido ✓ — Turno con ${data.medico_nombre}`,
     html,
   });

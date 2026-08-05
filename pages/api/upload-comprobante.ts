@@ -162,6 +162,7 @@ export default async function handler(
         paciente_nombre: booking.paciente_nombre,
         paciente_email: booking.paciente_email,
         medico_nombre: clientInfo.nombre_completo || '',
+        medico_email: clientInfo.email || undefined,
         fecha_hora: booking.fecha_hora,
         modalidad: eventoModalidad,
       }).catch((e) => console.error('[Email] Error acuse comprobante:', e.message));

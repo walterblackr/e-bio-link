@@ -30,7 +30,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       b.paciente_email,
       b.fecha_hora,
       c.slug,
-      c.nombre_completo
+      c.nombre_completo,
+      c.email AS medico_email
   `;
 
   const ahora = new Date();
@@ -46,6 +47,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         paciente_email: r.paciente_email,
         fecha_hora: r.fecha_hora,
         medico_nombre: r.nombre_completo,
+        medico_email: r.medico_email || undefined,
         slug: r.slug,
       });
       enviados++;

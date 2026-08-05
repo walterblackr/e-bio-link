@@ -49,6 +49,7 @@ export default async function handler(
       SELECT
         id,
         nombre_completo,
+        email,
         slug,
         payment_method,
         cbu_alias,
@@ -191,6 +192,7 @@ export default async function handler(
         paciente_nombre,
         paciente_email,
         medico_nombre: client.nombre_completo,
+        medico_email: client.email || undefined,
         fecha_hora,
         evento_nombre: evento.nombre,
         monto: montoACobrar,

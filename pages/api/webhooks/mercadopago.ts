@@ -269,6 +269,7 @@ export default async function handler(
               paciente_nombre: bookingMatch.paciente_nombre,
               paciente_email: bookingMatch.paciente_email,
               medico_nombre: clientData.nombre_completo,
+              medico_email: clientData.email || undefined,
               medico_especialidad: clientData.especialidad || undefined,
               fecha_hora: bookingMatch.fecha_hora,
               evento_nombre: eventoNombre,
@@ -339,6 +340,7 @@ export default async function handler(
             paciente_nombre: bookingMatch.paciente_nombre,
             paciente_email: bookingMatch.paciente_email,
             medico_nombre: clientData.nombre_completo,
+            medico_email: clientData.email || undefined,
             fecha_hora: bookingMatch.fecha_hora,
           }).catch((e) => console.error('[Email] Error cancelación:', e.message));
         } else if (clientData.cal_api_key && bookingMatch.cal_booking_id) {

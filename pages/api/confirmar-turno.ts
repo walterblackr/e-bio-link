@@ -97,6 +97,7 @@ export default async function handler(
         paciente_nombre: booking.paciente_nombre,
         paciente_email: booking.paciente_email,
         medico_nombre: clientInfo?.nombre_completo || '',
+        medico_email: clientInfo?.email || undefined,
         fecha_hora: booking.fecha_hora,
       }).catch((e) => console.error('[Email] Error cancelación:', e.message));
 
@@ -118,6 +119,7 @@ export default async function handler(
         paciente_nombre: booking.paciente_nombre,
         paciente_email: booking.paciente_email,
         medico_nombre: clientInfo?.nombre_completo || '',
+        medico_email: clientInfo?.email || undefined,
         medico_especialidad: clientInfo?.especialidad || undefined,
         fecha_hora: booking.fecha_hora,
         meet_link: booking.meet_link || null,
@@ -205,6 +207,7 @@ export default async function handler(
       paciente_nombre: booking.paciente_nombre,
       paciente_email: booking.paciente_email,
       medico_nombre: clientInfo?.nombre_completo || '',
+      medico_email: clientInfo?.email || undefined,
       medico_especialidad: clientInfo?.especialidad || undefined,
       fecha_hora: booking.fecha_hora,
       evento_nombre: eventoNombre,
