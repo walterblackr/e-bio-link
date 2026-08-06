@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { ArrowLeft, Clock, Video, MapPin, ChevronLeft, ChevronRight, Check } from "lucide-react";
 import { useRouter } from "next/navigation";
+import ComprobanteUploader from "@/app/components/ComprobanteUploader";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -136,7 +137,6 @@ export default function BookingFlow({ medico, eventos }: BookingFlowProps) {
   const [mpError, setMpError] = useState("");
 
   // Step 4 - Comprobante de transferencia
-  const [comprobanteFile, setComprobanteFile] = useState<File | null>(null);
   const [comprobanteUploading, setComprobanteUploading] = useState(false);
   const [comprobanteDone, setComprobanteDone] = useState(false);
   const [comprobanteError, setComprobanteError] = useState("");
@@ -311,14 +311,14 @@ export default function BookingFlow({ medico, eventos }: BookingFlowProps) {
 
   // ── Subir comprobante de transferencia ────────────────────────────────────
 
-  async function handleUploadComprobante() {
-    if (!comprobanteFile || !bookingResult?.booking_id) return;
+  async function handleUploadComprobante(file: File) {
+    if (!bookingResult?.booking_id) return;
     setComprobanteUploading(true);
     setComprobanteError("");
 
     try {
       const formData = new FormData();
-      formData.append("file", comprobanteFile);
+      formData.append("file", file);
       formData.append("booking_id", bookingResult.booking_id.toString());
 
       const res = await fetch("/api/upload-comprobante", {
@@ -803,7 +803,12 @@ export default function BookingFlow({ medico, eventos }: BookingFlowProps) {
                     {/* Paso 1: Transferir */}
                     {bookingResult.transfer_data && (
                       <div>
-                        <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">1 · Transferí</p>
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="w-6 h-6 bg-indigo-600 rounded-full flex items-center justify-center flex-shrink-0">
+                            <span className="text-white text-xs font-bold">1</span>
+                          </div>
+                          <p className="text-sm font-bold text-gray-900">Transferí</p>
+                        </div>
                         <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-2 text-sm">
                           {bookingResult.transfer_data.titular_cuenta && (
                             <div className="flex justify-between gap-2">
@@ -848,43 +853,17 @@ export default function BookingFlow({ medico, eventos }: BookingFlowProps) {
 
                     {/* Paso 2: Comprobante */}
                     <div>
-                      <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">2 · Subí el comprobante</p>
-                      <div className="space-y-3">
-                        <label className="block">
-                          <div className={`border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-colors ${
-                            comprobanteFile ? "border-indigo-400 bg-indigo-50" : "border-gray-300 hover:border-indigo-400"
-                          }`}>
-                            <input
-                              type="file"
-                              accept="image/*,.pdf"
-                              className="hidden"
-                              onChange={e => setComprobanteFile(e.target.files?.[0] || null)}
-                            />
-                            {comprobanteFile ? (
-                              <p className="text-sm text-indigo-700 font-medium truncate">{comprobanteFile.name}</p>
-                            ) : (
-                              <p className="text-sm text-gray-500">Tocá para seleccionar foto o PDF</p>
-                            )}
-                          </div>
-                        </label>
-                        {comprobanteError && (
-                          <p className="text-xs text-red-500">{comprobanteError}</p>
-                        )}
-                        <button
-                          onClick={handleUploadComprobante}
-                          disabled={!comprobanteFile || comprobanteUploading}
-                          className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 disabled:cursor-not-allowed text-white font-semibold py-3 px-4 rounded-xl transition-colors text-sm flex items-center justify-center gap-2"
-                        >
-                          {comprobanteUploading ? (
-                            <>
-                              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                              Subiendo...
-                            </>
-                          ) : (
-                            "Enviar comprobante →"
-                          )}
-                        </button>
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className="w-6 h-6 bg-indigo-600 rounded-full flex items-center justify-center flex-shrink-0">
+                          <span className="text-white text-xs font-bold">2</span>
+                        </div>
+                        <p className="text-sm font-bold text-gray-900">Subí el comprobante</p>
                       </div>
+                      <ComprobanteUploader
+                        onSubmit={handleUploadComprobante}
+                        uploading={comprobanteUploading}
+                        error={comprobanteError}
+                      />
                     </div>
                   </div>
                 )}

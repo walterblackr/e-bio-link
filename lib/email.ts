@@ -538,7 +538,10 @@ export async function sendInstruccionesPago(data: InstruccionesPagoData): Promis
 
   const html = `
     <!DOCTYPE html><html><head><style>${baseStyle()}
-    .cta { display:inline-block; background:#4f46e5; color:#ffffff !important; padding:14px 28px; border-radius:8px; font-weight:700; font-size:15px; text-decoration:none; margin:20px 0; }
+    .paso-titulo { display:flex; align-items:center; gap:10px; margin:24px 0 12px; }
+    .paso-num { display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; background:#4f46e5; color:#fff; border-radius:50%; font-weight:700; font-size:13px; flex-shrink:0; }
+    .paso-label { font-size:15px; font-weight:700; color:#111827; }
+    .cta-block { display:block; background:#4f46e5; color:#ffffff !important; padding:16px 24px; border-radius:10px; font-weight:700; font-size:16px; text-decoration:none; text-align:center; margin:16px 0 8px; }
     .aviso { background:#fefce8; border:1px solid #fde047; border-radius:8px; padding:14px 18px; margin:20px 0; font-size:13px; color:#713f12; }
     </style></head>
     <body>
@@ -549,7 +552,7 @@ export async function sendInstruccionesPago(data: InstruccionesPagoData): Promis
         </div>
         <div class="body">
           <p style="margin:0 0 20px;font-size:15px;color:#374151;">
-            Hola <strong>${data.paciente_nombre}</strong>, tu turno quedó reservado. Para confirmarlo, transferí ${concepto} y subí el comprobante.
+            Hola <strong>${data.paciente_nombre}</strong>, tu turno quedó reservado. Para confirmarlo seguí estos 2 pasos:
           </p>
 
           <div class="field">
@@ -571,16 +574,22 @@ export async function sendInstruccionesPago(data: InstruccionesPagoData): Promis
           </div>
           ${montoExtra}
 
-          ${datosBancarios}
-
           <div class="aviso">
             <strong>Tenés ${ventanaTexto} para completar el pago.</strong> Pasado ese tiempo, el horario se libera para otros pacientes y tendrías que reservar de nuevo.
           </div>
 
-          <p style="font-size:15px;color:#374151;margin:0 0 8px;">¿Ya transferiste? Subí tu comprobante acá:</p>
-          <div style="text-align:center;">
-            <a href="${data.link_pago}" class="cta">Subir comprobante →</a>
+          <div class="paso-titulo">
+            <span class="paso-num">1</span>
+            <span class="paso-label">Transferí</span>
           </div>
+          ${datosBancarios}
+
+          <div class="paso-titulo">
+            <span class="paso-num">2</span>
+            <span class="paso-label">Subí el comprobante</span>
+          </div>
+          <a href="${data.link_pago}" class="cta-block">Subir mi comprobante →</a>
+          <p style="font-size:11px;color:#9ca3af;margin:0 0 20px;word-break:break-all;">${data.link_pago}</p>
 
           <p style="margin:20px 0 0;font-size:13px;color:#6b7280;text-align:center;">
             Ante cualquier duda, respondé este correo.

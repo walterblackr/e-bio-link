@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { useSearchParams, useParams } from 'next/navigation';
+import ComprobanteUploader from '@/app/components/ComprobanteUploader';
 
 interface BookingData {
   id: number;
@@ -44,12 +45,10 @@ export default function PagoPage() {
   const [error, setError] = useState('');
 
   // Upload state
-  const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadDone, setUploadDone] = useState(false);
   const [uploadError, setUploadError] = useState('');
   const [aliasCopied, setAliasCopied] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!token) { setError('Link inválido'); setLoading(false); return; }
@@ -65,8 +64,8 @@ export default function PagoPage() {
       .finally(() => setLoading(false));
   }, [token]);
 
-  const handleUpload = async () => {
-    if (!file || !booking) return;
+  const handleUpload = async (file: File) => {
+    if (!booking) return;
     setUploading(true);
     setUploadError('');
     const fd = new FormData();
@@ -217,81 +216,59 @@ export default function PagoPage() {
               )}
             </div>
 
-            {/* Datos bancarios */}
+            {/* Paso 1: Datos bancarios */}
             {(booking.cbu_alias || booking.banco_nombre || booking.titular_cuenta) && (
-              <div className="bg-blue-50 rounded-xl p-4 space-y-2">
-                <p className="text-xs font-bold text-blue-700 uppercase tracking-wide">Datos para transferir</p>
-                {booking.cbu_alias && (
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-xs text-gray-400">Alias / CBU</p>
-                      <p className="text-sm font-semibold text-gray-900 font-mono">{booking.cbu_alias}</p>
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-6 h-6 bg-indigo-600 rounded-full flex items-center justify-center flex-shrink-0">
+                    <span className="text-white text-xs font-bold">1</span>
+                  </div>
+                  <p className="text-sm font-bold text-gray-900">Transferí</p>
+                </div>
+                <div className="bg-blue-50 rounded-xl p-4 space-y-2">
+                  {booking.cbu_alias && (
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-xs text-gray-400">Alias / CBU</p>
+                        <p className="text-sm font-semibold text-gray-900 font-mono">{booking.cbu_alias}</p>
+                      </div>
+                      <button
+                        onClick={() => copyAlias(booking.cbu_alias!)}
+                        className="text-xs text-indigo-600 font-semibold ml-3 shrink-0 px-2 py-1 rounded-md bg-blue-100 hover:bg-blue-200 transition-colors"
+                      >
+                        {aliasCopied ? '¡Copiado!' : 'Copiar'}
+                      </button>
                     </div>
-                    <button
-                      onClick={() => copyAlias(booking.cbu_alias!)}
-                      className="text-xs text-indigo-600 font-semibold ml-3 shrink-0"
-                    >
-                      {aliasCopied ? '¡Copiado!' : 'Copiar'}
-                    </button>
-                  </div>
-                )}
-                {booking.titular_cuenta && (
-                  <div>
-                    <p className="text-xs text-gray-400">Titular</p>
-                    <p className="text-sm text-gray-900">{booking.titular_cuenta}</p>
-                  </div>
-                )}
-                {booking.banco_nombre && (
-                  <div>
-                    <p className="text-xs text-gray-400">Banco</p>
-                    <p className="text-sm text-gray-900">{booking.banco_nombre}</p>
-                  </div>
-                )}
+                  )}
+                  {booking.titular_cuenta && (
+                    <div>
+                      <p className="text-xs text-gray-400">Titular</p>
+                      <p className="text-sm text-gray-900">{booking.titular_cuenta}</p>
+                    </div>
+                  )}
+                  {booking.banco_nombre && (
+                    <div>
+                      <p className="text-xs text-gray-400">Banco</p>
+                      <p className="text-sm text-gray-900">{booking.banco_nombre}</p>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
-            {/* Uploader */}
+            {/* Paso 2: Uploader */}
             <div>
-              <p className="text-sm font-semibold text-gray-800 mb-2">Subí el comprobante</p>
-              <div
-                onClick={() => fileInputRef.current?.click()}
-                className={`border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-colors ${
-                  file ? 'border-green-400 bg-green-50' : 'border-gray-200 hover:border-indigo-300'
-                }`}
-              >
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*,.pdf"
-                  className="hidden"
-                  onChange={e => setFile(e.target.files?.[0] || null)}
-                />
-                {file ? (
-                  <p className="text-sm text-green-700 font-medium">{file.name}</p>
-                ) : (
-                  <>
-                    <p className="text-sm text-gray-500">Tocá para seleccionar</p>
-                    <p className="text-xs text-gray-400 mt-1">Imagen o PDF · máx 10 MB</p>
-                  </>
-                )}
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-6 h-6 bg-indigo-600 rounded-full flex items-center justify-center flex-shrink-0">
+                  <span className="text-white text-xs font-bold">2</span>
+                </div>
+                <p className="text-sm font-bold text-gray-900">Subí el comprobante</p>
               </div>
-
-              {uploadError && (
-                <p className="text-xs text-red-500 mt-2">{uploadError}</p>
-              )}
-
-              <button
-                onClick={handleUpload}
-                disabled={!file || uploading}
-                className="w-full mt-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl text-sm transition-colors flex items-center justify-center gap-2"
-              >
-                {uploading ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    Subiendo...
-                  </>
-                ) : 'Enviar comprobante →'}
-              </button>
+              <ComprobanteUploader
+                onSubmit={handleUpload}
+                uploading={uploading}
+                error={uploadError}
+              />
             </div>
 
             {/* Aviso plazo */}
