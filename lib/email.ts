@@ -538,9 +538,6 @@ export async function sendInstruccionesPago(data: InstruccionesPagoData): Promis
 
   const html = `
     <!DOCTYPE html><html><head><style>${baseStyle()}
-    .paso-titulo { display:flex; align-items:center; gap:10px; margin:24px 0 12px; }
-    .paso-num { display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; background:#4f46e5; color:#fff; border-radius:50%; font-weight:700; font-size:13px; flex-shrink:0; }
-    .paso-label { font-size:15px; font-weight:700; color:#111827; }
     .cta-block { display:block; background:#4f46e5; color:#ffffff !important; padding:16px 24px; border-radius:10px; font-weight:700; font-size:16px; text-decoration:none; text-align:center; margin:16px 0 8px; }
     .aviso { background:#fefce8; border:1px solid #fde047; border-radius:8px; padding:14px 18px; margin:20px 0; font-size:13px; color:#713f12; }
     </style></head>
@@ -578,18 +575,34 @@ export async function sendInstruccionesPago(data: InstruccionesPagoData): Promis
             <strong>Tenés ${ventanaTexto} para completar el pago.</strong> Pasado ese tiempo, el horario se libera para otros pacientes y tendrías que reservar de nuevo.
           </div>
 
-          <div class="paso-titulo">
-            <span class="paso-num">1</span>
-            <span class="paso-label">Transferí</span>
-          </div>
+          <!-- Paso 1 -->
+          <table width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0 12px;">
+            <tr>
+              <td width="32" valign="middle">
+                <table cellpadding="0" cellspacing="0"><tr><td width="26" height="26" bgcolor="#4f46e5" style="border-radius:13px;text-align:center;vertical-align:middle;">
+                  <span style="color:#fff;font-weight:700;font-size:13px;line-height:26px;">1</span>
+                </td></tr></table>
+              </td>
+              <td valign="middle" style="font-size:15px;font-weight:700;color:#111827;padding-left:8px;">Transferí</td>
+            </tr>
+          </table>
           ${datosBancarios}
 
-          <div class="paso-titulo">
-            <span class="paso-num">2</span>
-            <span class="paso-label">Subí el comprobante</span>
-          </div>
+          <!-- Paso 2 -->
+          <table width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0 12px;">
+            <tr>
+              <td width="32" valign="middle">
+                <table cellpadding="0" cellspacing="0"><tr><td width="26" height="26" bgcolor="#4f46e5" style="border-radius:13px;text-align:center;vertical-align:middle;">
+                  <span style="color:#fff;font-weight:700;font-size:13px;line-height:26px;">2</span>
+                </td></tr></table>
+              </td>
+              <td valign="middle" style="font-size:15px;font-weight:700;color:#111827;padding-left:8px;">Subí el comprobante</td>
+            </tr>
+          </table>
           <a href="${data.link_pago}" class="cta-block">Subir mi comprobante →</a>
-          <p style="font-size:11px;color:#9ca3af;margin:0 0 20px;word-break:break-all;">${data.link_pago}</p>
+          <p style="font-size:12px;color:#9ca3af;text-align:center;margin:4px 0 20px;">
+            ¿El botón no funciona? <a href="${data.link_pago}" style="color:#9ca3af;">Hacé clic aquí</a>
+          </p>
 
           <p style="margin:20px 0 0;font-size:13px;color:#6b7280;text-align:center;">
             Ante cualquier duda, respondé este correo.
