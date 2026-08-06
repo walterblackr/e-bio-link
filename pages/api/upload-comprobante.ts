@@ -157,8 +157,8 @@ export default async function handler(
 
     // Enviar email al médico con los botones confirmar/rechazar
     if (clientInfo?.email) {
-      // Acuse al paciente confirmando que recibimos el comprobante
-      sendComprobanteAcuse({
+      // Acuse al paciente confirmando que recibimos el comprobante (awaited — Vercel mata fire-and-forget)
+      await sendComprobanteAcuse({
         paciente_nombre: booking.paciente_nombre,
         paciente_email: booking.paciente_email,
         medico_nombre: clientInfo.nombre_completo || '',

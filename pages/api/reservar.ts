@@ -185,10 +185,12 @@ export default async function handler(
     }
 
     // Enviar email con instrucciones de pago (solo transfer; MP tiene su propio flujo)
+    // IMPORTANTE: se awaita antes de responder — en Vercel el proceso muere al enviar la respuesta
+    // y las promesas fire-and-forget nunca completan su request HTTP a Resend.
     if (paymentMethod === 'transfer') {
       const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://ebiolink.app';
       const linkPago = `${baseUrl}/reserva/${client_slug}/pago?token=${publicToken}`;
-      sendInstruccionesPago({
+      await sendInstruccionesPago({
         paciente_nombre,
         paciente_email,
         medico_nombre: client.nombre_completo,
