@@ -88,7 +88,7 @@ export async function sendBookingConfirmation(data: BookingEmailData): Promise<v
       <div class="container">
         <div class="header">
           <h1>Turno confirmado ✓</h1>
-          <p>e-bio-link — Tu turno está reservado</p>
+          <p>e-bio-link — Tu turno está confirmado</p>
         </div>
         <div class="body">
           <p style="margin:0 0 20px;font-size:15px;color:#374151;">

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { ArrowLeft, Clock, Video, MapPin, ChevronLeft, ChevronRight, Check } from "lucide-react";
+import { ArrowLeft, Clock, Video, MapPin, ChevronLeft, ChevronRight, Check, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import ComprobanteUploader from "@/app/components/ComprobanteUploader";
 
@@ -117,6 +117,7 @@ export default function BookingFlow({ medico, eventos }: BookingFlowProps) {
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [slotError, setSlotError] = useState("");
   const [selectedSlot, setSelectedSlot] = useState<Slot | null>(null);
+  const [slotModalOpen, setSlotModalOpen] = useState(false);
 
   // Step 3
   const [form, setForm] = useState({
@@ -188,6 +189,11 @@ export default function BookingFlow({ medico, eventos }: BookingFlowProps) {
       fetchSlots(selectedDate);
     }
   }, [selectedDate, fetchSlots, step]);
+
+  useEffect(() => {
+    document.body.style.overflow = slotModalOpen ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [slotModalOpen]);
 
   // ── Calendar helpers ──────────────────────────────────────────────────────
 
@@ -509,8 +515,8 @@ export default function BookingFlow({ medico, eventos }: BookingFlowProps) {
               </div>
             </div>
 
-            <h2 className="text-lg font-bold text-gray-900 mb-1">Elegí el día</h2>
-            <p className="text-sm text-gray-500 mb-4">Seleccioná una fecha disponible</p>
+            <h2 className="text-lg font-bold text-gray-900 mb-1">Elegí el día y la hora</h2>
+            <p className="text-sm text-gray-500 mb-4">Tocá un día para ver los horarios disponibles</p>
 
             {/* Calendar */}
             <div className="bg-white rounded-xl border border-gray-200 p-4 mb-4">
@@ -561,7 +567,7 @@ export default function BookingFlow({ medico, eventos }: BookingFlowProps) {
                   return (
                     <button
                       key={day}
-                      onClick={() => !isDisabled && setSelectedDate(dateStr)}
+                      onClick={() => { if (!isDisabled) { setSelectedDate(dateStr); setSelectedSlot(null); setSlotModalOpen(true); } }}
                       disabled={isDisabled}
                       className={`
                         aspect-square rounded-lg text-sm font-medium transition-all
@@ -580,35 +586,96 @@ export default function BookingFlow({ medico, eventos }: BookingFlowProps) {
               </div>
             </div>
 
-            {/* Slots */}
-            {selectedDate && (
-              <div>
-                <p className="text-sm font-semibold text-gray-700 mb-3">
-                  Horarios para {formatFechaLarga(selectedDate)}
-                </p>
+            {/* Chip resumen: visible solo cuando ya hay slot elegido (al volver del paso 3) */}
+            {selectedSlot && selectedDate && (
+              <div className="mt-4 flex items-center justify-between bg-indigo-50 border border-indigo-200 rounded-xl px-4 py-3">
+                <div className="flex items-center gap-2">
+                  <Check className="w-4 h-4 text-indigo-600 flex-shrink-0" />
+                  <p className="text-sm font-semibold text-indigo-900">
+                    {formatFechaLarga(selectedDate)} · {selectedSlot.label} hs
+                  </p>
+                </div>
+                <button
+                  onClick={() => setSlotModalOpen(true)}
+                  className="text-xs text-indigo-600 hover:text-indigo-800 font-semibold underline flex-shrink-0 ml-3"
+                >
+                  Cambiar
+                </button>
+              </div>
+            )}
 
+            {/* Continue button — solo visible al volver del paso 3 con slot ya elegido */}
+            {selectedSlot && (
+              <div className="mt-6">
+                <button
+                  onClick={() => setStep(3)}
+                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-6 rounded-xl transition-colors"
+                >
+                  Continuar →
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ─── MODAL: Selección de horario (bottom sheet / centrado en desktop) ─ */}
+        {step === 2 && slotModalOpen && selectedDate && (
+          <>
+            {/* Overlay */}
+            <div
+              className="fixed inset-0 bg-black/40 z-50"
+              onClick={() => setSlotModalOpen(false)}
+            />
+
+            {/* Panel */}
+            <div className="fixed bottom-0 inset-x-0 z-50 flex flex-col rounded-t-2xl bg-white max-h-[75vh] sm:inset-x-auto sm:bottom-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-2xl sm:w-full sm:max-w-sm">
+              {/* Handle móvil */}
+              <div className="flex justify-center pt-3 pb-1 sm:hidden">
+                <div className="w-10 h-1 bg-gray-300 rounded-full" />
+              </div>
+
+              {/* Header */}
+              <div className="flex items-start justify-between px-5 py-4 border-b border-gray-100 flex-shrink-0">
+                <div>
+                  <p className="font-bold text-gray-900 text-base capitalize">
+                    {formatFechaLarga(selectedDate)}
+                  </p>
+                  <p className="text-sm text-gray-500 mt-0.5">Elegí un horario</p>
+                </div>
+                <button
+                  onClick={() => setSlotModalOpen(false)}
+                  className="p-1.5 rounded-full hover:bg-gray-100 transition text-gray-500 flex-shrink-0 ml-3"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Slots */}
+              <div className="overflow-y-auto px-5 py-4 flex-1">
                 {loadingSlots ? (
-                  <div className="text-center py-6">
-                    <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600" />
-                    <p className="text-sm text-gray-500 mt-2">Buscando disponibilidad...</p>
+                  <div className="text-center py-10">
+                    <div className="inline-block animate-spin rounded-full h-7 w-7 border-b-2 border-indigo-600" />
+                    <p className="text-sm text-gray-500 mt-3">Buscando disponibilidad...</p>
                   </div>
                 ) : slotError ? (
-                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                  <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
                     <p className="text-sm text-amber-700">{slotError}</p>
                   </div>
+                ) : slots.length === 0 ? (
+                  <div className="text-center py-10">
+                    <p className="text-sm text-gray-500">No hay horarios disponibles para este día.</p>
+                  </div>
                 ) : (
-                  <div className="grid grid-cols-4 gap-2">
+                  <div className="grid grid-cols-3 gap-2 pb-2">
                     {slots.map((slot) => (
                       <button
                         key={slot.start}
-                        onClick={() => setSelectedSlot(slot)}
-                        className={`
-                          py-2 px-1 rounded-lg text-sm font-medium border-2 transition-all
-                          ${selectedSlot?.start === slot.start
-                            ? "border-indigo-600 bg-indigo-600 text-white shadow-sm"
-                            : "border-gray-200 bg-white text-gray-700 hover:border-indigo-400"
-                          }
-                        `}
+                        onClick={() => {
+                          setSelectedSlot(slot);
+                          setSlotModalOpen(false);
+                          setStep(3);
+                        }}
+                        className="py-3 px-2 rounded-xl text-sm font-semibold border-2 border-gray-200 bg-white text-gray-800 hover:border-indigo-500 hover:bg-indigo-50 hover:text-indigo-700 transition-all active:scale-95"
                       >
                         {slot.label}
                       </button>
@@ -616,19 +683,8 @@ export default function BookingFlow({ medico, eventos }: BookingFlowProps) {
                   </div>
                 )}
               </div>
-            )}
-
-            {/* Continue button */}
-            <div className="mt-6">
-              <button
-                onClick={() => setStep(3)}
-                disabled={!selectedDate || !selectedSlot}
-                className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 disabled:cursor-not-allowed text-white font-semibold py-3 px-6 rounded-xl transition-colors"
-              >
-                Continuar →
-              </button>
             </div>
-          </div>
+          </>
         )}
 
         {/* ─── STEP 3: Datos del paciente ─────────────────────────────────── */}
